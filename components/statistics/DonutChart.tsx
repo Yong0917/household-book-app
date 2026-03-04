@@ -101,6 +101,7 @@ export function DonutChart({ data, total }: DonutChartProps) {
             strokeWidth={0}
             label={renderCustomLabel}
             labelLine={false}
+            animationDuration={300}
           >
             {data.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.color} />
