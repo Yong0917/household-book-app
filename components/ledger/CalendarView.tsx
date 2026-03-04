@@ -8,15 +8,13 @@ import {
   eachDayOfInterval,
   getDay,
   format,
-  addMonths,
-  subMonths,
   isSameDay,
   isSameMonth,
   isToday,
   parseISO,
 } from "date-fns";
 import { ko } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Drawer } from "vaul";
 import { cn } from "@/lib/utils";
 import { TransactionList } from "./TransactionList";
@@ -27,11 +25,14 @@ import type { Transaction } from "@/lib/mock/types";
 const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
 // 달력 외 고정 영역 높이 합계 (px)
-// LedgerTabView 탭바(48) + 월헤더(48) + 요약바(40) + 요일헤더(32) + 하단탭바(64)
+// 월헤더(48) + LedgerTabView 탭바(48) + 요약바(40) + 요일헤더(32) + 하단탭바(64)
 const NON_CALENDAR_PX = 232;
 
-export function CalendarView() {
-  const [currentMonth, setCurrentMonth] = useState<Date>(() => startOfMonth(new Date()));
+interface CalendarViewProps {
+  currentMonth: Date;
+}
+
+export function CalendarView({ currentMonth }: CalendarViewProps) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isDaySheetOpen, setIsDaySheetOpen] = useState(false);
   const [isTransactionSheetOpen, setIsTransactionSheetOpen] = useState(false);
@@ -107,14 +108,18 @@ export function CalendarView() {
         .sort((a, b) => b.transactionAt.localeCompare(a.transactionAt))
     : [];
 
-  const selectedDayItems = selectedDayTransactions.map((t) => ({
-    id: t.id,
-    type: t.type,
-    categoryName: categories.find((c) => c.id === t.categoryId)?.name ?? "기타",
-    description: t.description,
-    assetName: assets.find((a) => a.id === t.assetId)?.name ?? "기타",
-    amount: t.amount,
-  }));
+  const selectedDayItems = selectedDayTransactions.map((t) => {
+    const cat = categories.find((c) => c.id === t.categoryId);
+    return {
+      id: t.id,
+      type: t.type,
+      categoryName: cat?.name ?? "기타",
+      categoryColor: cat?.color,
+      description: t.description,
+      assetName: assets.find((a) => a.id === t.assetId)?.name ?? "기타",
+      amount: t.amount,
+    };
+  });
 
   // 선택 날짜 수입/지출 소계
   const dayIncome = selectedDayTransactions
@@ -134,49 +139,28 @@ export function CalendarView() {
   return (
     <>
       <div className="flex flex-col">
-        {/* 월 이동 헤더 */}
-        <div className="sticky top-12 z-10 bg-background flex items-center justify-between px-4 h-12 border-b">
-          <button
-            onClick={() => setCurrentMonth((prev) => subMonths(prev, 1))}
-            className="p-2 rounded-full hover:bg-muted transition-colors"
-            aria-label="이전 달"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <span className="text-base font-medium">
-            {format(currentMonth, "yyyy년 M월", { locale: ko })}
-          </span>
-          <button
-            onClick={() => setCurrentMonth((prev) => addMonths(prev, 1))}
-            className="p-2 rounded-full hover:bg-muted transition-colors"
-            aria-label="다음 달"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
-        </div>
-
         {/* 월간 요약 - compact 1줄 */}
-        <div className="flex items-center justify-around h-10 bg-muted/30 border-b text-xs px-2">
+        <div className="flex items-center justify-around h-10 border-b border-border/60 text-[11px] px-3 bg-muted/15">
           <span className="text-muted-foreground">
             수입{" "}
-            <span className="text-blue-500 font-medium">
+            <span className="text-income font-semibold tabular-nums">
               {monthIncome.toLocaleString("ko-KR")}원
             </span>
           </span>
-          <span className="text-border">|</span>
+          <span className="text-border/80">·</span>
           <span className="text-muted-foreground">
             지출{" "}
-            <span className="text-red-500 font-medium">
+            <span className="text-expense font-semibold tabular-nums">
               {monthExpense.toLocaleString("ko-KR")}원
             </span>
           </span>
-          <span className="text-border">|</span>
+          <span className="text-border/80">·</span>
           <span className="text-muted-foreground">
             합계{" "}
             <span
               className={cn(
-                "font-medium",
-                monthNet >= 0 ? "text-blue-500" : "text-red-500"
+                "font-semibold tabular-nums",
+                monthNet >= 0 ? "text-income" : "text-expense"
               )}
             >
               {monthNet >= 0 ? "+" : ""}
@@ -186,13 +170,13 @@ export function CalendarView() {
         </div>
 
         {/* 요일 헤더 */}
-        <div className="grid grid-cols-7 h-8 border-b">
+        <div className="grid grid-cols-7 h-8 border-b border-border/50 bg-muted/10">
           {WEEKDAY_LABELS.map((label, i) => (
             <div
               key={label}
               className={cn(
-                "flex items-center justify-center text-xs font-medium",
-                i === 0 ? "text-red-500" : i === 6 ? "text-blue-500" : "text-muted-foreground"
+                "flex items-center justify-center text-[11px] font-medium",
+                i === 0 ? "text-expense/80" : i === 6 ? "text-income/80" : "text-muted-foreground/70"
               )}
             >
               {label}
@@ -233,32 +217,32 @@ export function CalendarView() {
                 onClick={() => handleDayClick(day)}
                 className={cn(
                   "flex flex-col items-center justify-start pt-1.5 gap-0.5 cursor-pointer select-none",
-                  "border-r border-border/30",
-                  !isLastRow && "border-b border-border/30",
+                  "border-r border-border/25",
+                  !isLastRow && "border-b border-border/25",
                   colIdx === 6 && "border-r-0",
-                  isSelected && "bg-primary/8"
+                  isSelected && "bg-primary/[0.06]"
                 )}
               >
                 {/* 날짜 숫자 */}
                 <span
                   className={cn(
-                    "text-xs w-6 h-6 flex items-center justify-center rounded-full font-medium",
+                    "text-[11px] w-6 h-6 flex items-center justify-center rounded-full font-medium",
                     isSelected && "bg-primary text-primary-foreground",
-                    isTodayDate && !isSelected && "bg-primary/15 text-primary font-bold",
-                    !isSelected && !isTodayDate && dayOfWeek === 0 && "text-red-500",
-                    !isSelected && !isTodayDate && dayOfWeek === 6 && "text-blue-500"
+                    isTodayDate && !isSelected && "bg-primary/12 text-primary font-bold",
+                    !isSelected && !isTodayDate && dayOfWeek === 0 && "text-expense/80",
+                    !isSelected && !isTodayDate && dayOfWeek === 6 && "text-income/80"
                   )}
                 >
                   {format(day, "d")}
                 </span>
 
                 {/* 수입 금액 */}
-                <span className="text-[9px] leading-tight text-blue-500 w-full text-center px-0.5 truncate h-3.5">
+                <span className="text-[8.5px] leading-tight text-income w-full text-center px-0.5 truncate h-3.5 tabular-nums">
                   {dayData?.income ? dayData.income.toLocaleString("ko-KR") : ""}
                 </span>
 
                 {/* 지출 금액 */}
-                <span className="text-[9px] leading-tight text-red-500 w-full text-center px-0.5 truncate h-3.5">
+                <span className="text-[8.5px] leading-tight text-expense w-full text-center px-0.5 truncate h-3.5 tabular-nums">
                   {dayData?.expense ? dayData.expense.toLocaleString("ko-KR") : ""}
                 </span>
               </div>
@@ -267,44 +251,46 @@ export function CalendarView() {
         </div>
       </div>
 
-      {/* 거래 추가 FAB */}
-      <button
-        onClick={handleFabClick}
-        className="fixed bottom-20 right-4 z-10 h-14 w-14 rounded-full shadow-lg bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
-        aria-label="거래 추가"
-      >
-        <Plus className="h-6 w-6" />
-      </button>
+      {/* 거래 추가 FAB - 시트 열리면 숨김 */}
+      {!isTransactionSheetOpen && (
+        <button
+          onClick={handleFabClick}
+          className="fixed bottom-20 right-5 z-10 h-14 w-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-[0_4px_20px_rgba(0,0,0,0.22)] active:scale-[0.91] transition-all duration-150"
+          aria-label="거래 추가"
+        >
+          <Plus className="h-6 w-6 stroke-[2.2]" />
+        </button>
+      )}
 
       {/* 날짜 상세 바텀시트 */}
       <Drawer.Root open={isDaySheetOpen} onOpenChange={setIsDaySheetOpen}>
         <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 bg-black/40 z-30" />
-          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-30 bg-background rounded-t-3xl max-h-[75dvh] flex flex-col outline-none">
+          <Drawer.Overlay className="fixed inset-0 bg-black/30 z-30 backdrop-blur-[2px]" />
+          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-30 bg-background rounded-t-[1.5rem] max-h-[75dvh] flex flex-col outline-none">
             {/* 드래그 핸들 */}
-            <div className="mx-auto w-12 h-1.5 bg-muted-foreground/30 rounded-full mt-3 mb-1 flex-shrink-0" />
+            <div className="mx-auto w-10 h-1 bg-muted-foreground/20 rounded-full mt-3 mb-1 flex-shrink-0" />
 
             {/* 날짜 헤더 + 소계 */}
-            <div className="flex items-center justify-between px-4 py-3 border-b flex-shrink-0">
+            <div className="flex items-center justify-between px-5 py-3.5 border-b border-border/50 flex-shrink-0">
               <Drawer.Title asChild>
-                <h3 className="text-base font-semibold">
+                <h3 className="text-[15px] font-semibold">
                   {selectedDate
                     ? format(selectedDate, "M월 d일 (E)", { locale: ko })
                     : ""}
                   {selectedDate && isToday(selectedDate) && (
-                    <span className="ml-2 text-xs text-primary font-normal">오늘</span>
+                    <span className="ml-2 text-[9px] text-income font-bold uppercase tracking-wider">TODAY</span>
                   )}
                 </h3>
               </Drawer.Title>
-              <div className="flex gap-3 text-xs">
+              <div className="flex gap-2.5 text-[11px] tabular-nums">
                 {dayIncome > 0 && (
-                  <span className="text-blue-500 font-medium">
+                  <span className="text-income font-semibold">
                     +{dayIncome.toLocaleString("ko-KR")}
                   </span>
                 )}
                 {dayExpense > 0 && (
-                  <span className="text-red-500 font-medium">
-                    -{dayExpense.toLocaleString("ko-KR")}
+                  <span className="text-expense font-semibold">
+                    −{dayExpense.toLocaleString("ko-KR")}
                   </span>
                 )}
               </div>
@@ -319,10 +305,10 @@ export function CalendarView() {
             </div>
 
             {/* 이 날 거래 추가 버튼 */}
-            <div className="px-4 py-3 border-t flex-shrink-0">
+            <div className="px-5 py-4 border-t border-border/50 flex-shrink-0">
               <button
                 onClick={handleDaySheetAdd}
-                className="w-full py-2.5 rounded-xl border border-primary text-primary text-sm font-medium hover:bg-primary/5 active:bg-primary/10 transition-colors"
+                className="w-full py-3 rounded-xl bg-primary text-primary-foreground text-[13.5px] font-medium hover:bg-primary/90 active:scale-[0.99] transition-all"
               >
                 이 날 거래 추가
               </button>

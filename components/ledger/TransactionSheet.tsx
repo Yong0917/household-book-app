@@ -7,8 +7,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Drawer } from "vaul";
 import { format } from "date-fns";
+import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useMock } from "@/lib/mock/context";
 import type { Transaction } from "@/lib/mock/types";
@@ -36,7 +36,7 @@ interface TransactionSheetProps {
 
 // select 공통 스타일
 const selectClass =
-  "border border-input rounded-lg px-3 py-2 w-full bg-background text-sm focus:outline-none focus:ring-1 focus:ring-ring";
+  "border border-input rounded-xl px-3.5 py-3 w-full bg-background text-[13.5px] focus:outline-none focus:ring-1 focus:ring-ring appearance-none";
 
 export function TransactionSheet({
   open,
@@ -128,50 +128,55 @@ export function TransactionSheet({
     <Drawer.Root open={open} onOpenChange={onOpenChange} shouldScaleBackground>
       <Drawer.Portal>
         {/* 배경 오버레이 */}
-        <Drawer.Overlay className="fixed inset-0 bg-black/40" />
+        <Drawer.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-50" />
 
         {/* 드로어 콘텐츠 */}
-        <Drawer.Content className="fixed bottom-0 left-0 right-0 bg-background rounded-t-3xl max-h-[96dvh] flex flex-col">
+        <Drawer.Content className="fixed bottom-0 left-0 right-0 bg-background rounded-t-[1.75rem] max-h-[96dvh] flex flex-col z-50 outline-none">
           {/* 드래그 핸들 */}
-          <div className="mx-auto w-12 h-1.5 bg-muted-foreground/30 rounded-full mt-3 mb-2 flex-shrink-0" />
+          <div className="mx-auto w-10 h-1 bg-muted-foreground/20 rounded-full mt-3 mb-1 flex-shrink-0" />
 
-          {/* 스크롤 가능한 콘텐츠 영역 */}
-          <div className="overflow-y-auto flex-1 px-4 pb-8">
-            {/* 시트 헤더 */}
+          {/* 헤더 */}
+          <div className="relative flex items-center justify-center px-5 py-3.5 flex-shrink-0">
             <Drawer.Title asChild>
-              <h2 className="text-lg font-semibold text-center py-3">
+              <h2 className="text-[16px] font-semibold tracking-tight">
                 {mode === "create" ? "거래 추가" : "거래 수정"}
               </h2>
             </Drawer.Title>
+            <button
+              type="button"
+              onClick={() => onOpenChange(false)}
+              className="absolute right-5 w-8 h-8 flex items-center justify-center rounded-full bg-muted/70 text-muted-foreground hover:bg-muted transition-colors"
+              aria-label="닫기"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
 
+          {/* 스크롤 가능한 콘텐츠 영역 */}
+          <div className="overflow-y-auto flex-1 px-5 pb-4">
             <form onSubmit={handleSubmit(onSubmit)}>
               {/* 수입/지출 토글 탭 */}
-              <div className="bg-muted rounded-lg p-1 flex mb-5">
+              <div className="flex rounded-xl bg-muted/50 p-1 mb-6 gap-1">
                 <button
                   type="button"
-                  onClick={() => {
-                    // type 변경 시 categoryId 초기화
-                    reset({ ...watch(), type: "expense", categoryId: "" });
-                  }}
+                  onClick={() => reset({ ...watch(), type: "expense", categoryId: "" })}
                   className={cn(
-                    "flex-1 py-2 text-sm font-medium rounded-md transition-colors",
+                    "flex-1 py-2.5 text-[13px] font-semibold rounded-lg transition-all duration-150",
                     selectedType === "expense"
-                      ? "bg-background shadow text-foreground"
-                      : "text-muted-foreground"
+                      ? "bg-expense text-white shadow-sm"
+                      : "text-muted-foreground/60 hover:text-muted-foreground"
                   )}
                 >
                   지출
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    reset({ ...watch(), type: "income", categoryId: "" });
-                  }}
+                  onClick={() => reset({ ...watch(), type: "income", categoryId: "" })}
                   className={cn(
-                    "flex-1 py-2 text-sm font-medium rounded-md transition-colors",
+                    "flex-1 py-2.5 text-[13px] font-semibold rounded-lg transition-all duration-150",
                     selectedType === "income"
-                      ? "bg-background shadow text-foreground"
-                      : "text-muted-foreground"
+                      ? "bg-income text-white shadow-sm"
+                      : "text-muted-foreground/60 hover:text-muted-foreground"
                   )}
                 >
                   수입
@@ -179,27 +184,36 @@ export function TransactionSheet({
               </div>
 
               {/* 금액 입력 */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1.5">금액</label>
+              <div className="mb-5">
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 mb-2">
+                  금액
+                </label>
                 <div className="relative">
                   <Input
                     type="number"
                     placeholder="0"
                     {...register("amount", { valueAsNumber: true })}
-                    className="text-right text-2xl h-14 pr-8 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    className={cn(
+                      "text-right text-[1.75rem] font-bold h-16 pr-9 rounded-xl tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+                      selectedType === "expense"
+                        ? "border-expense/30 focus-visible:ring-expense/40"
+                        : "border-income/30 focus-visible:ring-income/40"
+                    )}
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground text-lg pointer-events-none">
+                  <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground text-base pointer-events-none font-medium">
                     원
                   </span>
                 </div>
                 {errors.amount && (
-                  <p className="text-red-500 text-xs mt-1">{errors.amount.message}</p>
+                  <p className="text-destructive text-[11px] mt-1.5">{errors.amount.message}</p>
                 )}
               </div>
 
               {/* 카테고리 선택 */}
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1.5">카테고리</label>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 mb-2">
+                  카테고리
+                </label>
                 <select {...register("categoryId")} className={selectClass}>
                   <option value="">카테고리를 선택하세요</option>
                   {filteredCategories.map((c) => (
@@ -209,13 +223,15 @@ export function TransactionSheet({
                   ))}
                 </select>
                 {errors.categoryId && (
-                  <p className="text-red-500 text-xs mt-1">{errors.categoryId.message}</p>
+                  <p className="text-destructive text-[11px] mt-1.5">{errors.categoryId.message}</p>
                 )}
               </div>
 
               {/* 자산 선택 */}
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1.5">자산</label>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 mb-2">
+                  자산
+                </label>
                 <select {...register("assetId")} className={selectClass}>
                   <option value="">자산을 선택하세요</option>
                   {assets.map((a) => (
@@ -225,53 +241,68 @@ export function TransactionSheet({
                   ))}
                 </select>
                 {errors.assetId && (
-                  <p className="text-red-500 text-xs mt-1">{errors.assetId.message}</p>
+                  <p className="text-destructive text-[11px] mt-1.5">{errors.assetId.message}</p>
                 )}
               </div>
 
               {/* 날짜 및 시간 입력 */}
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-1.5">날짜 및 시간</label>
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 mb-2">
+                  날짜 및 시간
+                </label>
                 <div className="grid grid-cols-2 gap-2">
                   <input
                     type="date"
                     {...register("date")}
-                    className="border border-input rounded-lg px-3 py-2 w-full bg-background text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                    className="border border-input rounded-xl px-3.5 py-3 w-full bg-background text-[13px] focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                   <input
                     type="time"
                     {...register("time")}
-                    className="border border-input rounded-lg px-3 py-2 w-full bg-background text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                    className="border border-input rounded-xl px-3.5 py-3 w-full bg-background text-[13px] focus:outline-none focus:ring-1 focus:ring-ring"
                   />
                 </div>
               </div>
 
               {/* 메모 입력 */}
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1.5">메모</label>
-                <Input placeholder="메모 (선택사항)" {...register("description")} />
+              <div className="mb-7">
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 mb-2">
+                  메모
+                </label>
+                <Input
+                  placeholder="메모 (선택사항)"
+                  {...register("description")}
+                  className="rounded-xl"
+                />
               </div>
 
-              {/* 액션 버튼 */}
-              <div className="mt-6 space-y-2">
-                {/* 수정 모드에서 삭제 버튼 표시 */}
-                {mode === "edit" && (
-                  <Button
+              {/* 수정 모드에서 삭제 버튼 */}
+              {mode === "edit" && (
+                <div className="mb-2.5">
+                  <button
                     type="button"
-                    variant="outline"
-                    className="w-full text-red-500 border-red-200 hover:bg-red-50 hover:text-red-500"
                     onClick={handleDelete}
+                    className="w-full py-3.5 rounded-xl text-[13.5px] font-medium border border-destructive/25 text-destructive hover:bg-destructive/6 active:scale-[0.99] transition-all"
                   >
                     삭제
-                  </Button>
-                )}
-
-                {/* 저장 버튼 */}
-                <Button type="submit" className="w-full">
-                  저장
-                </Button>
-              </div>
+                  </button>
+                </div>
+              )}
             </form>
+          </div>
+
+          {/* 저장 버튼 - 항상 하단 고정 */}
+          <div className="px-5 pb-6 pt-3 flex-shrink-0">
+            <button
+              type="button"
+              onClick={handleSubmit(onSubmit)}
+              className={cn(
+                "w-full py-3.5 rounded-xl text-[14px] font-semibold text-white active:scale-[0.99] transition-all hover:opacity-90",
+                selectedType === "expense" ? "bg-expense" : "bg-income"
+              )}
+            >
+              저장
+            </button>
           </div>
         </Drawer.Content>
       </Drawer.Portal>

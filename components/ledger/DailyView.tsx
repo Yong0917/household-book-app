@@ -2,14 +2,11 @@
 
 // 가계부 월간 목록 뷰 (날짜별 그룹화)
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import {
   format,
-  addMonths,
-  subMonths,
   isSameMonth,
   parseISO,
-  startOfMonth,
   isToday,
 } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -18,9 +15,11 @@ import { TransactionSheet } from "@/components/ledger/TransactionSheet";
 import { useMock } from "@/lib/mock/context";
 import type { Transaction } from "@/lib/mock/types";
 
-export function DailyView() {
-  // 현재 표시 중인 월 (lazy initializer)
-  const [currentMonth, setCurrentMonth] = useState<Date>(() => startOfMonth(new Date()));
+interface DailyViewProps {
+  currentMonth: Date;
+}
+
+export function DailyView({ currentMonth }: DailyViewProps) {
   // 바텀 시트 열림 상태
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   // 수정 중인 거래 (null이면 create 모드)
@@ -72,64 +71,39 @@ export function DailyView() {
 
   return (
     <>
-      {/* 상단 월 네비게이션 헤더 */}
-      <header className="sticky top-12 bg-background border-b z-10">
-        <div className="flex items-center justify-between px-4 h-14">
-          <button
-            onClick={() => setCurrentMonth((prev) => subMonths(prev, 1))}
-            className="p-2 rounded-full hover:bg-muted transition-colors"
-            aria-label="이전 달"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-
-          <span className="text-base font-medium">
-            {format(currentMonth, "yyyy년 M월", { locale: ko })}
-          </span>
-
-          <button
-            onClick={() => setCurrentMonth((prev) => addMonths(prev, 1))}
-            className="p-2 rounded-full hover:bg-muted transition-colors"
-            aria-label="다음 달"
-          >
-            <ChevronRight className="h-5 w-5" />
-          </button>
-        </div>
-      </header>
-
       {/* 월간 수입/지출/순합계 요약 */}
-      <div className="px-4 py-3 bg-muted/30 border-b">
-        <div className="grid grid-cols-3 text-center">
-          <div>
-            <p className="text-xs text-muted-foreground mb-0.5">수입</p>
-            <p className="text-sm font-medium text-blue-500">
-              {income.toLocaleString("ko-KR")}원
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-0.5">지출</p>
-            <p className="text-sm font-medium text-red-500">
-              {expense.toLocaleString("ko-KR")}원
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground mb-0.5">순합계</p>
-            <p
-              className={`text-sm font-medium ${
-                net >= 0 ? "text-blue-500" : "text-red-500"
-              }`}
-            >
-              {net >= 0 ? "+" : ""}
-              {net.toLocaleString("ko-KR")}원
-            </p>
-          </div>
+      <div className="flex items-center px-5 py-3.5 border-b border-border/60 bg-muted/20">
+        <div className="flex-1">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">수입</p>
+          <p className="text-[13px] font-semibold text-income tabular-nums">
+            {income.toLocaleString("ko-KR")}원
+          </p>
+        </div>
+        <div className="h-8 w-px bg-border mx-1" />
+        <div className="flex-1 text-center">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">지출</p>
+          <p className="text-[13px] font-semibold text-expense tabular-nums">
+            {expense.toLocaleString("ko-KR")}원
+          </p>
+        </div>
+        <div className="h-8 w-px bg-border mx-1" />
+        <div className="flex-1 text-right">
+          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">순합계</p>
+          <p
+            className={`text-[13px] font-semibold tabular-nums ${
+              net >= 0 ? "text-income" : "text-expense"
+            }`}
+          >
+            {net >= 0 ? "+" : ""}
+            {net.toLocaleString("ko-KR")}원
+          </p>
         </div>
       </div>
 
       {/* 날짜별 그룹화된 거래 목록 */}
       {sortedDates.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16">
-          <p className="text-muted-foreground text-sm">거래 내역이 없습니다</p>
+        <div className="flex flex-col items-center justify-center py-20">
+          <p className="text-muted-foreground/60 text-sm">거래 내역이 없습니다</p>
         </div>
       ) : (
         sortedDates.map((dateKey) => {
@@ -144,35 +118,39 @@ export function DailyView() {
             .filter((t) => t.type === "expense")
             .reduce((sum, t) => sum + t.amount, 0);
 
-          // TransactionList에 전달할 데이터 변환
-          const listItems = dayTransactions.map((t) => ({
-            id: t.id,
-            type: t.type,
-            categoryName: categories.find((c) => c.id === t.categoryId)?.name ?? "기타",
-            description: t.description,
-            assetName: assets.find((a) => a.id === t.assetId)?.name ?? "기타",
-            amount: t.amount,
-          }));
+          // TransactionList에 전달할 데이터 변환 (categoryColor 포함)
+          const listItems = dayTransactions.map((t) => {
+            const cat = categories.find((c) => c.id === t.categoryId);
+            return {
+              id: t.id,
+              type: t.type,
+              categoryName: cat?.name ?? "기타",
+              categoryColor: cat?.color,
+              description: t.description,
+              assetName: assets.find((a) => a.id === t.assetId)?.name ?? "기타",
+              amount: t.amount,
+            };
+          });
 
           return (
             <div key={dateKey}>
               {/* 날짜 구분 헤더 */}
-              <div className="flex items-center justify-between px-4 py-2 bg-muted/20 border-b border-t">
-                <span className="text-sm font-medium">
+              <div className="flex items-center justify-between px-5 py-2.5 bg-muted/15 border-b border-t border-border/40">
+                <span className="text-[12.5px] font-medium text-foreground/75">
                   {format(dayDate, "M월 d일 (E)", { locale: ko })}
                   {isToday(dayDate) && (
-                    <span className="ml-1.5 text-xs text-primary font-normal">오늘</span>
+                    <span className="ml-2 text-[9px] text-income font-bold uppercase tracking-wider">TODAY</span>
                   )}
                 </span>
-                <div className="flex gap-3 text-xs">
+                <div className="flex gap-2.5 text-[11px] tabular-nums">
                   {dayIncome > 0 && (
-                    <span className="text-blue-500">
+                    <span className="text-income font-medium">
                       +{dayIncome.toLocaleString("ko-KR")}
                     </span>
                   )}
                   {dayExpense > 0 && (
-                    <span className="text-red-500">
-                      -{dayExpense.toLocaleString("ko-KR")}
+                    <span className="text-expense font-medium">
+                      −{dayExpense.toLocaleString("ko-KR")}
                     </span>
                   )}
                 </div>
@@ -185,14 +163,16 @@ export function DailyView() {
         })
       )}
 
-      {/* 거래 추가 FAB 버튼 */}
-      <button
-        onClick={handleAddClick}
-        className="fixed bottom-20 right-4 z-10 h-14 w-14 rounded-full shadow-lg bg-primary text-primary-foreground flex items-center justify-center hover:bg-primary/90 transition-colors"
-        aria-label="거래 추가"
-      >
-        <Plus className="h-6 w-6" />
-      </button>
+      {/* 거래 추가 FAB 버튼 - 시트 열리면 숨김 */}
+      {!isSheetOpen && (
+        <button
+          onClick={handleAddClick}
+          className="fixed bottom-20 right-5 z-10 h-14 w-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-[0_4px_20px_rgba(0,0,0,0.22)] active:scale-[0.91] transition-all duration-150"
+          aria-label="거래 추가"
+        >
+          <Plus className="h-6 w-6 stroke-[2.2]" />
+        </button>
+      )}
 
       {/* 거래 등록/수정 바텀 시트 */}
       <TransactionSheet
