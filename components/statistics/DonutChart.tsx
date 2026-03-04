@@ -4,24 +4,19 @@
 import { PieChart, Pie, Cell, ResponsiveContainer } from "recharts";
 import { BarChart2, Circle } from "lucide-react";
 
+import { PieLabelRenderProps } from "recharts";
+
 // 슬라이스 외부에 연결선 + 카테고리명 레이블 렌더링
-function renderCustomLabel({
-  cx,
-  cy,
-  midAngle,
-  outerRadius,
-  name,
-  percent,
-  color,
-}: {
-  cx: number;
-  cy: number;
-  midAngle: number;
-  outerRadius: number;
-  name: string;
-  percent: number;
-  color: string;
-}) {
+const renderCustomLabel = (props: PieLabelRenderProps) => {
+  const {
+    cx = 0,
+    cy = 0,
+    midAngle = 0,
+    outerRadius = 0,
+    name,
+    percent = 0,
+    color
+  } = props;
   const RADIAN = Math.PI / 180;
   const cos = Math.cos(-midAngle * RADIAN);
   const sin = Math.sin(-midAngle * RADIAN);
@@ -109,6 +104,7 @@ export function DonutChart({ data, total }: DonutChartProps) {
           </Pie>
         </PieChart>
       </ResponsiveContainer>
+
 
       {/* 카테고리 목록 */}
       <div className="mt-4 space-y-3 px-4">
