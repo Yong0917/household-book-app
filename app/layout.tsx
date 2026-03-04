@@ -12,6 +12,10 @@ export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: "가계부",
   description: "개인 수입·지출 관리 앱",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/icon-192.png",
+  },
 };
 
 
