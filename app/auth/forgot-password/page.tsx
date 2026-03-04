@@ -1,11 +1,6 @@
+// 비밀번호 재설정 요청 페이지 - 폼 컴포넌트가 min-h-svh 레이아웃을 직접 담당
 import { ForgotPasswordForm } from "@/components/forgot-password-form";
 
 export default function Page() {
-  return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-sm">
-        <ForgotPasswordForm />
-      </div>
-    </div>
-  );
+  return <ForgotPasswordForm />;
 }
