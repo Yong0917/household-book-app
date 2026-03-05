@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Drawer } from "vaul";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -67,14 +67,14 @@ export function TransactionSheet({
   // 기본값 계산
   const getDefaultValues = (): FormData => {
     if (mode === "edit" && transaction) {
-      const dt = transaction.transactionAt;
+      const dt = parseISO(transaction.transactionAt);
       return {
         type: transaction.type,
         amount: transaction.amount,
         categoryId: transaction.categoryId,
         assetId: transaction.assetId,
-        date: dt.substring(0, 10),
-        time: dt.substring(11, 16),
+        date: format(dt, "yyyy-MM-dd"),
+        time: format(dt, "HH:mm"),
         description: transaction.description ?? "",
       };
     }
@@ -184,7 +184,7 @@ export function TransactionSheet({
 
   // 폼 제출
   const onSubmit = async (data: FormData) => {
-    const transactionAt = `${data.date}T${data.time}:00`;
+    const transactionAt = new Date(`${data.date}T${data.time}:00`).toISOString();
     const payload = {
       type: data.type,
       amount: data.amount,

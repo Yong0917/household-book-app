@@ -158,7 +158,7 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
             .sort((a, b) => compareAsc(parseISO(b.transactionAt), parseISO(a.transactionAt)))
             .map((t) => {
               const cat = categories.find((c) => c.id === t.categoryId);
-              const time = t.transactionAt.substring(11, 16);
+              const time = format(parseISO(t.transactionAt), "HH:mm");
               return {
                 id: t.id,
                 type: t.type,

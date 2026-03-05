@@ -32,9 +32,10 @@ export async function getTransactionsByMonth(
 ): Promise<Transaction[]> {
   const supabase = await createClient();
 
-  // 월의 시작과 끝 (UTC 기준)
-  const start = new Date(year, month - 1, 1).toISOString();
-  const end = new Date(year, month, 1).toISOString();
+  // 월의 시작과 끝 (KST 자정 기준 → UTC 변환)
+  const KST_OFFSET = 9 * 60 * 60 * 1000;
+  const start = new Date(Date.UTC(year, month - 1, 1) - KST_OFFSET).toISOString();
+  const end = new Date(Date.UTC(year, month, 1) - KST_OFFSET).toISOString();
 
   const { data, error } = await supabase
     .from("transactions")
