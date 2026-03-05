@@ -173,10 +173,10 @@ export function TransactionSheet({
     <Drawer.Root open={open} onOpenChange={onOpenChange} shouldScaleBackground>
       <Drawer.Portal>
         {/* 배경 오버레이 */}
-        <Drawer.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-50" />
+        <Drawer.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[70]" />
 
         {/* 드로어 콘텐츠 - 전체화면 */}
-        <Drawer.Content className="fixed inset-0 bg-background flex flex-col z-50 outline-none">
+        <Drawer.Content className="fixed inset-0 bg-background flex flex-col z-[70] outline-none">
           {/* 상단 여백 (Safe Area) */}
           <div className="h-[env(safe-area-inset-top)] flex-shrink-0" />
 

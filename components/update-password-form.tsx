@@ -38,45 +38,44 @@ export function UpdatePasswordForm({
   };
 
   return (
-    // 전체 화면 중앙 정렬 레이아웃 (모바일 중심)
     <div
       className={cn(
-        "min-h-svh flex flex-col justify-center px-6 py-12",
+        "min-h-svh flex flex-col justify-center px-7 py-14",
         className
       )}
       {...props}
     >
       {/* 브랜드 영역 */}
-      <div className="flex flex-col items-center mb-10">
-        <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mb-4 shadow-lg">
-          <BookOpen className="h-8 w-8 text-primary-foreground" />
+      <div className="flex flex-col items-center mb-12">
+        <div className="w-12 h-12 bg-foreground rounded-2xl flex items-center justify-center mb-5 shadow-sm">
+          <BookOpen className="h-[22px] w-[22px] text-background" strokeWidth={1.75} />
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">가계부</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          나의 수입과 지출을 기록하세요
+        <h1 className="text-[22px] font-bold tracking-tight text-foreground">가계부</h1>
+        <p className="text-[13px] text-muted-foreground mt-1.5">
+          수입과 지출을 한 눈에
         </p>
       </div>
 
       {/* 폼 영역 */}
-      <div className="space-y-5">
+      <div className="space-y-6">
         {/* 폼 타이틀 */}
-        <div>
-          <h2 className="text-xl font-semibold">새 비밀번호 설정</h2>
-          <p className="text-sm text-muted-foreground mt-1">
+        <div className="space-y-1">
+          <h2 className="text-[22px] font-bold tracking-tight">새 비밀번호 설정</h2>
+          <p className="text-[13.5px] text-muted-foreground">
             새로운 비밀번호를 입력하세요
           </p>
         </div>
 
         <form onSubmit={handleForgotPassword} className="space-y-4">
           {/* 새 비밀번호 입력 */}
-          <div className="grid gap-2">
-            <Label htmlFor="password">새 비밀번호</Label>
+          <div className="space-y-1.5">
+            <Label htmlFor="password" className="text-[12.5px] font-semibold text-muted-foreground uppercase tracking-wide">새 비밀번호</Label>
             <Input
               id="password"
               type="password"
-              placeholder="새 비밀번호"
+              placeholder="••••••••"
               required
-              className="h-12 text-base"
+              className="h-12 text-[15px]"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
@@ -84,7 +83,7 @@ export function UpdatePasswordForm({
 
           {/* 에러 메시지 */}
           {error && (
-            <p className="text-sm text-red-500 bg-red-50 dark:bg-red-950/20 px-3 py-2 rounded-lg">
+            <p className="text-[13px] text-destructive bg-destructive/8 px-3.5 py-2.5 rounded-xl border border-destructive/15">
               {error}
             </p>
           )}
@@ -92,7 +91,7 @@ export function UpdatePasswordForm({
           {/* 비밀번호 저장 버튼 */}
           <Button
             type="submit"
-            className="w-full h-12 text-base font-medium"
+            className="w-full h-12 text-[15px] font-semibold mt-2"
             disabled={isLoading}
           >
             {isLoading ? "저장 중..." : "비밀번호 저장"}

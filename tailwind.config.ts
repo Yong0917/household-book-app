@@ -59,6 +59,9 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      spacing: {
+        "13": "3.25rem",
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

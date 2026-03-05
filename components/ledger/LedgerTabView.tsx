@@ -1,7 +1,7 @@
 "use client";
 
 // 가계부 탭 뷰 ("일일" 목록 / "달력" 전환) + 공유 월 상태 관리
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { DailyView } from "./DailyView";
 import { CalendarView } from "./CalendarView";
@@ -9,6 +9,10 @@ import { SearchView } from "./SearchView";
 import { ChevronLeft, ChevronRight, ChevronDown, Search } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth } from "date-fns";
 import { ko } from "date-fns/locale";
+import { getTransactionsByMonth } from "@/lib/actions/transactions";
+import { getCategories } from "@/lib/actions/categories";
+import { getAssets } from "@/lib/actions/assets";
+import type { Transaction, Category, Asset } from "@/lib/mock/types";
 
 type Tab = "list" | "calendar";
 
@@ -25,6 +29,75 @@ export function LedgerTabView() {
 
   // 검색 모드
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+
+  // 공유 데이터 상태 (DailyView, CalendarView에 props로 전달)
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 월별 트랜잭션 캐시 (같은 달로 돌아올 때 재사용)
+  const txCacheRef = useRef<Map<string, Transaction[]>>(new Map());
+  // categories/assets는 한 번만 로드
+  const staticLoadedRef = useRef(false);
+
+  const loadData = useCallback(async (invalidateCache = false) => {
+    const key = format(currentMonth, "yyyy-MM");
+
+    if (invalidateCache) {
+      txCacheRef.current.delete(key);
+    }
+
+    const cached = txCacheRef.current.get(key);
+    const hasStatic = staticLoadedRef.current;
+
+    // 트랜잭션 캐시 히트 + 정적 데이터 이미 로드됨 → 즉시 반영
+    if (cached && hasStatic) {
+      setTransactions(cached);
+      return;
+    }
+
+    setIsLoading(true);
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth() + 1;
+
+    if (cached) {
+      // 트랜잭션은 캐시, 정적 데이터만 로드
+      const [cats, assts] = await Promise.all([getCategories(), getAssets()]);
+      setCategories(cats);
+      setAssets(assts);
+      setTransactions(cached);
+      staticLoadedRef.current = true;
+    } else if (hasStatic) {
+      // 정적 데이터는 캐시, 트랜잭션만 로드
+      const txs = await getTransactionsByMonth(year, month);
+      txCacheRef.current.set(key, txs);
+      setTransactions(txs);
+    } else {
+      // 모두 로드
+      const [txs, cats, assts] = await Promise.all([
+        getTransactionsByMonth(year, month),
+        getCategories(),
+        getAssets(),
+      ]);
+      txCacheRef.current.set(key, txs);
+      setTransactions(txs);
+      setCategories(cats);
+      setAssets(assts);
+      staticLoadedRef.current = true;
+    }
+
+    setIsLoading(false);
+  }, [currentMonth]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // 거래 추가/수정/삭제 후 현재 월 캐시 무효화 후 재로드
+  const handleSuccess = useCallback(() => {
+    loadData(true);
+  }, [loadData]);
 
   const openPicker = () => {
     setPickerYear(currentMonth.getFullYear());
@@ -61,84 +134,95 @@ export function LedgerTabView() {
 
   return (
     <div className="flex flex-col">
-      {/* 헤더: 월 네비게이션(좌) + 검색·필터 버튼(우) */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border/60">
-        <div className="flex items-center justify-between px-2 h-12">
-          {/* 월 네비게이션 (왼쪽 정렬) */}
+      {/* 헤더: 월 네비게이션(좌) + 검색 버튼(우) */}
+      <div className="sticky top-0 z-20 bg-background/96 backdrop-blur-md border-b border-border/50">
+        <div className="flex items-center justify-between px-2 h-13">
+          {/* 월 네비게이션 */}
           <div className="flex items-center gap-0.5">
-            {/* 이전 달 */}
             <button
               onClick={() => setCurrentMonth((prev) => subMonths(prev, 1))}
-              className="p-2 rounded-full hover:bg-muted/80 transition-colors"
+              className="p-2 rounded-full hover:bg-muted/70 active:bg-muted transition-colors"
               aria-label="이전 달"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
 
-            {/* 월 텍스트 - 클릭 시 월 선택 팝업 */}
             <button
               onClick={openPicker}
-              className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-muted/80 transition-colors"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-muted/70 transition-colors"
             >
-              <span className="text-[15px] font-semibold tracking-tight">
+              <span className="text-[16px] font-bold tracking-tight">
                 {format(currentMonth, "yyyy년 M월", { locale: ko })}
               </span>
-              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/70" />
             </button>
 
-            {/* 다음 달 */}
             <button
               onClick={() => setCurrentMonth((prev) => addMonths(prev, 1))}
-              className="p-2 rounded-full hover:bg-muted/80 transition-colors"
+              className="p-2 rounded-full hover:bg-muted/70 active:bg-muted transition-colors"
               aria-label="다음 달"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
           </div>
 
-          {/* 검색 버튼 (오른쪽) */}
+          {/* 검색 버튼 */}
           <button
             onClick={openSearch}
-            className="p-2 rounded-full hover:bg-muted/80 transition-colors"
+            className="p-2 rounded-full hover:bg-muted/70 active:bg-muted transition-colors mr-1"
             aria-label="검색"
           >
-            <Search className="h-[18px] w-[18px]" />
+            <Search className="h-[18px] w-[18px] text-foreground/75" />
           </button>
         </div>
       </div>
 
-      {/* 탭 바 (sticky, 헤더 아래) */}
-      <div className="flex h-11 border-b border-border/60 sticky top-12 z-20 bg-background/95 backdrop-blur-sm">
+      {/* 탭 바 */}
+      <div className="flex h-11 border-b border-border/50 sticky top-13 z-20 bg-background/96 backdrop-blur-md">
         <button
           onClick={() => setTab("list")}
           className={cn(
-            "flex-1 text-[13px] font-medium transition-colors relative",
-            tab === "list" ? "text-primary" : "text-muted-foreground/60"
+            "flex-1 text-[13px] font-semibold transition-all relative",
+            tab === "list" ? "text-primary" : "text-muted-foreground/50"
           )}
         >
           일일
           {tab === "list" && (
-            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-primary rounded-full" />
+            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-[2px] bg-primary rounded-full" />
           )}
         </button>
         <button
           onClick={() => setTab("calendar")}
           className={cn(
-            "flex-1 text-[13px] font-medium transition-colors relative",
-            tab === "calendar" ? "text-primary" : "text-muted-foreground/60"
+            "flex-1 text-[13px] font-semibold transition-all relative",
+            tab === "calendar" ? "text-primary" : "text-muted-foreground/50"
           )}
         >
           달력
           {tab === "calendar" && (
-            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-primary rounded-full" />
+            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-[2px] bg-primary rounded-full" />
           )}
         </button>
       </div>
 
       {/* 탭 콘텐츠 */}
       {tab === "list"
-        ? <DailyView currentMonth={currentMonth} />
-        : <CalendarView currentMonth={currentMonth} />
+        ? <DailyView
+            currentMonth={currentMonth}
+            transactions={transactions}
+            categories={categories}
+            assets={assets}
+            isLoading={isLoading}
+            onSuccess={handleSuccess}
+          />
+        : <CalendarView
+            currentMonth={currentMonth}
+            transactions={transactions}
+            categories={categories}
+            assets={assets}
+            isLoading={isLoading}
+            onSuccess={handleSuccess}
+          />
       }
 
       {/* 검색 뷰 오버레이 */}

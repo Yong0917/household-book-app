@@ -16,7 +16,7 @@ export function BottomTabBar() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 h-16 bg-background/95 backdrop-blur-sm border-t border-border/60 flex items-stretch"
+      className="fixed bottom-0 left-0 right-0 z-50 h-16 bg-background/96 backdrop-blur-md border-t border-border/50 flex items-stretch"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       {tabs.map(({ href, icon: Icon, label, match }) => {
@@ -25,26 +25,26 @@ export function BottomTabBar() {
           <Link
             key={href}
             href={href}
-            className="flex flex-col items-center justify-center gap-0.5 flex-1 py-2"
+            className="flex flex-col items-center justify-center gap-1 flex-1 py-2"
           >
             <div
               className={cn(
-                "w-11 h-7 flex items-center justify-center rounded-full transition-all duration-200",
-                isActive ? "bg-primary/8" : ""
+                "w-14 h-7 flex items-center justify-center rounded-full transition-all duration-200",
+                isActive ? "bg-primary/10" : ""
               )}
             >
               <Icon
                 className={cn(
-                  "h-[18px] w-[18px] transition-colors duration-200",
-                  isActive ? "text-primary" : "text-muted-foreground/70"
+                  "h-[19px] w-[19px] transition-all duration-200",
+                  isActive ? "text-primary" : "text-muted-foreground/55"
                 )}
-                strokeWidth={isActive ? 2.5 : 1.8}
+                strokeWidth={isActive ? 2.4 : 1.7}
               />
             </div>
             <span
               className={cn(
-                "text-[10px] tracking-tight transition-colors duration-200",
-                isActive ? "text-primary font-semibold" : "text-muted-foreground/70"
+                "text-[10.5px] transition-all duration-200 tracking-tight",
+                isActive ? "text-primary font-bold" : "text-muted-foreground/55 font-medium"
               )}
             >
               {label}

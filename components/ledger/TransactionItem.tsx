@@ -28,11 +28,11 @@ export function TransactionItem({
   const dotColor = categoryColor ?? (type === "income" ? "#388e5a" : "#c9581a");
 
   return (
-    <div className="flex items-center gap-3.5 px-5 py-3.5 border-b border-border/50 active:bg-muted/40 transition-colors">
-      {/* 카테고리 색상 도트 */}
+    <div className="flex items-center gap-3.5 px-5 py-3.5 border-b border-border/40 active:bg-muted/30 transition-colors duration-100">
+      {/* 카테고리 색상 아이콘 */}
       <div
-        className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0"
-        style={{ backgroundColor: `${dotColor}18` }}
+        className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+        style={{ backgroundColor: `${dotColor}1A` }}
       >
         <div
           className="w-3 h-3 rounded-full"
@@ -43,12 +43,12 @@ export function TransactionItem({
       {/* 거래 정보 영역 */}
       <div className="flex-1 min-w-0">
         {/* 메모(없으면 카테고리명) */}
-        <p className="font-medium text-[13.5px] leading-snug truncate">
+        <p className="font-semibold text-[13.5px] leading-snug truncate text-foreground/90">
           {description || categoryName}
         </p>
 
         {/* 시간 + 카테고리명 + 자산명 */}
-        <p className="text-[11.5px] text-muted-foreground truncate mt-0.5">
+        <p className="text-[11.5px] text-muted-foreground/75 truncate mt-0.5">
           {time ? `${time} · ` : ""}{description ? `${categoryName} · ` : ""}{assetName}
         </p>
       </div>
@@ -57,7 +57,7 @@ export function TransactionItem({
       <div className="flex-shrink-0">
         <span
           className={cn(
-            "font-semibold text-[13.5px] tabular-nums",
+            "font-bold text-[14px] tabular-nums",
             type === "income" ? "text-income" : "text-expense"
           )}
         >

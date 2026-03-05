@@ -225,8 +225,8 @@ export default function CategoryDetailPage() {
                 width={36}
               />
               <Tooltip
-                formatter={(value: number) => [
-                  `${value.toLocaleString("ko-KR")}원`,
+                formatter={(value: number | undefined) => [
+                  value != null ? `${value.toLocaleString("ko-KR")}원` : "",
                   "",
                 ]}
                 labelStyle={{ color: "#9ca3af", fontSize: 11 }}
