@@ -1,10 +1,26 @@
 "use client";
 
-// 분류(카테고리) 목록 컴포넌트 (Supabase server actions 연동)
+// 분류(카테고리) 목록 컴포넌트 (Supabase server actions 연동, 드래그 정렬 지원)
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, GripVertical } from "lucide-react";
 import { Drawer } from "vaul";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -12,6 +28,7 @@ import {
   addCategory,
   updateCategory,
   deleteCategory,
+  reorderCategories,
 } from "@/lib/actions/categories";
 import type { Category } from "@/lib/mock/types";
 
@@ -31,28 +48,121 @@ const COLOR_PALETTE = [
   "#6b7280",
 ];
 
+// 드래그 가능한 개별 카테고리 아이템
+function SortableCategoryItem({
+  category,
+  onItemClick,
+  onDelete,
+  isPending,
+}: {
+  category: Category;
+  onItemClick: (c: Category) => void;
+  onDelete: (c: Category) => void;
+  isPending: boolean;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: category.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center justify-between px-4 py-3 bg-background"
+    >
+      {/* 드래그 핸들 */}
+      <button
+        {...attributes}
+        {...listeners}
+        className="mr-2 text-muted-foreground/40 touch-none cursor-grab active:cursor-grabbing"
+        aria-label="순서 변경"
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+
+      {/* 카테고리 색상 아이콘 + 이름 */}
+      <button
+        onClick={() => onItemClick(category)}
+        className="flex items-center gap-3 flex-1 text-left"
+      >
+        <div
+          className="h-8 w-8 rounded-full flex-shrink-0"
+          style={{ backgroundColor: category.color }}
+        />
+        <span className="text-sm font-medium">{category.name}</span>
+        {category.isDefault && (
+          <span className="text-xs text-muted-foreground">(기본)</span>
+        )}
+      </button>
+
+      {/* 삭제 버튼 */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className={cn(
+          "text-muted-foreground hover:text-red-500",
+          category.isDefault && "opacity-30 cursor-not-allowed"
+        )}
+        onClick={() => onDelete(category)}
+        disabled={category.isDefault || isPending}
+        aria-label={`${category.name} 삭제`}
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
+
 interface CategoryListProps {
   initialCategories: Category[];
 }
 
 export function CategoryList({ initialCategories }: CategoryListProps) {
-  // 활성 탭 상태 (수입/지출)
   const [activeTab, setActiveTab] = useState<CategoryType>("expense");
-  // Drawer 열림 상태
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  // 수정 중인 카테고리 (null이면 추가 모드)
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  // 폼 상태
   const [formName, setFormName] = useState("");
   const [formColor, setFormColor] = useState(COLOR_PALETTE[0]);
   const [isPending, setIsPending] = useState(false);
 
   const router = useRouter();
 
-  // 현재 탭에 해당하는 카테고리 필터링
-  const filteredCategories = initialCategories.filter((c) => c.type === activeTab);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
+  );
 
-  // 추가 버튼 클릭
+  const filteredCategories = categories.filter((c) => c.type === activeTab);
+
+  // 드래그 종료 → 순서 업데이트
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = filteredCategories.findIndex((c) => c.id === active.id);
+    const newIndex = filteredCategories.findIndex((c) => c.id === over.id);
+    const reordered = arrayMove(filteredCategories, oldIndex, newIndex);
+
+    // 현재 탭 외의 카테고리는 그대로 유지
+    const otherCategories = categories.filter((c) => c.type !== activeTab);
+    setCategories([...otherCategories, ...reordered]);
+
+    await reorderCategories(reordered.map((c) => c.id));
+  };
+
   const handleAddClick = () => {
     setEditingCategory(null);
     setFormName("");
@@ -60,7 +170,6 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
     setIsDrawerOpen(true);
   };
 
-  // 항목 클릭 (수정)
   const handleItemClick = (category: Category) => {
     setEditingCategory(category);
     setFormName(category.name);
@@ -68,7 +177,6 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
     setIsDrawerOpen(true);
   };
 
-  // 저장 버튼
   const handleSave = async () => {
     if (!formName.trim() || isPending) return;
     setIsPending(true);
@@ -93,7 +201,6 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
     }
   };
 
-  // 삭제 버튼 (Drawer 내)
   const handleDelete = async () => {
     if (!editingCategory || isPending) return;
     setIsPending(true);
@@ -106,7 +213,6 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
     }
   };
 
-  // 목록에서 직접 삭제
   const handleDirectDelete = async (category: Category) => {
     if (category.isDefault || isPending) return;
     setIsPending(true);
@@ -146,45 +252,29 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
         </button>
       </div>
 
-      {/* 카테고리 목록 */}
-      <div className="divide-y">
-        {filteredCategories.map((category) => (
-          <div
-            key={category.id}
-            className="flex items-center justify-between px-4 py-3"
-          >
-            {/* 카테고리 색상 아이콘 + 이름 */}
-            <button
-              onClick={() => handleItemClick(category)}
-              className="flex items-center gap-3 flex-1 text-left"
-            >
-              <div
-                className="h-8 w-8 rounded-full flex-shrink-0"
-                style={{ backgroundColor: category.color }}
+      {/* 드래그 정렬 목록 */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={filteredCategories.map((c) => c.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="divide-y">
+            {filteredCategories.map((category) => (
+              <SortableCategoryItem
+                key={category.id}
+                category={category}
+                onItemClick={handleItemClick}
+                onDelete={handleDirectDelete}
+                isPending={isPending}
               />
-              <span className="text-sm font-medium">{category.name}</span>
-              {category.isDefault && (
-                <span className="text-xs text-muted-foreground">(기본)</span>
-              )}
-            </button>
-
-            {/* 삭제 버튼 (기본 카테고리는 비활성) */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className={cn(
-                "text-muted-foreground hover:text-red-500",
-                category.isDefault && "opacity-30 cursor-not-allowed"
-              )}
-              onClick={() => handleDirectDelete(category)}
-              disabled={category.isDefault || isPending}
-              aria-label={`${category.name} 삭제`}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+            ))}
           </div>
-        ))}
-      </div>
+        </SortableContext>
+      </DndContext>
 
       {/* 카테고리 추가 버튼 */}
       <div className="px-4 py-3">
@@ -199,7 +289,6 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 bg-black/40" />
           <Drawer.Content className="fixed bottom-0 left-0 right-0 bg-background rounded-t-3xl max-h-[80dvh] flex flex-col">
-            {/* 드래그 핸들 */}
             <div className="mx-auto w-12 h-1.5 bg-muted-foreground/30 rounded-full mt-3 mb-2 flex-shrink-0" />
 
             <div className="overflow-y-auto flex-1 px-4 pb-8">
@@ -209,7 +298,6 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
                 </h2>
               </Drawer.Title>
 
-              {/* 이름 입력 */}
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-1.5">이름</label>
                 <Input
@@ -219,7 +307,6 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
                 />
               </div>
 
-              {/* 색상 선택 */}
               <div className="mb-6">
                 <label className="block text-sm font-medium mb-2">색상</label>
                 <div className="grid grid-cols-5 gap-3">
@@ -238,9 +325,7 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
                 </div>
               </div>
 
-              {/* 버튼 영역 */}
               <div className="space-y-2">
-                {/* 수정 모드에서 삭제 버튼 (기본 카테고리 제외) */}
                 {editingCategory && !editingCategory.isDefault && (
                   <Button
                     variant="outline"
@@ -251,7 +336,6 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
                     삭제
                   </Button>
                 )}
-
                 <Button
                   className="w-full"
                   onClick={handleSave}

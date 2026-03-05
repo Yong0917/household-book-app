@@ -1,17 +1,32 @@
 "use client";
 
-// 자산 목록 컴포넌트 (Supabase server actions 연동)
+// 자산 목록 컴포넌트 (Supabase server actions 연동, 드래그 정렬 지원)
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Wallet, Building2, CreditCard, HelpCircle, Trash2, Plus } from "lucide-react";
+import { Wallet, Building2, CreditCard, HelpCircle, Trash2, Plus, GripVertical } from "lucide-react";
 import { Drawer } from "vaul";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { addAsset, updateAsset, deleteAsset } from "@/lib/actions/assets";
+import { addAsset, updateAsset, deleteAsset, reorderAssets } from "@/lib/actions/assets";
 import type { Asset, AssetType } from "@/lib/mock/types";
 
-// 자산 타입별 아이콘 매핑
 const ASSET_ICONS: Record<AssetType, React.ElementType> = {
   cash: Wallet,
   bank: Building2,
@@ -19,7 +34,6 @@ const ASSET_ICONS: Record<AssetType, React.ElementType> = {
   other: HelpCircle,
 };
 
-// 자산 타입별 한글 레이블
 const ASSET_LABELS: Record<AssetType, string> = {
   cash: "현금",
   bank: "은행",
@@ -27,27 +41,122 @@ const ASSET_LABELS: Record<AssetType, string> = {
   other: "기타",
 };
 
-// select 공통 스타일
 const selectClass =
   "border border-input rounded-lg px-3 py-2 w-full bg-background text-sm focus:outline-none focus:ring-1 focus:ring-ring";
+
+// 드래그 가능한 개별 자산 아이템
+function SortableAssetItem({
+  asset,
+  onItemClick,
+  onDelete,
+  isPending,
+}: {
+  asset: Asset;
+  onItemClick: (a: Asset) => void;
+  onDelete: (a: Asset) => void;
+  isPending: boolean;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: asset.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  const IconComponent = ASSET_ICONS[asset.type];
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center justify-between px-4 py-3 bg-background"
+    >
+      {/* 드래그 핸들 */}
+      <button
+        {...attributes}
+        {...listeners}
+        className="mr-2 text-muted-foreground/40 touch-none cursor-grab active:cursor-grabbing"
+        aria-label="순서 변경"
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
+
+      {/* 자산 아이콘 + 정보 */}
+      <button
+        onClick={() => onItemClick(asset)}
+        className="flex items-center gap-3 flex-1 text-left"
+      >
+        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
+          <IconComponent className="h-5 w-5 text-muted-foreground" />
+        </div>
+        <div>
+          <p className="text-sm font-medium">{asset.name}</p>
+          <p className="text-xs text-muted-foreground">{ASSET_LABELS[asset.type]}</p>
+        </div>
+        {asset.isDefault && (
+          <span className="text-xs text-muted-foreground ml-1">(기본)</span>
+        )}
+      </button>
+
+      {/* 삭제 버튼 */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className={cn(
+          "text-muted-foreground hover:text-red-500",
+          asset.isDefault && "opacity-30 cursor-not-allowed"
+        )}
+        onClick={() => onDelete(asset)}
+        disabled={asset.isDefault || isPending}
+        aria-label={`${asset.name} 삭제`}
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+}
 
 interface AssetListProps {
   initialAssets: Asset[];
 }
 
 export function AssetList({ initialAssets }: AssetListProps) {
-  // Drawer 열림 상태
+  const [assets, setAssets] = useState<Asset[]>(initialAssets);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  // 수정 중인 자산 (null이면 추가 모드)
   const [editingAsset, setEditingAsset] = useState<Asset | null>(null);
-  // 폼 상태
   const [formName, setFormName] = useState("");
   const [formType, setFormType] = useState<AssetType>("cash");
   const [isPending, setIsPending] = useState(false);
 
   const router = useRouter();
 
-  // 추가 버튼 클릭
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 5 } })
+  );
+
+  // 드래그 종료 → 순서 업데이트
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = assets.findIndex((a) => a.id === active.id);
+    const newIndex = assets.findIndex((a) => a.id === over.id);
+    const reordered = arrayMove(assets, oldIndex, newIndex);
+    setAssets(reordered);
+
+    await reorderAssets(reordered.map((a) => a.id));
+  };
+
   const handleAddClick = () => {
     setEditingAsset(null);
     setFormName("");
@@ -55,7 +164,6 @@ export function AssetList({ initialAssets }: AssetListProps) {
     setIsDrawerOpen(true);
   };
 
-  // 항목 클릭 (수정)
   const handleItemClick = (asset: Asset) => {
     setEditingAsset(asset);
     setFormName(asset.name);
@@ -63,7 +171,6 @@ export function AssetList({ initialAssets }: AssetListProps) {
     setIsDrawerOpen(true);
   };
 
-  // 저장 버튼
   const handleSave = async () => {
     if (!formName.trim() || isPending) return;
     setIsPending(true);
@@ -80,7 +187,6 @@ export function AssetList({ initialAssets }: AssetListProps) {
     }
   };
 
-  // 삭제 버튼 (Drawer 내)
   const handleDelete = async () => {
     if (!editingAsset || isPending) return;
     setIsPending(true);
@@ -93,7 +199,6 @@ export function AssetList({ initialAssets }: AssetListProps) {
     }
   };
 
-  // 목록에서 직접 삭제
   const handleDirectDelete = async (asset: Asset) => {
     if (asset.isDefault || isPending) return;
     setIsPending(true);
@@ -107,53 +212,29 @@ export function AssetList({ initialAssets }: AssetListProps) {
 
   return (
     <div>
-      {/* 자산 목록 */}
-      <div className="divide-y border-t border-b">
-        {initialAssets.map((asset) => {
-          const IconComponent = ASSET_ICONS[asset.type];
-
-          return (
-            <div
-              key={asset.id}
-              className="flex items-center justify-between px-4 py-3"
-            >
-              {/* 자산 아이콘 + 정보 */}
-              <button
-                onClick={() => handleItemClick(asset)}
-                className="flex items-center gap-3 flex-1 text-left"
-              >
-                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center flex-shrink-0">
-                  <IconComponent className="h-5 w-5 text-muted-foreground" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">{asset.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {ASSET_LABELS[asset.type]}
-                  </p>
-                </div>
-                {asset.isDefault && (
-                  <span className="text-xs text-muted-foreground ml-1">(기본)</span>
-                )}
-              </button>
-
-              {/* 삭제 버튼 (기본 자산은 비활성) */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className={cn(
-                  "text-muted-foreground hover:text-red-500",
-                  asset.isDefault && "opacity-30 cursor-not-allowed"
-                )}
-                onClick={() => handleDirectDelete(asset)}
-                disabled={asset.isDefault || isPending}
-                aria-label={`${asset.name} 삭제`}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          );
-        })}
-      </div>
+      {/* 드래그 정렬 목록 */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext
+          items={assets.map((a) => a.id)}
+          strategy={verticalListSortingStrategy}
+        >
+          <div className="divide-y border-t border-b">
+            {assets.map((asset) => (
+              <SortableAssetItem
+                key={asset.id}
+                asset={asset}
+                onItemClick={handleItemClick}
+                onDelete={handleDirectDelete}
+                isPending={isPending}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       {/* 자산 추가 버튼 */}
       <div className="px-4 py-3">
@@ -168,7 +249,6 @@ export function AssetList({ initialAssets }: AssetListProps) {
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 bg-black/40" />
           <Drawer.Content className="fixed bottom-0 left-0 right-0 bg-background rounded-t-3xl max-h-[70dvh] flex flex-col">
-            {/* 드래그 핸들 */}
             <div className="mx-auto w-12 h-1.5 bg-muted-foreground/30 rounded-full mt-3 mb-2 flex-shrink-0" />
 
             <div className="overflow-y-auto flex-1 px-4 pb-8">
@@ -178,7 +258,6 @@ export function AssetList({ initialAssets }: AssetListProps) {
                 </h2>
               </Drawer.Title>
 
-              {/* 이름 입력 */}
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-1.5">이름</label>
                 <Input
@@ -188,7 +267,6 @@ export function AssetList({ initialAssets }: AssetListProps) {
                 />
               </div>
 
-              {/* 타입 선택 */}
               <div className="mb-6">
                 <label className="block text-sm font-medium mb-1.5">유형</label>
                 <select
@@ -203,9 +281,7 @@ export function AssetList({ initialAssets }: AssetListProps) {
                 </select>
               </div>
 
-              {/* 버튼 영역 */}
               <div className="space-y-2">
-                {/* 수정 모드에서 삭제 버튼 (기본 자산 제외) */}
                 {editingAsset && !editingAsset.isDefault && (
                   <Button
                     variant="outline"
@@ -216,7 +292,6 @@ export function AssetList({ initialAssets }: AssetListProps) {
                     삭제
                   </Button>
                 )}
-
                 <Button
                   className="w-full"
                   onClick={handleSave}
