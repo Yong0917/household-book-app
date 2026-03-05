@@ -1,13 +1,13 @@
 "use client";
 
 // 통계 페이지 - 수입/지출 탭 통합 (기본: 지출)
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, isSameMonth, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { DonutChart } from "@/components/statistics/DonutChart";
+import { CategoryDetailSheet } from "@/components/statistics/CategoryDetailSheet";
 import { getTransactionsByMonth } from "@/lib/actions/transactions";
 import { getCategories } from "@/lib/actions/categories";
 import type { Transaction, Category, TransactionType } from "@/lib/mock/types";
@@ -18,24 +18,55 @@ const MONTH_LABELS = [
 ];
 
 export default function StatisticsPage() {
-  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TransactionType>("expense");
   const [currentMonth, setCurrentMonth] = useState<Date>(() => startOfMonth(new Date()));
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
 
+  // 카테고리 상세 드로어
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailCategoryId, setDetailCategoryId] = useState<string | null>(null);
+
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
 
+  // 월별 트랜잭션 캐시
+  const txCacheRef = useRef<Map<string, Transaction[]>>(new Map());
+  // categories는 한 번만 로드
+  const catsRef = useRef<Category[]>([]);
+
   const loadData = useCallback(async () => {
+    const key = format(currentMonth, "yyyy-MM");
+    const cached = txCacheRef.current.get(key);
+    const hasCategories = catsRef.current.length > 0;
+
+    if (cached && hasCategories) {
+      setTransactions(cached);
+      return;
+    }
+
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth() + 1;
-    const [txs, cats] = await Promise.all([
-      getTransactionsByMonth(year, month),
-      getCategories(),
-    ]);
-    setTransactions(txs);
-    setCategories(cats);
+
+    if (cached) {
+      const cats = await getCategories();
+      catsRef.current = cats;
+      setCategories(cats);
+      setTransactions(cached);
+    } else if (hasCategories) {
+      const txs = await getTransactionsByMonth(year, month);
+      txCacheRef.current.set(key, txs);
+      setTransactions(txs);
+    } else {
+      const [txs, cats] = await Promise.all([
+        getTransactionsByMonth(year, month),
+        getCategories(),
+      ]);
+      txCacheRef.current.set(key, txs);
+      catsRef.current = cats;
+      setTransactions(txs);
+      setCategories(cats);
+    }
   }, [currentMonth]);
 
   useEffect(() => {
@@ -77,11 +108,11 @@ export default function StatisticsPage() {
   return (
     <>
       {/* 월 이동 헤더 */}
-      <header className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border/60 z-10">
-        <div className="flex items-center justify-center gap-0.5 px-4 h-12">
+      <header className="sticky top-0 bg-background/96 backdrop-blur-md border-b border-border/50 z-10">
+        <div className="flex items-center justify-center gap-0.5 px-4 h-13">
           <button
             onClick={() => setCurrentMonth((prev) => subMonths(prev, 1))}
-            className="p-2 rounded-full hover:bg-muted/80 transition-colors"
+            className="p-2 rounded-full hover:bg-muted/70 active:bg-muted transition-colors"
             aria-label="이전 달"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -89,17 +120,17 @@ export default function StatisticsPage() {
 
           <button
             onClick={openPicker}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-muted/80 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-muted/70 transition-colors"
           >
-            <span className="text-[15px] font-semibold tracking-tight">
+            <span className="text-[16px] font-bold tracking-tight">
               {format(currentMonth, "yyyy년 M월", { locale: ko })}
             </span>
-            <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/70" />
           </button>
 
           <button
             onClick={() => setCurrentMonth((prev) => addMonths(prev, 1))}
-            className="p-2 rounded-full hover:bg-muted/80 transition-colors"
+            className="p-2 rounded-full hover:bg-muted/70 active:bg-muted transition-colors"
             aria-label="다음 달"
           >
             <ChevronRight className="h-4 w-4" />
@@ -108,44 +139,44 @@ export default function StatisticsPage() {
       </header>
 
       {/* 수입/지출 전환 탭 */}
-      <div className="flex border-b border-border/60">
+      <div className="flex border-b border-border/50">
         <button
           onClick={() => setActiveTab("income")}
           className={cn(
-            "flex-1 py-3 text-center text-[13px] font-medium transition-colors relative",
-            activeTab === "income" ? "text-income" : "text-muted-foreground/60"
+            "flex-1 py-3 text-center text-[13px] font-semibold transition-all relative",
+            activeTab === "income" ? "text-income" : "text-muted-foreground/50"
           )}
         >
           수입
           {activeTab === "income" && (
-            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-income rounded-full" />
+            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-[2px] bg-income rounded-full" />
           )}
         </button>
         <button
           onClick={() => setActiveTab("expense")}
           className={cn(
-            "flex-1 py-3 text-center text-[13px] font-medium transition-colors relative",
-            activeTab === "expense" ? "text-expense" : "text-muted-foreground/60"
+            "flex-1 py-3 text-center text-[13px] font-semibold transition-all relative",
+            activeTab === "expense" ? "text-expense" : "text-muted-foreground/50"
           )}
         >
           지출
           {activeTab === "expense" && (
-            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 bg-expense rounded-full" />
+            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-[2px] bg-expense rounded-full" />
           )}
         </button>
       </div>
 
       {/* 총 금액 표시 */}
-      <div className="text-center py-6 px-5">
-        <p className="text-[11px] text-muted-foreground uppercase tracking-widest mb-2">
+      <div className="text-center pt-7 pb-4 px-5">
+        <p className="text-[10.5px] text-muted-foreground/70 font-semibold uppercase tracking-widest mb-2.5">
           이번 달 총 {isExpense ? "지출" : "수입"}
         </p>
         <p className={cn(
-          "text-[2rem] font-bold tabular-nums tracking-tight",
+          "text-[2.2rem] font-bold tabular-nums tracking-tight leading-none",
           isExpense ? "text-expense" : "text-income"
         )}>
           {total.toLocaleString("ko-KR")}
-          <span className="text-2xl font-semibold ml-0.5">원</span>
+          <span className="text-[1.5rem] font-semibold ml-1">원</span>
         </p>
       </div>
 
@@ -155,10 +186,20 @@ export default function StatisticsPage() {
         total={total}
         onCategoryClick={(item) => {
           if (item.id) {
-            const monthStr = format(currentMonth, "yyyy-MM");
-            router.push(`/statistics/category/${item.id}?month=${monthStr}&type=${activeTab}`);
+            setDetailCategoryId(item.id);
+            setDetailOpen(true);
           }
         }}
+      />
+
+      {/* 카테고리 상세 드로어 */}
+      <CategoryDetailSheet
+        open={detailOpen}
+        onOpenChange={setDetailOpen}
+        categoryId={detailCategoryId}
+        initialMonth={currentMonth}
+        type={activeTab}
+        categories={categories}
       />
 
       {/* 월 선택 팝업 */}
