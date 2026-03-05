@@ -120,16 +120,42 @@ export function TransactionSheet({
     handleSubmit,
     watch,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: getDefaultValues(),
   });
 
+  // 금액 표시용 state (콤마 포함 문자열)
+  const [displayAmount, setDisplayAmount] = useState<string>(() =>
+    mode === "edit" && transaction
+      ? transaction.amount.toLocaleString("ko-KR")
+      : ""
+  );
+
+  const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/[^0-9]/g, "");
+    if (raw === "") {
+      setDisplayAmount("");
+      setValue("amount", undefined as unknown as number, { shouldValidate: false });
+    } else {
+      const num = parseInt(raw, 10);
+      setDisplayAmount(num.toLocaleString("ko-KR"));
+      setValue("amount", num, { shouldValidate: true });
+    }
+  };
+
   // 시트가 열릴 때 폼 초기화 + 히스토리 스택에 상태 추가 (뒤로가기 인터셉트)
   useEffect(() => {
     if (open) {
-      reset(getDefaultValues());
+      const defaults = getDefaultValues();
+      reset(defaults);
+      setDisplayAmount(
+        mode === "edit" && transaction
+          ? transaction.amount.toLocaleString("ko-KR")
+          : ""
+      );
       history.pushState({ transactionSheet: true }, "");
 
       const handlePopState = () => {
@@ -267,11 +293,13 @@ export function TransactionSheet({
                 </label>
                 <div className="relative">
                   <Input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     placeholder="0"
-                    {...register("amount", { valueAsNumber: true })}
+                    value={displayAmount}
+                    onChange={handleAmountChange}
                     className={cn(
-                      "text-right text-[1.75rem] font-bold h-16 pr-9 rounded-xl tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+                      "text-right text-[1.75rem] font-bold h-16 pr-9 rounded-xl tabular-nums",
                       selectedType === "expense"
                         ? "border-expense/30 focus-visible:ring-expense/40"
                         : "border-income/30 focus-visible:ring-income/40"
