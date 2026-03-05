@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronRight, Tag, Wallet, LogOut, Palette } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
+import { ExportButton } from "@/components/settings/ExportButton";
 
 export default function SettingsPage() {
   return (
@@ -43,6 +44,9 @@ export default function SettingsPage() {
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
           </Link>
+
+          {/* 엑셀 내보내기 */}
+          <ExportButton />
         </div>
       </div>
 
