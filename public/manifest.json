@@ -1,6 +1,6 @@
 {
-    "name": "My Money",
-    "short_name": "Money",
+    "name": "티끌모아 부자",
+    "short_name": "티끌모아 부자",
     "description": "광고 없는 나만의 가계부",
     "start_url": "/",
     "display": "standalone",
