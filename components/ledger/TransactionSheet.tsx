@@ -91,13 +91,31 @@ export function TransactionSheet({
     defaultValues: getDefaultValues(),
   });
 
-  // 시트가 열릴 때 폼 초기화
+  // 시트가 열릴 때 폼 초기화 + 히스토리 스택에 상태 추가 (뒤로가기 인터셉트)
   useEffect(() => {
     if (open) {
       reset(getDefaultValues());
+      history.pushState({ transactionSheet: true }, "");
+
+      const handlePopState = () => {
+        onOpenChange(false);
+      };
+      window.addEventListener("popstate", handlePopState, { once: true });
+      return () => {
+        window.removeEventListener("popstate", handlePopState);
+      };
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  // 시트를 직접 닫을 때 (X 버튼, 저장, 삭제) 히스토리 상태 정리
+  const handleClose = () => {
+    if (history.state?.transactionSheet) {
+      history.back();
+    } else {
+      onOpenChange(false);
+    }
+  };
 
   // 현재 선택된 거래 유형 감시 (카테고리 필터링용)
   const selectedType = watch("type");
@@ -120,7 +138,7 @@ export function TransactionSheet({
     } else {
       await addTransaction(payload);
     }
-    onOpenChange(false);
+    handleClose();
     onSuccess?.();
   };
 
@@ -128,7 +146,7 @@ export function TransactionSheet({
   const handleDelete = async () => {
     if (transaction) {
       await deleteTransaction(transaction.id);
-      onOpenChange(false);
+      handleClose();
       onSuccess?.();
     }
   };
@@ -139,10 +157,10 @@ export function TransactionSheet({
         {/* 배경 오버레이 */}
         <Drawer.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-50" />
 
-        {/* 드로어 콘텐츠 */}
-        <Drawer.Content className="fixed bottom-0 left-0 right-0 bg-background rounded-t-[1.75rem] max-h-[96dvh] flex flex-col z-50 outline-none">
-          {/* 드래그 핸들 */}
-          <div className="mx-auto w-10 h-1 bg-muted-foreground/20 rounded-full mt-3 mb-1 flex-shrink-0" />
+        {/* 드로어 콘텐츠 - 전체화면 */}
+        <Drawer.Content className="fixed inset-0 bg-background flex flex-col z-50 outline-none">
+          {/* 상단 여백 (Safe Area) */}
+          <div className="h-[env(safe-area-inset-top)] flex-shrink-0" />
 
           {/* 헤더 */}
           <div className="relative flex items-center justify-center px-5 py-3.5 flex-shrink-0">
@@ -153,7 +171,7 @@ export function TransactionSheet({
             </Drawer.Title>
             <button
               type="button"
-              onClick={() => onOpenChange(false)}
+              onClick={handleClose}
               className="absolute right-5 w-8 h-8 flex items-center justify-center rounded-full bg-muted/70 text-muted-foreground hover:bg-muted transition-colors"
               aria-label="닫기"
             >

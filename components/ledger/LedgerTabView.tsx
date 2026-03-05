@@ -1,7 +1,7 @@
 "use client";
 
 // 가계부 탭 뷰 ("일일" 목록 / "달력" 전환) + 공유 월 상태 관리
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { DailyView } from "./DailyView";
 import { CalendarView } from "./CalendarView";
@@ -36,14 +36,28 @@ export function LedgerTabView() {
     setIsPickerOpen(false);
   };
 
-  const openSearch = () => setIsSearchOpen(true);
+  const openSearch = () => {
+    setIsSearchOpen(true);
+    history.pushState({ searchView: true }, "");
+  };
 
-  // 검색 화면이 열려있을 때는 SearchView만 표시
-  if (isSearchOpen) {
-    return (
-      <SearchView onBack={() => setIsSearchOpen(false)} />
-    );
-  }
+  const closeSearch = () => {
+    setIsSearchOpen(false);
+    // popstate 리스너가 있으면 history.back()이 리스너를 트리거하므로 직접 back만 호출
+    if (history.state?.searchView) {
+      history.back();
+    }
+  };
+
+  // 뒤로가기 버튼으로 검색 닫기
+  useEffect(() => {
+    if (!isSearchOpen) return;
+    const handlePopState = () => {
+      setIsSearchOpen(false);
+    };
+    window.addEventListener("popstate", handlePopState, { once: true });
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [isSearchOpen]);
 
   return (
     <div className="flex flex-col">
@@ -126,6 +140,11 @@ export function LedgerTabView() {
         ? <DailyView currentMonth={currentMonth} />
         : <CalendarView currentMonth={currentMonth} />
       }
+
+      {/* 검색 뷰 오버레이 */}
+      {isSearchOpen && (
+        <SearchView onBack={closeSearch} />
+      )}
 
       {/* 월 선택 팝업 */}
       {isPickerOpen && (

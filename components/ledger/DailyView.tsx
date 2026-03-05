@@ -8,6 +8,7 @@ import {
   isSameMonth,
   parseISO,
   isToday,
+  compareAsc,
 } from "date-fns";
 import { ko } from "date-fns/locale";
 import { TransactionList } from "@/components/ledger/TransactionList";
@@ -140,19 +141,23 @@ export function DailyView({ currentMonth }: DailyViewProps) {
             .filter((t) => t.type === "expense")
             .reduce((sum, t) => sum + t.amount, 0);
 
-          // TransactionList에 전달할 데이터 변환 (categoryColor 포함)
-          const listItems = dayTransactions.map((t) => {
-            const cat = categories.find((c) => c.id === t.categoryId);
-            return {
-              id: t.id,
-              type: t.type,
-              categoryName: cat?.name ?? "기타",
-              categoryColor: cat?.color,
-              description: t.description,
-              assetName: assets.find((a) => a.id === t.assetId)?.name ?? "기타",
-              amount: t.amount,
-            };
-          });
+          // 시간순(오름차순) 정렬 후 TransactionList에 전달할 데이터 변환
+          const listItems = [...dayTransactions]
+            .sort((a, b) => compareAsc(parseISO(b.transactionAt), parseISO(a.transactionAt)))
+            .map((t) => {
+              const cat = categories.find((c) => c.id === t.categoryId);
+              const time = t.transactionAt.substring(11, 16);
+              return {
+                id: t.id,
+                type: t.type,
+                categoryName: cat?.name ?? "기타",
+                categoryColor: cat?.color,
+                description: t.description,
+                assetName: assets.find((a) => a.id === t.assetId)?.name ?? "기타",
+                amount: t.amount,
+                time,
+              };
+            });
 
           return (
             <div key={dateKey}>

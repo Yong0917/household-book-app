@@ -10,6 +10,7 @@ export interface TransactionItemProps {
   description?: string;
   assetName: string;
   amount: number;
+  time?: string; // HH:mm 형식 시간
 }
 
 export function TransactionItem({
@@ -19,6 +20,7 @@ export function TransactionItem({
   description,
   assetName,
   amount,
+  time,
 }: TransactionItemProps) {
   // 금액 포맷: 한국 원화 형식
   const formattedAmount = amount.toLocaleString("ko-KR") + "원";
@@ -43,9 +45,9 @@ export function TransactionItem({
         {/* 카테고리명 */}
         <p className="font-medium text-[13.5px] leading-snug truncate">{categoryName}</p>
 
-        {/* 메모 + 자산명 */}
+        {/* 시간 + 메모 + 자산명 */}
         <p className="text-[11.5px] text-muted-foreground truncate mt-0.5">
-          {description ? `${description} · ` : ""}{assetName}
+          {time ? `${time} · ` : ""}{description ? `${description} · ` : ""}{assetName}
         </p>
       </div>
 
