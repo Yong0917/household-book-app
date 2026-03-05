@@ -4,14 +4,16 @@
 import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronDown, X } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, isSameMonth, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
 import { cn } from "@/lib/utils";
-import { DonutChart } from "@/components/statistics/DonutChart";
+import { DonutChart, DonutChartData } from "@/components/statistics/DonutChart";
 import { getTransactionsByMonth } from "@/lib/actions/transactions";
 import { getCategories } from "@/lib/actions/categories";
-import type { Transaction, Category } from "@/lib/mock/types";
+import { getAssets } from "@/lib/actions/assets";
+import type { Transaction, Category, Asset } from "@/lib/mock/types";
+import { Drawer } from "vaul";
 
 const MONTH_LABELS = [
   "1월", "2월", "3월", "4월", "5월", "6월",
@@ -27,17 +29,26 @@ export function ExpenseView() {
   // 서버에서 가져온 데이터
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 카테고리 상세 드로어
+  const [selectedCategory, setSelectedCategory] = useState<DonutChartData | null>(null);
 
   // 데이터 로드
   const loadData = useCallback(async () => {
+    setIsLoading(true);
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth() + 1;
-    const [txs, cats] = await Promise.all([
+    const [txs, cats, assetList] = await Promise.all([
       getTransactionsByMonth(year, month),
       getCategories(),
+      getAssets(),
     ]);
     setTransactions(txs);
     setCategories(cats);
+    setAssets(assetList);
+    setIsLoading(false);
   }, [currentMonth]);
 
   useEffect(() => {
@@ -69,7 +80,7 @@ export function ExpenseView() {
   const chartData = Array.from(categoryMap.entries())
     .map(([catId, value]) => {
       const cat = categories.find((c) => c.id === catId);
-      return { name: cat?.name ?? "기타", value, color: cat?.color ?? "#6b7280" };
+      return { id: catId, name: cat?.name ?? "기타", value, color: cat?.color ?? "#6b7280" };
     })
     .sort((a, b) => b.value - a.value);
 
@@ -145,14 +156,104 @@ export function ExpenseView() {
       {/* 총 지출 금액 표시 */}
       <div className="text-center py-6 px-5">
         <p className="text-[11px] text-muted-foreground uppercase tracking-widest mb-2">이번 달 총 지출</p>
-        <p className="text-[2rem] font-bold text-expense tabular-nums tracking-tight">
-          {total.toLocaleString("ko-KR")}
-          <span className="text-2xl font-semibold ml-0.5">원</span>
-        </p>
+        {isLoading ? (
+          <div className="h-10 w-36 bg-muted-foreground/10 rounded-lg animate-pulse mx-auto" />
+        ) : (
+          <p className="text-[2rem] font-bold text-expense tabular-nums tracking-tight">
+            {total.toLocaleString("ko-KR")}
+            <span className="text-2xl font-semibold ml-0.5">원</span>
+          </p>
+        )}
       </div>
 
       {/* 도넛 차트 */}
-      <DonutChart data={chartData} total={total} />
+      {isLoading ? (
+        <div className="flex flex-col items-center gap-6 px-5 py-4">
+          <div className="h-44 w-44 rounded-full border-[22px] border-muted-foreground/10 animate-pulse" />
+          <div className="w-full flex flex-col gap-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="flex items-center gap-3">
+                <div className="h-3 w-3 rounded-full bg-muted-foreground/10 animate-pulse flex-shrink-0" />
+                <div className="h-3 flex-1 bg-muted-foreground/10 rounded animate-pulse" />
+                <div className="h-3 w-16 bg-muted-foreground/10 rounded animate-pulse" />
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <DonutChart data={chartData} total={total} onCategoryClick={setSelectedCategory} />
+      )}
+
+      {/* 카테고리 상세 드로어 */}
+      <Drawer.Root open={!!selectedCategory} onOpenChange={(open) => { if (!open) setSelectedCategory(null); }}>
+        <Drawer.Portal>
+          <Drawer.Overlay className="fixed inset-0 bg-black/40 z-40" />
+          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-50 flex flex-col bg-background rounded-t-2xl max-h-[80vh]">
+            {/* 핸들 */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+            </div>
+
+            {/* 헤더 */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-border/60">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-3 h-3 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: selectedCategory?.color }}
+                />
+                <span className="font-semibold text-[15px]">{selectedCategory?.name}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-semibold text-expense tabular-nums">
+                  {selectedCategory?.value.toLocaleString("ko-KR")}원
+                </span>
+                <button
+                  onClick={() => setSelectedCategory(null)}
+                  className="p-1.5 rounded-full hover:bg-muted/80 transition-colors"
+                >
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </div>
+            </div>
+
+            {/* 거래 목록 */}
+            <div className="overflow-y-auto flex-1 pb-8">
+              {filtered
+                .filter((t) => t.categoryId === selectedCategory?.id)
+                .sort((a, b) => b.transactionAt.localeCompare(a.transactionAt))
+                .map((t) => {
+                  const asset = assets.find((a) => a.id === t.assetId);
+                  const cat = categories.find((c) => c.id === t.categoryId);
+                  const date = parseISO(t.transactionAt);
+                  return (
+                    <div key={t.id} className="flex items-center gap-3.5 px-5 py-3.5 border-b border-border/40">
+                      {/* 날짜 */}
+                      <div className="text-center flex-shrink-0 w-8">
+                        <p className="text-xs text-muted-foreground">{format(date, "M/d")}</p>
+                        <p className="text-[10px] text-muted-foreground/60">{format(date, "HH:mm")}</p>
+                      </div>
+
+                      {/* 정보 */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-[13.5px] leading-snug truncate">
+                          {t.description || cat?.name}
+                        </p>
+                        <p className="text-[11.5px] text-muted-foreground truncate mt-0.5">
+                          {t.description ? `${cat?.name} · ` : ""}{asset?.name}
+                        </p>
+                      </div>
+
+                      {/* 금액 */}
+                      <span className="font-semibold text-[13.5px] tabular-nums text-expense flex-shrink-0">
+                        −{t.amount.toLocaleString("ko-KR")}원
+                      </span>
+                    </div>
+                  );
+                })}
+            </div>
+          </Drawer.Content>
+        </Drawer.Portal>
+      </Drawer.Root>
 
       {/* 월 선택 팝업 */}
       {isPickerOpen && (

@@ -32,9 +32,11 @@ export function DailyView({ currentMonth }: DailyViewProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // 데이터 로드
   const loadData = useCallback(async () => {
+    setIsLoading(true);
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth() + 1;
     const [txs, cats, assts] = await Promise.all([
@@ -45,6 +47,7 @@ export function DailyView({ currentMonth }: DailyViewProps) {
     setTransactions(txs);
     setCategories(cats);
     setAssets(assts);
+    setIsLoading(false);
   }, [currentMonth]);
 
   useEffect(() => {
@@ -98,33 +101,66 @@ export function DailyView({ currentMonth }: DailyViewProps) {
       <div className="flex items-center px-5 py-3.5 border-b border-border/60 bg-muted/20">
         <div className="flex-1">
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">수입</p>
-          <p className="text-[13px] font-semibold text-income tabular-nums">
-            {income.toLocaleString("ko-KR")}원
-          </p>
+          {isLoading ? (
+            <div className="h-3.5 w-16 bg-muted-foreground/10 rounded animate-pulse" />
+          ) : (
+            <p className="text-[13px] font-semibold text-income tabular-nums">
+              {income.toLocaleString("ko-KR")}원
+            </p>
+          )}
         </div>
         <div className="h-8 w-px bg-border mx-1" />
         <div className="flex-1 text-center">
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">지출</p>
-          <p className="text-[13px] font-semibold text-expense tabular-nums">
-            {expense.toLocaleString("ko-KR")}원
-          </p>
+          {isLoading ? (
+            <div className="h-3.5 w-16 bg-muted-foreground/10 rounded animate-pulse mx-auto" />
+          ) : (
+            <p className="text-[13px] font-semibold text-expense tabular-nums">
+              {expense.toLocaleString("ko-KR")}원
+            </p>
+          )}
         </div>
         <div className="h-8 w-px bg-border mx-1" />
         <div className="flex-1 text-right">
           <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">순합계</p>
-          <p
-            className={`text-[13px] font-semibold tabular-nums ${
-              net >= 0 ? "text-income" : "text-expense"
-            }`}
-          >
-            {net >= 0 ? "+" : ""}
-            {net.toLocaleString("ko-KR")}원
-          </p>
+          {isLoading ? (
+            <div className="h-3.5 w-16 bg-muted-foreground/10 rounded animate-pulse ml-auto" />
+          ) : (
+            <p
+              className={`text-[13px] font-semibold tabular-nums ${
+                net >= 0 ? "text-income" : "text-expense"
+              }`}
+            >
+              {net >= 0 ? "+" : ""}
+              {net.toLocaleString("ko-KR")}원
+            </p>
+          )}
         </div>
       </div>
 
       {/* 날짜별 그룹화된 거래 목록 */}
-      {sortedDates.length === 0 ? (
+      {isLoading ? (
+        <div className="flex flex-col gap-px">
+          {[...Array(4)].map((_, i) => (
+            <div key={i}>
+              <div className="flex items-center justify-between px-5 py-2.5 bg-muted/15 border-b border-t border-border/40">
+                <div className="h-3 w-24 bg-muted-foreground/10 rounded animate-pulse" />
+                <div className="h-3 w-16 bg-muted-foreground/10 rounded animate-pulse" />
+              </div>
+              {[...Array(2)].map((_, j) => (
+                <div key={j} className="flex items-center gap-3 px-5 py-3.5 border-b border-border/30">
+                  <div className="h-9 w-9 rounded-full bg-muted-foreground/10 animate-pulse flex-shrink-0" />
+                  <div className="flex-1 flex flex-col gap-1.5">
+                    <div className="h-3 w-20 bg-muted-foreground/10 rounded animate-pulse" />
+                    <div className="h-2.5 w-14 bg-muted-foreground/8 rounded animate-pulse" />
+                  </div>
+                  <div className="h-3.5 w-16 bg-muted-foreground/10 rounded animate-pulse" />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      ) : sortedDates.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20">
           <p className="text-muted-foreground/60 text-sm">거래 내역이 없습니다</p>
         </div>

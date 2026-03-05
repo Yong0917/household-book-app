@@ -44,9 +44,11 @@ export function CalendarView({ currentMonth }: CalendarViewProps) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // 데이터 로드
   const loadData = useCallback(async () => {
+    setIsLoading(true);
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth() + 1;
     const [txs, cats, assts] = await Promise.all([
@@ -57,6 +59,7 @@ export function CalendarView({ currentMonth }: CalendarViewProps) {
     setTransactions(txs);
     setCategories(cats);
     setAssets(assts);
+    setIsLoading(false);
   }, [currentMonth]);
 
   useEffect(() => {
@@ -164,32 +167,42 @@ export function CalendarView({ currentMonth }: CalendarViewProps) {
       <div className="flex flex-col">
         {/* 월간 요약 - compact 1줄 */}
         <div className="flex items-center justify-around h-10 border-b border-border/60 text-[11px] px-3 bg-muted/15">
-          <span className="text-muted-foreground">
-            수입{" "}
-            <span className="text-income font-semibold tabular-nums">
-              {monthIncome.toLocaleString("ko-KR")}원
-            </span>
-          </span>
-          <span className="text-border/80">·</span>
-          <span className="text-muted-foreground">
-            지출{" "}
-            <span className="text-expense font-semibold tabular-nums">
-              {monthExpense.toLocaleString("ko-KR")}원
-            </span>
-          </span>
-          <span className="text-border/80">·</span>
-          <span className="text-muted-foreground">
-            합계{" "}
-            <span
-              className={cn(
-                "font-semibold tabular-nums",
-                monthNet >= 0 ? "text-income" : "text-expense"
-              )}
-            >
-              {monthNet >= 0 ? "+" : ""}
-              {monthNet.toLocaleString("ko-KR")}원
-            </span>
-          </span>
+          {isLoading ? (
+            <div className="flex items-center gap-6">
+              <div className="h-2.5 w-20 bg-muted-foreground/10 rounded animate-pulse" />
+              <div className="h-2.5 w-20 bg-muted-foreground/10 rounded animate-pulse" />
+              <div className="h-2.5 w-20 bg-muted-foreground/10 rounded animate-pulse" />
+            </div>
+          ) : (
+            <>
+              <span className="text-muted-foreground">
+                수입{" "}
+                <span className="text-income font-semibold tabular-nums">
+                  {monthIncome.toLocaleString("ko-KR")}원
+                </span>
+              </span>
+              <span className="text-border/80">·</span>
+              <span className="text-muted-foreground">
+                지출{" "}
+                <span className="text-expense font-semibold tabular-nums">
+                  {monthExpense.toLocaleString("ko-KR")}원
+                </span>
+              </span>
+              <span className="text-border/80">·</span>
+              <span className="text-muted-foreground">
+                합계{" "}
+                <span
+                  className={cn(
+                    "font-semibold tabular-nums",
+                    monthNet >= 0 ? "text-income" : "text-expense"
+                  )}
+                >
+                  {monthNet >= 0 ? "+" : ""}
+                  {monthNet.toLocaleString("ko-KR")}원
+                </span>
+              </span>
+            </>
+          )}
         </div>
 
         {/* 요일 헤더 */}
@@ -209,11 +222,16 @@ export function CalendarView({ currentMonth }: CalendarViewProps) {
 
         {/* 날짜 그리드 - dvh 기반으로 화면 꽉 채움 */}
         <div
-          className="grid grid-cols-7"
+          className="grid grid-cols-7 relative"
           style={{
             gridAutoRows: `max(60px, calc((100dvh - ${NON_CALENDAR_PX}px) / ${rows}))`,
           }}
         >
+          {isLoading && (
+            <div className="absolute inset-0 z-10 bg-background/60 flex items-center justify-center">
+              <div className="h-5 w-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+            </div>
+          )}
           {/* 시작 오프셋 빈 셀 */}
           {Array.from({ length: startOffset }).map((_, i) => (
             <div
