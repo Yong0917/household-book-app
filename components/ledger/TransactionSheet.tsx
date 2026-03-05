@@ -2,7 +2,7 @@
 
 // 거래 등록/수정 바텀 시트 컴포넌트 (vaul Drawer + React Hook Form + Zod)
 import { useEffect, useRef, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Drawer } from "vaul";
@@ -11,6 +11,7 @@ import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { MemoInput } from "@/components/ledger/MemoInput";
 import {
   addTransaction,
   updateTransaction,
@@ -121,6 +122,7 @@ export function TransactionSheet({
     watch,
     reset,
     setValue,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
@@ -376,10 +378,15 @@ export function TransactionSheet({
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 mb-2">
                   메모
                 </label>
-                <Input
-                  placeholder="메모 (선택사항)"
-                  {...register("description")}
-                  className="rounded-xl"
+                <Controller
+                  name="description"
+                  control={control}
+                  render={({ field }) => (
+                    <MemoInput
+                      value={field.value ?? ""}
+                      onChange={field.onChange}
+                    />
+                  )}
                 />
               </div>
 

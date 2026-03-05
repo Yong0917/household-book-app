@@ -151,3 +151,18 @@ export async function deleteTransaction(id: string): Promise<void> {
   revalidatePath("/ledger");
   revalidatePath("/statistics");
 }
+
+// 메모 자동완성 추천 목록 조회
+export async function getMemoSuggestions(keyword: string): Promise<string[]> {
+  if (!keyword.trim()) return [];
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("description")
+    .ilike("description", `%${keyword}%`)
+    .not("description", "is", null)
+    .limit(50);
+  if (error) return [];
+  const unique = [...new Set((data ?? []).map((r) => r.description as string))];
+  return unique.slice(0, 10);
+}
