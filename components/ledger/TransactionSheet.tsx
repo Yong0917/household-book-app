@@ -10,8 +10,12 @@ import { format } from "date-fns";
 import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { useMock } from "@/lib/mock/context";
-import type { Transaction } from "@/lib/mock/types";
+import {
+  addTransaction,
+  updateTransaction,
+  deleteTransaction,
+} from "@/lib/actions/transactions";
+import type { Transaction, Category, Asset } from "@/lib/mock/types";
 
 // 폼 검증 스키마
 const schema = z.object({
@@ -32,6 +36,9 @@ interface TransactionSheetProps {
   mode: "create" | "edit";
   transaction?: Transaction;
   initialDate?: string; // 'yyyy-MM-dd' 형식
+  categories: Category[];
+  assets: Asset[];
+  onSuccess?: () => void; // 저장/삭제 성공 후 콜백
 }
 
 // select 공통 스타일
@@ -44,10 +51,10 @@ export function TransactionSheet({
   mode,
   transaction,
   initialDate,
+  categories,
+  assets,
+  onSuccess,
 }: TransactionSheetProps) {
-  const { categories, assets, addTransaction, updateTransaction, deleteTransaction } =
-    useMock();
-
   // 기본값 계산
   const getDefaultValues = (): FormData => {
     if (mode === "edit" && transaction) {
@@ -78,7 +85,7 @@ export function TransactionSheet({
     handleSubmit,
     watch,
     reset,
-    formState: { errors },
+    formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: getDefaultValues(),
@@ -97,7 +104,7 @@ export function TransactionSheet({
   const filteredCategories = categories.filter((c) => c.type === selectedType);
 
   // 폼 제출
-  const onSubmit = (data: FormData) => {
+  const onSubmit = async (data: FormData) => {
     const transactionAt = `${data.date}T${data.time}:00`;
     const payload = {
       type: data.type,
@@ -109,18 +116,20 @@ export function TransactionSheet({
     };
 
     if (mode === "edit" && transaction) {
-      updateTransaction(transaction.id, payload);
+      await updateTransaction(transaction.id, payload);
     } else {
-      addTransaction(payload);
+      await addTransaction(payload);
     }
     onOpenChange(false);
+    onSuccess?.();
   };
 
   // 거래 삭제
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (transaction) {
-      deleteTransaction(transaction.id);
+      await deleteTransaction(transaction.id);
       onOpenChange(false);
+      onSuccess?.();
     }
   };
 
@@ -282,7 +291,8 @@ export function TransactionSheet({
                   <button
                     type="button"
                     onClick={handleDelete}
-                    className="w-full py-3.5 rounded-xl text-[13.5px] font-medium border border-destructive/25 text-destructive hover:bg-destructive/6 active:scale-[0.99] transition-all"
+                    disabled={isSubmitting}
+                    className="w-full py-3.5 rounded-xl text-[13.5px] font-medium border border-destructive/25 text-destructive hover:bg-destructive/6 active:scale-[0.99] transition-all disabled:opacity-50"
                   >
                     삭제
                   </button>
@@ -296,12 +306,13 @@ export function TransactionSheet({
             <button
               type="button"
               onClick={handleSubmit(onSubmit)}
+              disabled={isSubmitting}
               className={cn(
-                "w-full py-3.5 rounded-xl text-[14px] font-semibold text-white active:scale-[0.99] transition-all hover:opacity-90",
+                "w-full py-3.5 rounded-xl text-[14px] font-semibold text-white active:scale-[0.99] transition-all hover:opacity-90 disabled:opacity-50",
                 selectedType === "expense" ? "bg-expense" : "bg-income"
               )}
             >
-              저장
+              {isSubmitting ? "저장 중..." : "저장"}
             </button>
           </div>
         </Drawer.Content>

@@ -1,7 +1,7 @@
 "use client";
 
-// 달력 보기 컴포넌트 - 바텀시트 기반 일일 거래 조회
-import { useState } from "react";
+// 달력 보기 컴포넌트 - Supabase 연동
+import { useState, useEffect, useCallback } from "react";
 import {
   startOfMonth,
   endOfMonth,
@@ -19,8 +19,10 @@ import { Drawer } from "vaul";
 import { cn } from "@/lib/utils";
 import { TransactionList } from "./TransactionList";
 import { TransactionSheet } from "./TransactionSheet";
-import { useMock } from "@/lib/mock/context";
-import type { Transaction } from "@/lib/mock/types";
+import { getTransactionsByMonth } from "@/lib/actions/transactions";
+import { getCategories } from "@/lib/actions/categories";
+import { getAssets } from "@/lib/actions/assets";
+import type { Transaction, Category, Asset } from "@/lib/mock/types";
 
 const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -38,7 +40,28 @@ export function CalendarView({ currentMonth }: CalendarViewProps) {
   const [isTransactionSheetOpen, setIsTransactionSheetOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
-  const { transactions, categories, assets } = useMock();
+  // 서버에서 가져온 데이터
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
+
+  // 데이터 로드
+  const loadData = useCallback(async () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth() + 1;
+    const [txs, cats, assts] = await Promise.all([
+      getTransactionsByMonth(year, month),
+      getCategories(),
+      getAssets(),
+    ]);
+    setTransactions(txs);
+    setCategories(cats);
+    setAssets(assts);
+  }, [currentMonth]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
 
   // 현재 월 거래 필터링
   const monthlyTransactions = transactions.filter((t) =>
@@ -324,6 +347,9 @@ export function CalendarView({ currentMonth }: CalendarViewProps) {
         mode={selectedTransaction ? "edit" : "create"}
         transaction={selectedTransaction ?? undefined}
         initialDate={addInitialDate}
+        categories={categories}
+        assets={assets}
+        onSuccess={loadData}
       />
     </>
   );

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { GeistSans } from "geist/font/sans";
 import { ThemeProvider } from "next-themes";
-import { MockProvider } from "@/lib/mock/context";
 import "./globals.css";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -33,9 +32,7 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <MockProvider>
-            {children}
-          </MockProvider>
+          {children}
         </ThemeProvider>
       </body>
     </html>

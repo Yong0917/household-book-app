@@ -1,13 +1,14 @@
 "use client";
 
-// 자산 목록 컴포넌트 (Mock CRUD 구현)
+// 자산 목록 컴포넌트 (Supabase server actions 연동)
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Wallet, Building2, CreditCard, HelpCircle, Trash2, Plus } from "lucide-react";
 import { Drawer } from "vaul";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { useMock } from "@/lib/mock/context";
+import { addAsset, updateAsset, deleteAsset } from "@/lib/actions/assets";
 import type { Asset, AssetType } from "@/lib/mock/types";
 
 // 자산 타입별 아이콘 매핑
@@ -30,7 +31,11 @@ const ASSET_LABELS: Record<AssetType, string> = {
 const selectClass =
   "border border-input rounded-lg px-3 py-2 w-full bg-background text-sm focus:outline-none focus:ring-1 focus:ring-ring";
 
-export function AssetList() {
+interface AssetListProps {
+  initialAssets: Asset[];
+}
+
+export function AssetList({ initialAssets }: AssetListProps) {
   // Drawer 열림 상태
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   // 수정 중인 자산 (null이면 추가 모드)
@@ -38,8 +43,9 @@ export function AssetList() {
   // 폼 상태
   const [formName, setFormName] = useState("");
   const [formType, setFormType] = useState<AssetType>("cash");
+  const [isPending, setIsPending] = useState(false);
 
-  const { assets, addAsset, updateAsset, deleteAsset } = useMock();
+  const router = useRouter();
 
   // 추가 버튼 클릭
   const handleAddClick = () => {
@@ -58,21 +64,44 @@ export function AssetList() {
   };
 
   // 저장 버튼
-  const handleSave = () => {
-    if (!formName.trim()) return;
-    if (editingAsset) {
-      updateAsset(editingAsset.id, { name: formName.trim(), type: formType });
-    } else {
-      addAsset({ name: formName.trim(), type: formType, isDefault: false });
+  const handleSave = async () => {
+    if (!formName.trim() || isPending) return;
+    setIsPending(true);
+    try {
+      if (editingAsset) {
+        await updateAsset(editingAsset.id, { name: formName.trim(), type: formType });
+      } else {
+        await addAsset({ name: formName.trim(), type: formType, isDefault: false });
+      }
+      setIsDrawerOpen(false);
+      router.refresh();
+    } finally {
+      setIsPending(false);
     }
-    setIsDrawerOpen(false);
   };
 
   // 삭제 버튼 (Drawer 내)
-  const handleDelete = () => {
-    if (editingAsset) {
-      deleteAsset(editingAsset.id);
+  const handleDelete = async () => {
+    if (!editingAsset || isPending) return;
+    setIsPending(true);
+    try {
+      await deleteAsset(editingAsset.id);
       setIsDrawerOpen(false);
+      router.refresh();
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  // 목록에서 직접 삭제
+  const handleDirectDelete = async (asset: Asset) => {
+    if (asset.isDefault || isPending) return;
+    setIsPending(true);
+    try {
+      await deleteAsset(asset.id);
+      router.refresh();
+    } finally {
+      setIsPending(false);
     }
   };
 
@@ -80,7 +109,7 @@ export function AssetList() {
     <div>
       {/* 자산 목록 */}
       <div className="divide-y border-t border-b">
-        {assets.map((asset) => {
+        {initialAssets.map((asset) => {
           const IconComponent = ASSET_ICONS[asset.type];
 
           return (
@@ -115,8 +144,8 @@ export function AssetList() {
                   "text-muted-foreground hover:text-red-500",
                   asset.isDefault && "opacity-30 cursor-not-allowed"
                 )}
-                onClick={() => !asset.isDefault && deleteAsset(asset.id)}
-                disabled={asset.isDefault}
+                onClick={() => handleDirectDelete(asset)}
+                disabled={asset.isDefault || isPending}
                 aria-label={`${asset.name} 삭제`}
               >
                 <Trash2 className="h-4 w-4" />
@@ -182,6 +211,7 @@ export function AssetList() {
                     variant="outline"
                     className="w-full text-red-500 border-red-200 hover:bg-red-50 hover:text-red-500"
                     onClick={handleDelete}
+                    disabled={isPending}
                   >
                     삭제
                   </Button>
@@ -190,9 +220,9 @@ export function AssetList() {
                 <Button
                   className="w-full"
                   onClick={handleSave}
-                  disabled={!formName.trim()}
+                  disabled={!formName.trim() || isPending}
                 >
-                  저장
+                  {isPending ? "저장 중..." : "저장"}
                 </Button>
               </div>
             </div>

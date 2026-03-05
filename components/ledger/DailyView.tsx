@@ -1,7 +1,7 @@
 "use client";
 
-// 가계부 월간 목록 뷰 (날짜별 그룹화)
-import { useState } from "react";
+// 가계부 월간 목록 뷰 (날짜별 그룹화) - Supabase 연동
+import { useState, useEffect, useCallback } from "react";
 import { Plus } from "lucide-react";
 import {
   format,
@@ -12,8 +12,10 @@ import {
 import { ko } from "date-fns/locale";
 import { TransactionList } from "@/components/ledger/TransactionList";
 import { TransactionSheet } from "@/components/ledger/TransactionSheet";
-import { useMock } from "@/lib/mock/context";
-import type { Transaction } from "@/lib/mock/types";
+import { getTransactionsByMonth } from "@/lib/actions/transactions";
+import { getCategories } from "@/lib/actions/categories";
+import { getAssets } from "@/lib/actions/assets";
+import type { Transaction, Category, Asset } from "@/lib/mock/types";
 
 interface DailyViewProps {
   currentMonth: Date;
@@ -25,10 +27,30 @@ export function DailyView({ currentMonth }: DailyViewProps) {
   // 수정 중인 거래 (null이면 create 모드)
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
-  // Mock 데이터 읽기
-  const { transactions, categories, assets } = useMock();
+  // 서버에서 가져온 데이터
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
 
-  // 현재 월 거래 필터링
+  // 데이터 로드
+  const loadData = useCallback(async () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth() + 1;
+    const [txs, cats, assts] = await Promise.all([
+      getTransactionsByMonth(year, month),
+      getCategories(),
+      getAssets(),
+    ]);
+    setTransactions(txs);
+    setCategories(cats);
+    setAssets(assts);
+  }, [currentMonth]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  // 현재 월 거래 필터링 (transaction_at이 해당 월인지 확인)
   const filtered = transactions.filter((t) =>
     isSameMonth(parseISO(t.transactionAt), currentMonth)
   );
@@ -181,6 +203,9 @@ export function DailyView({ currentMonth }: DailyViewProps) {
         mode={selectedTransaction ? "edit" : "create"}
         transaction={selectedTransaction ?? undefined}
         initialDate={defaultDate}
+        categories={categories}
+        assets={assets}
+        onSuccess={loadData}
       />
     </>
   );

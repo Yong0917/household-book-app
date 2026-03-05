@@ -1,13 +1,18 @@
 "use client";
 
-// 분류(카테고리) 목록 컴포넌트 (Mock CRUD 구현)
+// 분류(카테고리) 목록 컴포넌트 (Supabase server actions 연동)
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Trash2, Plus } from "lucide-react";
 import { Drawer } from "vaul";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { useMock } from "@/lib/mock/context";
+import {
+  addCategory,
+  updateCategory,
+  deleteCategory,
+} from "@/lib/actions/categories";
 import type { Category } from "@/lib/mock/types";
 
 type CategoryType = "income" | "expense";
@@ -26,7 +31,11 @@ const COLOR_PALETTE = [
   "#6b7280",
 ];
 
-export function CategoryList() {
+interface CategoryListProps {
+  initialCategories: Category[];
+}
+
+export function CategoryList({ initialCategories }: CategoryListProps) {
   // 활성 탭 상태 (수입/지출)
   const [activeTab, setActiveTab] = useState<CategoryType>("expense");
   // Drawer 열림 상태
@@ -36,11 +45,12 @@ export function CategoryList() {
   // 폼 상태
   const [formName, setFormName] = useState("");
   const [formColor, setFormColor] = useState(COLOR_PALETTE[0]);
+  const [isPending, setIsPending] = useState(false);
 
-  const { categories, addCategory, updateCategory, deleteCategory } = useMock();
+  const router = useRouter();
 
   // 현재 탭에 해당하는 카테고리 필터링
-  const filteredCategories = categories.filter((c) => c.type === activeTab);
+  const filteredCategories = initialCategories.filter((c) => c.type === activeTab);
 
   // 추가 버튼 클릭
   const handleAddClick = () => {
@@ -59,21 +69,52 @@ export function CategoryList() {
   };
 
   // 저장 버튼
-  const handleSave = () => {
-    if (!formName.trim()) return;
-    if (editingCategory) {
-      updateCategory(editingCategory.id, { name: formName.trim(), color: formColor });
-    } else {
-      addCategory({ name: formName.trim(), type: activeTab, color: formColor, isDefault: false });
+  const handleSave = async () => {
+    if (!formName.trim() || isPending) return;
+    setIsPending(true);
+    try {
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, {
+          name: formName.trim(),
+          color: formColor,
+        });
+      } else {
+        await addCategory({
+          name: formName.trim(),
+          type: activeTab,
+          color: formColor,
+          isDefault: false,
+        });
+      }
+      setIsDrawerOpen(false);
+      router.refresh();
+    } finally {
+      setIsPending(false);
     }
-    setIsDrawerOpen(false);
   };
 
   // 삭제 버튼 (Drawer 내)
-  const handleDelete = () => {
-    if (editingCategory) {
-      deleteCategory(editingCategory.id);
+  const handleDelete = async () => {
+    if (!editingCategory || isPending) return;
+    setIsPending(true);
+    try {
+      await deleteCategory(editingCategory.id);
       setIsDrawerOpen(false);
+      router.refresh();
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  // 목록에서 직접 삭제
+  const handleDirectDelete = async (category: Category) => {
+    if (category.isDefault || isPending) return;
+    setIsPending(true);
+    try {
+      await deleteCategory(category.id);
+      router.refresh();
+    } finally {
+      setIsPending(false);
     }
   };
 
@@ -135,8 +176,8 @@ export function CategoryList() {
                 "text-muted-foreground hover:text-red-500",
                 category.isDefault && "opacity-30 cursor-not-allowed"
               )}
-              onClick={() => !category.isDefault && deleteCategory(category.id)}
-              disabled={category.isDefault}
+              onClick={() => handleDirectDelete(category)}
+              disabled={category.isDefault || isPending}
               aria-label={`${category.name} 삭제`}
             >
               <Trash2 className="h-4 w-4" />
@@ -205,6 +246,7 @@ export function CategoryList() {
                     variant="outline"
                     className="w-full text-red-500 border-red-200 hover:bg-red-50 hover:text-red-500"
                     onClick={handleDelete}
+                    disabled={isPending}
                   >
                     삭제
                   </Button>
@@ -213,9 +255,9 @@ export function CategoryList() {
                 <Button
                   className="w-full"
                   onClick={handleSave}
-                  disabled={!formName.trim()}
+                  disabled={!formName.trim() || isPending}
                 >
-                  저장
+                  {isPending ? "저장 중..." : "저장"}
                 </Button>
               </div>
             </div>

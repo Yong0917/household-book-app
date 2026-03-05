@@ -1,7 +1,7 @@
 "use client";
 
-// 지출 통계 뷰 컴포넌트 (Mock 데이터 연결)
-import { useState } from "react";
+// 지출 통계 뷰 컴포넌트 - Supabase 연동
+import { useState, useEffect, useCallback } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
@@ -9,7 +9,9 @@ import { format, addMonths, subMonths, startOfMonth, isSameMonth, parseISO } fro
 import { ko } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { DonutChart } from "@/components/statistics/DonutChart";
-import { useMock } from "@/lib/mock/context";
+import { getTransactionsByMonth } from "@/lib/actions/transactions";
+import { getCategories } from "@/lib/actions/categories";
+import type { Transaction, Category } from "@/lib/mock/types";
 
 const MONTH_LABELS = [
   "1월", "2월", "3월", "4월", "5월", "6월",
@@ -22,6 +24,26 @@ export function ExpenseView() {
   const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
   const pathname = usePathname();
 
+  // 서버에서 가져온 데이터
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  // 데이터 로드
+  const loadData = useCallback(async () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth() + 1;
+    const [txs, cats] = await Promise.all([
+      getTransactionsByMonth(year, month),
+      getCategories(),
+    ]);
+    setTransactions(txs);
+    setCategories(cats);
+  }, [currentMonth]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
   const openPicker = () => {
     setPickerYear(currentMonth.getFullYear());
     setIsPickerOpen(true);
@@ -31,9 +53,6 @@ export function ExpenseView() {
     setCurrentMonth(new Date(pickerYear, monthIndex, 1));
     setIsPickerOpen(false);
   };
-
-  // Mock 데이터 읽기
-  const { transactions, categories } = useMock();
 
   // 현재 월 지출 거래 필터링
   const filtered = transactions.filter(
