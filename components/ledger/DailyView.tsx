@@ -1,7 +1,7 @@
 "use client";
 
-// 가계부 월간 목록 뷰 (날짜별 그룹화) - Supabase 연동
-import { useState, useEffect, useCallback } from "react";
+// 가계부 월간 목록 뷰 (날짜별 그룹화) - 데이터는 LedgerTabView에서 props로 전달
+import { useState } from "react";
 import { Plus } from "lucide-react";
 import {
   format,
@@ -13,46 +13,22 @@ import {
 import { ko } from "date-fns/locale";
 import { TransactionList } from "@/components/ledger/TransactionList";
 import { TransactionSheet } from "@/components/ledger/TransactionSheet";
-import { getTransactionsByMonth } from "@/lib/actions/transactions";
-import { getCategories } from "@/lib/actions/categories";
-import { getAssets } from "@/lib/actions/assets";
 import type { Transaction, Category, Asset } from "@/lib/mock/types";
 
 interface DailyViewProps {
   currentMonth: Date;
+  transactions: Transaction[];
+  categories: Category[];
+  assets: Asset[];
+  isLoading: boolean;
+  onSuccess: () => void;
 }
 
-export function DailyView({ currentMonth }: DailyViewProps) {
+export function DailyView({ currentMonth, transactions, categories, assets, isLoading, onSuccess }: DailyViewProps) {
   // 바텀 시트 열림 상태
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   // 수정 중인 거래 (null이면 create 모드)
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-
-  // 서버에서 가져온 데이터
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // 데이터 로드
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth() + 1;
-    const [txs, cats, assts] = await Promise.all([
-      getTransactionsByMonth(year, month),
-      getCategories(),
-      getAssets(),
-    ]);
-    setTransactions(txs);
-    setCategories(cats);
-    setAssets(assts);
-    setIsLoading(false);
-  }, [currentMonth]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
 
   // 현재 월 거래 필터링 (transaction_at이 해당 월인지 확인)
   const filtered = transactions.filter((t) =>
@@ -98,36 +74,36 @@ export function DailyView({ currentMonth }: DailyViewProps) {
   return (
     <>
       {/* 월간 수입/지출/순합계 요약 */}
-      <div className="flex items-center px-5 py-3.5 border-b border-border/60 bg-muted/20">
-        <div className="flex-1">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">수입</p>
+      <div className="flex items-center px-5 py-4 border-b border-border/50">
+        <div className="flex-1 flex flex-col gap-1">
+          <p className="text-[10.5px] text-muted-foreground/70 font-semibold uppercase tracking-widest">수입</p>
           {isLoading ? (
-            <div className="h-3.5 w-16 bg-muted-foreground/10 rounded animate-pulse" />
+            <div className="h-4 w-20 bg-muted-foreground/10 rounded-md animate-pulse" />
           ) : (
-            <p className="text-[13px] font-semibold text-income tabular-nums">
+            <p className="text-[14px] font-bold text-income tabular-nums leading-none">
               {income.toLocaleString("ko-KR")}원
             </p>
           )}
         </div>
-        <div className="h-8 w-px bg-border mx-1" />
-        <div className="flex-1 text-center">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">지출</p>
+        <div className="h-9 w-px bg-border/60 mx-2" />
+        <div className="flex-1 flex flex-col items-center gap-1">
+          <p className="text-[10.5px] text-muted-foreground/70 font-semibold uppercase tracking-widest">지출</p>
           {isLoading ? (
-            <div className="h-3.5 w-16 bg-muted-foreground/10 rounded animate-pulse mx-auto" />
+            <div className="h-4 w-20 bg-muted-foreground/10 rounded-md animate-pulse" />
           ) : (
-            <p className="text-[13px] font-semibold text-expense tabular-nums">
+            <p className="text-[14px] font-bold text-expense tabular-nums leading-none">
               {expense.toLocaleString("ko-KR")}원
             </p>
           )}
         </div>
-        <div className="h-8 w-px bg-border mx-1" />
-        <div className="flex-1 text-right">
-          <p className="text-[10px] text-muted-foreground uppercase tracking-widest mb-1">순합계</p>
+        <div className="h-9 w-px bg-border/60 mx-2" />
+        <div className="flex-1 flex flex-col items-end gap-1">
+          <p className="text-[10.5px] text-muted-foreground/70 font-semibold uppercase tracking-widest">순합계</p>
           {isLoading ? (
-            <div className="h-3.5 w-16 bg-muted-foreground/10 rounded animate-pulse ml-auto" />
+            <div className="h-4 w-20 bg-muted-foreground/10 rounded-md animate-pulse" />
           ) : (
             <p
-              className={`text-[13px] font-semibold tabular-nums ${
+              className={`text-[14px] font-bold tabular-nums leading-none ${
                 net >= 0 ? "text-income" : "text-expense"
               }`}
             >
@@ -198,21 +174,26 @@ export function DailyView({ currentMonth }: DailyViewProps) {
           return (
             <div key={dateKey}>
               {/* 날짜 구분 헤더 */}
-              <div className="flex items-center justify-between px-5 py-2.5 bg-muted/15 border-b border-t border-border/40">
-                <span className="text-[12.5px] font-medium text-foreground/75">
-                  {format(dayDate, "M월 d일 (E)", { locale: ko })}
+              <div className="flex items-end justify-between px-5 pt-4 pb-2.5 bg-background border-b border-border/40">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-[26px] font-bold tabular-nums leading-none text-foreground/90">
+                    {format(dayDate, "d")}
+                  </span>
+                  <span className="text-[12px] text-muted-foreground font-medium">
+                    {format(dayDate, "M월", { locale: ko })} · {format(dayDate, "EEEE", { locale: ko })}
+                  </span>
                   {isToday(dayDate) && (
-                    <span className="ml-2 text-[9px] text-income font-bold uppercase tracking-wider">TODAY</span>
+                    <span className="text-[9.5px] bg-income/12 text-income font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider">TODAY</span>
                   )}
-                </span>
-                <div className="flex gap-2.5 text-[11px] tabular-nums">
+                </div>
+                <div className="flex gap-2 text-[11.5px] tabular-nums pb-0.5">
                   {dayIncome > 0 && (
-                    <span className="text-income font-medium">
+                    <span className="text-income font-semibold">
                       +{dayIncome.toLocaleString("ko-KR")}
                     </span>
                   )}
                   {dayExpense > 0 && (
-                    <span className="text-expense font-medium">
+                    <span className="text-expense font-semibold">
                       −{dayExpense.toLocaleString("ko-KR")}
                     </span>
                   )}
@@ -246,7 +227,7 @@ export function DailyView({ currentMonth }: DailyViewProps) {
         initialDate={defaultDate}
         categories={categories}
         assets={assets}
-        onSuccess={loadData}
+        onSuccess={onSuccess}
       />
     </>
   );

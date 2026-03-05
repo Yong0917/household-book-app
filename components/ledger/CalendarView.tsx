@@ -1,7 +1,7 @@
 "use client";
 
-// 달력 보기 컴포넌트 - Supabase 연동
-import { useState, useEffect, useCallback } from "react";
+// 달력 보기 컴포넌트 - 데이터는 LedgerTabView에서 props로 전달
+import { useState } from "react";
 import {
   startOfMonth,
   endOfMonth,
@@ -19,9 +19,6 @@ import { Drawer } from "vaul";
 import { cn } from "@/lib/utils";
 import { TransactionList } from "./TransactionList";
 import { TransactionSheet } from "./TransactionSheet";
-import { getTransactionsByMonth } from "@/lib/actions/transactions";
-import { getCategories } from "@/lib/actions/categories";
-import { getAssets } from "@/lib/actions/assets";
 import type { Transaction, Category, Asset } from "@/lib/mock/types";
 
 const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -32,39 +29,18 @@ const NON_CALENDAR_PX = 232;
 
 interface CalendarViewProps {
   currentMonth: Date;
+  transactions: Transaction[];
+  categories: Category[];
+  assets: Asset[];
+  isLoading: boolean;
+  onSuccess: () => void;
 }
 
-export function CalendarView({ currentMonth }: CalendarViewProps) {
+export function CalendarView({ currentMonth, transactions, categories, assets, isLoading, onSuccess }: CalendarViewProps) {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isDaySheetOpen, setIsDaySheetOpen] = useState(false);
   const [isTransactionSheetOpen, setIsTransactionSheetOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
-
-  // 서버에서 가져온 데이터
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // 데이터 로드
-  const loadData = useCallback(async () => {
-    setIsLoading(true);
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth() + 1;
-    const [txs, cats, assts] = await Promise.all([
-      getTransactionsByMonth(year, month),
-      getCategories(),
-      getAssets(),
-    ]);
-    setTransactions(txs);
-    setCategories(cats);
-    setAssets(assts);
-    setIsLoading(false);
-  }, [currentMonth]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
 
   // 현재 월 거래 필터링
   const monthlyTransactions = transactions.filter((t) =>
@@ -306,8 +282,8 @@ export function CalendarView({ currentMonth }: CalendarViewProps) {
       {/* 날짜 상세 바텀시트 */}
       <Drawer.Root open={isDaySheetOpen} onOpenChange={setIsDaySheetOpen}>
         <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 bg-black/30 z-30 backdrop-blur-[2px]" />
-          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-30 bg-background rounded-t-[1.5rem] max-h-[75dvh] flex flex-col outline-none">
+          <Drawer.Overlay className="fixed inset-0 bg-black/30 z-[60] backdrop-blur-[2px]" />
+          <Drawer.Content className="fixed bottom-0 left-0 right-0 z-[60] bg-background rounded-t-[1.5rem] max-h-[75dvh] flex flex-col outline-none">
             {/* 드래그 핸들 */}
             <div className="mx-auto w-10 h-1 bg-muted-foreground/20 rounded-full mt-3 mb-1 flex-shrink-0" />
 
@@ -367,7 +343,7 @@ export function CalendarView({ currentMonth }: CalendarViewProps) {
         initialDate={addInitialDate}
         categories={categories}
         assets={assets}
-        onSuccess={loadData}
+        onSuccess={onSuccess}
       />
     </>
   );
