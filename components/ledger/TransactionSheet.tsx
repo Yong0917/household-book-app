@@ -1,7 +1,7 @@
 "use client";
 
 // 거래 등록/수정 바텀 시트 컴포넌트 (vaul Drawer + React Hook Form + Zod)
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -51,11 +51,8 @@ const dismissKeyboard = () => {
   if (document.activeElement instanceof HTMLElement) {
     document.activeElement.blur();
   }
-  
-  setTimeout(() => {
-    window.dispatchEvent(new Event("resize"));
-  }, 50)
 };
+
 
 export function TransactionSheet({
   open,
@@ -93,6 +90,30 @@ export function TransactionSheet({
   };
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  // iOS에서 키보드 dismiss 후 visualViewport가 늦게 업데이트되는 문제 대응
+  useEffect(() => {
+    if (!open) return;
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    const updateHeight = () => {
+      if (contentRef.current) {
+        contentRef.current.style.height = `${viewport.height}px`;
+        contentRef.current.style.top = `${viewport.offsetTop}px`;
+      }
+    };
+
+    viewport.addEventListener("resize", updateHeight);
+    viewport.addEventListener("scroll", updateHeight);
+    updateHeight();
+
+    return () => {
+      viewport.removeEventListener("resize", updateHeight);
+      viewport.removeEventListener("scroll", updateHeight);
+    };
+  }, [open]);
 
   const {
     register,
@@ -187,7 +208,7 @@ export function TransactionSheet({
         <Drawer.Overlay className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-[70]" />
 
         {/* 드로어 콘텐츠 - 전체화면 */}
-        <Drawer.Content className="fixed inset-0 h-[100dvh] bg-background flex flex-col z-[70] outline-none">
+        <Drawer.Content ref={contentRef} className="fixed inset-x-0 top-0 h-[100dvh] bg-background flex flex-col z-[70] outline-none">
           {/* 상단 여백 (Safe Area) */}
           <div className="h-[env(safe-area-inset-top)] flex-shrink-0" />
 
