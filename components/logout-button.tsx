@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 interface LogoutButtonProps {
   className?: string;
@@ -10,6 +12,7 @@ interface LogoutButtonProps {
 
 export function LogoutButton({ className, children }: LogoutButtonProps) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
 
   const logout = async () => {
     const supabase = createClient();
@@ -18,8 +21,18 @@ export function LogoutButton({ className, children }: LogoutButtonProps) {
   };
 
   return (
-    <button onClick={logout} className={className}>
-      {children ?? "로그아웃"}
-    </button>
+    <>
+      <ConfirmDialog
+        open={open}
+        onOpenChange={setOpen}
+        title="로그아웃"
+        description="정말 로그아웃하시겠어요?"
+        confirmLabel="로그아웃"
+        onConfirm={logout}
+      />
+      <button onClick={() => setOpen(true)} className={className}>
+        {children ?? "로그아웃"}
+      </button>
+    </>
   );
 }
