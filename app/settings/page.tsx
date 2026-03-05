@@ -1,7 +1,8 @@
 // 설정 페이지 (서버 컴포넌트)
 import Link from "next/link";
-import { ChevronRight, Tag, Wallet, LogOut } from "lucide-react";
+import { ChevronRight, Tag, Wallet, LogOut, Palette } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
+import { ThemeSelector } from "@/components/settings/ThemeSelector";
 
 export default function SettingsPage() {
   return (
@@ -37,6 +38,15 @@ export default function SettingsPage() {
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground" />
           </Link>
+
+          {/* 테마 설정 */}
+          <div className="flex items-center justify-between px-4 py-4">
+            <div className="flex items-center gap-3">
+              <Palette className="h-5 w-5 text-muted-foreground" />
+              <span className="text-sm font-medium">화면 테마</span>
+            </div>
+            <ThemeSelector />
+          </div>
         </div>
       </div>
 

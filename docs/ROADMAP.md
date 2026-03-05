@@ -1,7 +1,7 @@
 # 가계부 앱 (household-book-app) 개발 로드맵
 
-> 마지막 업데이트: 2026-03-05
-> 버전: v1.1
+> 마지막 업데이트: 2026-03-07
+> 버전: v1.2
 
 ---
 
@@ -126,37 +126,37 @@ Next.js 15 + Supabase 기반의 개인 가계부 앱 MVP. 사용자가 스마트
 
 ---
 
-### Phase 3: 백엔드 연동 (Supabase 실제 연동, 8일)
+### Phase 3: 백엔드 연동 (Supabase 실제 연동, 8일) ✅ 완료
 
 **목표**: 검증된 UI/UX를 기반으로 Supabase DB 스키마 생성, Server Actions 구현, 실제 데이터를 연동한다.
 **완료 기준**: 모든 CRUD가 Supabase에 실제 저장·조회되고, RLS 정책이 적용되어 타 사용자 데이터에 접근 불가. 배포 환경에서 동작 확인.
 
 #### 3-1. Supabase 스키마 및 초기 데이터
 
-- [ ] Supabase 대시보드에서 `profiles` 테이블 생성 — id (UUID, auth.users 참조), display_name (TEXT), created_at (TIMESTAMPTZ) | 담당: 백엔드 | 예상: 0.5d | 우선순위: 🔴높음
-- [ ] `categories` 테이블 생성 — id, user_id (auth.users 참조), name, type ('income'|'expense'), icon (lucide-react 아이콘명), color (hex), is_default (BOOLEAN), sort_order (INT), created_at | 담당: 백엔드 | 예상: 0.5d | 우선순위: 🔴높음
-- [ ] `assets` 테이블 생성 — id, user_id, name, type ('cash'|'bank'|'card'|'other'), icon, color, is_default (BOOLEAN), sort_order (INT), created_at | 담당: 백엔드 | 예상: 0.5d | 우선순위: 🔴높음
-- [ ] `transactions` 테이블 생성 — id, user_id, type, amount (BIGINT, 양수), category_id (categories 참조), asset_id (assets 참조), description (TEXT, nullable), transaction_at (TIMESTAMPTZ), created_at, updated_at | 담당: 백엔드 | 예상: 0.5d | 우선순위: 🔴높음
-- [ ] 모든 테이블에 RLS 정책 적용 — SELECT/INSERT/UPDATE/DELETE 모두 `user_id = auth.uid()` 조건 | 담당: 백엔드 | 예상: 1d | 우선순위: 🔴높음
-- [ ] 신규 회원가입 시 기본 카테고리/자산 프리셋 자동 삽입하는 PostgreSQL 함수 및 트리거 생성 (또는 Server Action에서 최초 로그인 시 삽입 처리) | 담당: 백엔드 | 예상: 1d | 우선순위: 🔴높음
+- [x] Supabase 대시보드에서 `profiles` 테이블 생성 — id (UUID, auth.users 참조), display_name (TEXT), created_at (TIMESTAMPTZ) | 담당: 백엔드 | 예상: 0.5d | 우선순위: 🔴높음
+- [x] `categories` 테이블 생성 — id, user_id (auth.users 참조), name, type ('income'|'expense'), icon (lucide-react 아이콘명), color (hex), is_default (BOOLEAN), sort_order (INT), created_at | 담당: 백엔드 | 예상: 0.5d | 우선순위: 🔴높음
+- [x] `assets` 테이블 생성 — id, user_id, name, type ('cash'|'bank'|'card'|'other'), icon, color, is_default (BOOLEAN), sort_order (INT), created_at | 담당: 백엔드 | 예상: 0.5d | 우선순위: 🔴높음
+- [x] `transactions` 테이블 생성 — id, user_id, type, amount (BIGINT, 양수), category_id (categories 참조), asset_id (assets 참조), description (TEXT, nullable), transaction_at (TIMESTAMPTZ), created_at, updated_at | 담당: 백엔드 | 예상: 0.5d | 우선순위: 🔴높음
+- [x] 모든 테이블에 RLS 정책 적용 — SELECT/INSERT/UPDATE/DELETE 모두 `user_id = auth.uid()` 조건 | 담당: 백엔드 | 예상: 1d | 우선순위: 🔴높음
+- [x] 신규 회원가입 시 기본 카테고리/자산 프리셋 자동 삽입하는 PostgreSQL 함수 및 트리거 생성 (`create_default_data_for_user` 트리거 — auth.users INSERT 시 실행) | 담당: 백엔드 | 예상: 1d | 우선순위: 🔴높음
 
 #### 3-2. Server Actions 구현
 
-- [ ] `lib/actions/categories.ts` — 카테고리 목록 조회(type 필터), 카테고리 추가, 카테고리 수정, 카테고리 삭제(is_default 체크) Server Actions 구현 | 담당: 풀스택 | 예상: 1d | 우선순위: 🔴높음
-- [ ] `lib/actions/assets.ts` — 자산 목록 조회, 자산 추가, 자산 수정, 자산 삭제(is_default 체크) Server Actions 구현 | 담당: 풀스택 | 예상: 1d | 우선순위: 🔴높음
-- [ ] `lib/actions/transactions.ts` — 날짜별 거래 목록 조회, 월별 거래 목록 조회, 거래 추가, 거래 수정, 거래 삭제 Server Actions 구현 | 담당: 풀스택 | 예상: 1.5d | 우선순위: 🔴높음
+- [x] `lib/actions/categories.ts` — 카테고리 목록 조회(type 필터), 카테고리 추가, 카테고리 수정, 카테고리 삭제(is_default 체크) Server Actions 구현 | 담당: 풀스택 | 예상: 1d | 우선순위: 🔴높음
+- [x] `lib/actions/assets.ts` — 자산 목록 조회, 자산 추가, 자산 수정, 자산 삭제(is_default 체크) Server Actions 구현 | 담당: 풀스택 | 예상: 1d | 우선순위: 🔴높음
+- [x] `lib/actions/transactions.ts` — 날짜별 거래 목록 조회, 월별 거래 목록 조회, 거래 추가, 거래 수정, 거래 삭제 Server Actions 구현 | 담당: 풀스택 | 예상: 1.5d | 우선순위: 🔴높음
 
 #### 3-3. Mock 데이터를 실제 API로 교체
 
-- [ ] `app/ledger/daily/page.tsx`를 서버 컴포넌트로 전환, Server Actions로 날짜별 거래 조회 | 담당: 풀스택 | 예상: 0.5d | 우선순위: 🔴높음
-- [ ] `app/ledger/calendar/page.tsx`를 서버 컴포넌트로 전환, Server Actions로 월별 거래 조회 | 담당: 풀스택 | 예상: 0.5d | 우선순위: 🔴높음
-- [ ] `app/statistics/income/page.tsx`, `expense/page.tsx`를 서버 컴포넌트로 전환, 월별 거래 집계 | 담당: 풀스택 | 예상: 0.5d | 우선순위: 🟡중간
-- [ ] `app/settings/categories/page.tsx`, `assets/page.tsx` Supabase CRUD 연동 | 담당: 풀스택 | 예상: 0.5d | 우선순위: 🟡중간
-- [ ] TransactionSheet 폼 저장 버튼을 `lib/actions/transactions.ts` Server Actions에 연결 | 담당: 풀스택 | 예상: 0.5d | 우선순위: 🔴높음
+- [x] `app/ledger/daily/page.tsx`를 서버 컴포넌트로 전환, Server Actions로 날짜별 거래 조회 | 담당: 풀스택 | 예상: 0.5d | 우선순위: 🔴높음
+- [x] `app/ledger/calendar/page.tsx`를 서버 컴포넌트로 전환, Server Actions로 월별 거래 조회 | 담당: 풀스택 | 예상: 0.5d | 우선순위: 🔴높음
+- [x] `app/statistics/income/page.tsx`, `expense/page.tsx`를 서버 컴포넌트로 전환, 월별 거래 집계 | 담당: 풀스택 | 예상: 0.5d | 우선순위: 🟡중간
+- [x] `app/settings/categories/page.tsx`, `assets/page.tsx` Supabase CRUD 연동 | 담당: 풀스택 | 예상: 0.5d | 우선순위: 🟡중간
+- [x] TransactionSheet 폼 저장 버튼을 `lib/actions/transactions.ts` Server Actions에 연결 | 담당: 풀스택 | 예상: 0.5d | 우선순위: 🔴높음
 
 #### 3-4. 배포
 
-- [ ] Vercel 프로젝트 연결 및 환경 변수 설정 (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) | 담당: DevOps | 예상: 0.5d | 우선순위: 🟡중간
+- [x] Vercel 프로젝트 연결 및 환경 변수 설정 (NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) | 담당: DevOps | 예상: 0.5d | 우선순위: 🟡중간
 - [ ] 배포 후 인증 흐름, 거래 CRUD, RLS 정책 동작 검증 | 담당: 풀스택 | 예상: 0.5d | 우선순위: 🟡중간
 
 ---
@@ -217,3 +217,4 @@ Phase 0 (환경 준비)
 |------|------|-----------|
 | v1.0 | 2026-03-04 | 최초 작성 — PRD v1 기반, Phase 0~3 로드맵 수립 |
 | v1.1 | 2026-03-05 | Phase 0, 1, 2 완료 상태 반영 — 체크박스 및 섹션 헤더 업데이트 |
+| v1.2 | 2026-03-07 | Phase 3 완료 상태 반영 — DB 스키마, Server Actions, API 연동, 환경 변수 설정 완료 체크 |
