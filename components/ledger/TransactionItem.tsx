@@ -42,12 +42,14 @@ export function TransactionItem({
 
       {/* 거래 정보 영역 */}
       <div className="flex-1 min-w-0">
-        {/* 카테고리명 */}
-        <p className="font-medium text-[13.5px] leading-snug truncate">{categoryName}</p>
+        {/* 메모(없으면 카테고리명) */}
+        <p className="font-medium text-[13.5px] leading-snug truncate">
+          {description || categoryName}
+        </p>
 
-        {/* 시간 + 메모 + 자산명 */}
+        {/* 시간 + 카테고리명 + 자산명 */}
         <p className="text-[11.5px] text-muted-foreground truncate mt-0.5">
-          {time ? `${time} · ` : ""}{description ? `${description} · ` : ""}{assetName}
+          {time ? `${time} · ` : ""}{description ? `${categoryName} · ` : ""}{assetName}
         </p>
       </div>
 

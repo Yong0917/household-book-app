@@ -1,9 +1,9 @@
 "use client";
 
 // 분류(카테고리) 목록 컴포넌트 (Supabase server actions 연동, 드래그 정렬 지원)
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, Plus, GripVertical } from "lucide-react";
+import { Trash2, Plus, GripVertical, X } from "lucide-react";
 import { Drawer } from "vaul";
 import {
   DndContext,
@@ -141,6 +141,20 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
   const [confirmTarget, setConfirmTarget] = useState<Category | null>(null);
 
   const router = useRouter();
+
+  // initialCategories prop이 변경되면 로컬 상태 동기화 (router.refresh() 후 반영)
+  useEffect(() => {
+    setCategories(initialCategories);
+  }, [initialCategories]);
+
+  // Drawer 열릴 때 뒤로가기 인터셉트
+  useEffect(() => {
+    if (!isDrawerOpen) return;
+    history.pushState({ categoryDrawer: true }, "");
+    const handlePopState = () => setIsDrawerOpen(false);
+    window.addEventListener("popstate", handlePopState, { once: true });
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [isDrawerOpen]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -298,20 +312,29 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
         destructive
       />
 
-      {/* 추가/수정 Drawer */}
-      <Drawer.Root open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
+      {/* 추가/수정 Drawer - 전체화면 */}
+      <Drawer.Root open={isDrawerOpen} onOpenChange={setIsDrawerOpen} dismissible={false}>
         <Drawer.Portal>
-          <Drawer.Overlay className="fixed inset-0 bg-black/40" />
-          <Drawer.Content className="fixed bottom-0 left-0 right-0 bg-background rounded-t-3xl max-h-[80dvh] flex flex-col">
-            <div className="mx-auto w-12 h-1.5 bg-muted-foreground/30 rounded-full mt-3 mb-2 flex-shrink-0" />
-
-            <div className="overflow-y-auto flex-1 px-4 pb-8">
+          <Drawer.Overlay className="fixed inset-0 bg-black/40 z-[60]" />
+          <Drawer.Content className="fixed inset-0 bg-background flex flex-col outline-none z-[60]">
+            {/* 헤더 */}
+            <div className="flex items-center justify-between px-4 h-14 border-b border-border/60 flex-shrink-0">
+              <div className="w-10" />
               <Drawer.Title asChild>
-                <h2 className="text-lg font-semibold text-center py-3">
+                <h2 className="text-[15px] font-semibold">
                   {editingCategory ? "카테고리 수정" : "카테고리 추가"}
                 </h2>
               </Drawer.Title>
+              <button
+                onClick={() => setIsDrawerOpen(false)}
+                className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-muted/80 transition-colors text-muted-foreground"
+                aria-label="닫기"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
 
+            <div className="overflow-y-auto flex-1 px-4 pt-6 pb-8">
               <div className="mb-4">
                 <label className="block text-sm font-medium mb-1.5">이름</label>
                 <Input
@@ -329,7 +352,7 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
                       key={color}
                       onClick={() => setFormColor(color)}
                       className={cn(
-                        "h-10 w-10 rounded-full transition-transform",
+                        "h-12 w-12 rounded-full transition-transform",
                         formColor === color && "ring-2 ring-offset-2 ring-foreground scale-110"
                       )}
                       style={{ backgroundColor: color }}
@@ -338,26 +361,27 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
                   ))}
                 </div>
               </div>
+            </div>
 
-              <div className="space-y-2">
-                {editingCategory && !editingCategory.isDefault && (
-                  <Button
-                    variant="outline"
-                    className="w-full text-red-500 border-red-200 hover:bg-red-50 hover:text-red-500"
-                    onClick={handleDelete}
-                    disabled={isPending}
-                  >
-                    삭제
-                  </Button>
-                )}
+            {/* 하단 버튼 영역 */}
+            <div className="px-4 pb-8 pt-3 border-t border-border/60 space-y-2 flex-shrink-0">
+              {editingCategory && !editingCategory.isDefault && (
                 <Button
-                  className="w-full"
-                  onClick={handleSave}
-                  disabled={!formName.trim() || isPending}
+                  variant="outline"
+                  className="w-full text-red-500 border-red-200 hover:bg-red-50 hover:text-red-500"
+                  onClick={handleDelete}
+                  disabled={isPending}
                 >
-                  {isPending ? "저장 중..." : "저장"}
+                  삭제
                 </Button>
-              </div>
+              )}
+              <Button
+                className="w-full"
+                onClick={handleSave}
+                disabled={!formName.trim() || isPending}
+              >
+                {isPending ? "저장 중..." : "저장"}
+              </Button>
             </div>
           </Drawer.Content>
         </Drawer.Portal>
