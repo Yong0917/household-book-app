@@ -47,8 +47,10 @@ export async function GET(request: NextRequest) {
   const rows = (transactions ?? []).map((t) => {
     const date = new Date(new Date(t.transaction_at).getTime() + KST_OFFSET);
     const dateStr = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
+    const timeStr = `${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}`;
     return {
       날짜: dateStr,
+      시간: timeStr,
       유형: t.type === "income" ? "수입" : "지출",
       금액: t.amount,
       분류: categoryMap.get(t.category_id) ?? "-",
@@ -63,6 +65,7 @@ export async function GET(request: NextRequest) {
   // 컬럼 너비 설정
   ws["!cols"] = [
     { wch: 12 }, // 날짜
+    { wch: 8 },  // 시간
     { wch: 6 },  // 유형
     { wch: 12 }, // 금액
     { wch: 12 }, // 분류
