@@ -23,6 +23,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import {
   addCategory,
@@ -137,6 +138,7 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
   const [formName, setFormName] = useState("");
   const [formColor, setFormColor] = useState(COLOR_PALETTE[0]);
   const [isPending, setIsPending] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<Category | null>(null);
 
   const router = useRouter();
 
@@ -201,26 +203,27 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!editingCategory || isPending) return;
-    setIsPending(true);
-    try {
-      await deleteCategory(editingCategory.id);
-      setIsDrawerOpen(false);
-      router.refresh();
-    } finally {
-      setIsPending(false);
-    }
+    setConfirmTarget(editingCategory);
   };
 
-  const handleDirectDelete = async (category: Category) => {
+  const handleDirectDelete = (category: Category) => {
     if (category.isDefault || isPending) return;
+    setConfirmTarget(category);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmTarget || isPending) return;
+    const wasInDrawer = editingCategory?.id === confirmTarget.id;
     setIsPending(true);
     try {
-      await deleteCategory(category.id);
+      await deleteCategory(confirmTarget.id);
+      if (wasInDrawer) setIsDrawerOpen(false);
       router.refresh();
     } finally {
       setIsPending(false);
+      setConfirmTarget(null);
     }
   };
 
@@ -283,6 +286,17 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
           추가
         </Button>
       </div>
+
+      {/* 삭제 확인 다이얼로그 */}
+      <ConfirmDialog
+        open={confirmTarget !== null}
+        onOpenChange={(open) => { if (!open) setConfirmTarget(null); }}
+        title="카테고리 삭제"
+        description={`'${confirmTarget?.name}' 카테고리를 삭제할까요? 이 카테고리를 사용한 거래의 카테고리가 미분류로 변경됩니다.`}
+        confirmLabel="삭제"
+        onConfirm={handleConfirmDelete}
+        destructive
+      />
 
       {/* 추가/수정 Drawer */}
       <Drawer.Root open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>

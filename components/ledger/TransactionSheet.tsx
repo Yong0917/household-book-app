@@ -1,7 +1,7 @@
 "use client";
 
 // 거래 등록/수정 바텀 시트 컴포넌트 (vaul Drawer + React Hook Form + Zod)
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,6 +10,7 @@ import { format } from "date-fns";
 import { X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   addTransaction,
   updateTransaction,
@@ -80,6 +81,8 @@ export function TransactionSheet({
     };
   };
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const {
     register,
     handleSubmit,
@@ -142,8 +145,13 @@ export function TransactionSheet({
     onSuccess?.();
   };
 
-  // 거래 삭제
-  const handleDelete = async () => {
+  // 거래 삭제 확인 모달 열기
+  const handleDelete = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  // 거래 삭제 실행
+  const handleConfirmDelete = async () => {
     if (transaction) {
       await deleteTransaction(transaction.id);
       handleClose();
@@ -152,6 +160,16 @@ export function TransactionSheet({
   };
 
   return (
+    <>
+    <ConfirmDialog
+      open={showDeleteConfirm}
+      onOpenChange={setShowDeleteConfirm}
+      title="거래 삭제"
+      description="이 거래를 삭제할까요? 삭제된 거래는 복구할 수 없습니다."
+      confirmLabel="삭제"
+      onConfirm={handleConfirmDelete}
+      destructive
+    />
     <Drawer.Root open={open} onOpenChange={onOpenChange} shouldScaleBackground>
       <Drawer.Portal>
         {/* 배경 오버레이 */}
@@ -336,5 +354,6 @@ export function TransactionSheet({
         </Drawer.Content>
       </Drawer.Portal>
     </Drawer.Root>
+    </>
   );
 }

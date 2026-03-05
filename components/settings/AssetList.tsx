@@ -23,6 +23,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 import { addAsset, updateAsset, deleteAsset, reorderAssets } from "@/lib/actions/assets";
 import type { Asset, AssetType } from "@/lib/mock/types";
@@ -136,6 +137,7 @@ export function AssetList({ initialAssets }: AssetListProps) {
   const [formName, setFormName] = useState("");
   const [formType, setFormType] = useState<AssetType>("cash");
   const [isPending, setIsPending] = useState(false);
+  const [confirmTarget, setConfirmTarget] = useState<Asset | null>(null);
 
   const router = useRouter();
 
@@ -187,26 +189,27 @@ export function AssetList({ initialAssets }: AssetListProps) {
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!editingAsset || isPending) return;
-    setIsPending(true);
-    try {
-      await deleteAsset(editingAsset.id);
-      setIsDrawerOpen(false);
-      router.refresh();
-    } finally {
-      setIsPending(false);
-    }
+    setConfirmTarget(editingAsset);
   };
 
-  const handleDirectDelete = async (asset: Asset) => {
+  const handleDirectDelete = (asset: Asset) => {
     if (asset.isDefault || isPending) return;
+    setConfirmTarget(asset);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmTarget || isPending) return;
+    const wasInDrawer = editingAsset?.id === confirmTarget.id;
     setIsPending(true);
     try {
-      await deleteAsset(asset.id);
+      await deleteAsset(confirmTarget.id);
+      if (wasInDrawer) setIsDrawerOpen(false);
       router.refresh();
     } finally {
       setIsPending(false);
+      setConfirmTarget(null);
     }
   };
 
@@ -243,6 +246,17 @@ export function AssetList({ initialAssets }: AssetListProps) {
           추가
         </Button>
       </div>
+
+      {/* 삭제 확인 다이얼로그 */}
+      <ConfirmDialog
+        open={confirmTarget !== null}
+        onOpenChange={(open) => { if (!open) setConfirmTarget(null); }}
+        title="자산 삭제"
+        description={`'${confirmTarget?.name}' 자산을 삭제할까요? 이 자산을 사용한 거래의 자산 정보가 미분류로 변경됩니다.`}
+        confirmLabel="삭제"
+        onConfirm={handleConfirmDelete}
+        destructive
+      />
 
       {/* 추가/수정 Drawer */}
       <Drawer.Root open={isDrawerOpen} onOpenChange={setIsDrawerOpen}>
