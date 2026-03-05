@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
-import { GeistSans } from "geist/font/sans";
+import { Noto_Sans_KR } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
+
+const notoSansKR = Noto_Sans_KR({
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "700"],
+  variable: "--font-sans",
+  display: "swap",
+});
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -24,8 +31,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${GeistSans.className} antialiased`}>
+    <html lang="ko" suppressHydrationWarning>
+      <body className={`${notoSansKR.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
