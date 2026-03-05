@@ -10,6 +10,7 @@ export interface Category {
   type: TransactionType;
   color: string;
   isDefault: boolean;
+  sortOrder: number;
 }
 
 export interface Asset {
@@ -17,6 +18,7 @@ export interface Asset {
   name: string;
   type: AssetType;
   isDefault: boolean;
+  sortOrder: number;
 }
 
 export interface Transaction {

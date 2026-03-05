@@ -5,29 +5,29 @@ import type { Category, Asset, Transaction } from "./types";
 // 기본 카테고리 데이터 (수입 5개, 지출 10개)
 export const INITIAL_CATEGORIES: Category[] = [
   // 수입 카테고리
-  { id: "c1", name: "급여", type: "income", color: "#3b82f6", isDefault: true },
-  { id: "c2", name: "부수입", type: "income", color: "#22c55e", isDefault: true },
-  { id: "c3", name: "이자", type: "income", color: "#14b8a6", isDefault: true },
-  { id: "c4", name: "투자수익", type: "income", color: "#8b5cf6", isDefault: true },
-  { id: "c5", name: "기타수입", type: "income", color: "#6b7280", isDefault: true },
+  { id: "c1", name: "급여", type: "income", color: "#3b82f6", isDefault: true, sortOrder: 0 },
+  { id: "c2", name: "부수입", type: "income", color: "#22c55e", isDefault: true, sortOrder: 1 },
+  { id: "c3", name: "이자", type: "income", color: "#14b8a6", isDefault: true, sortOrder: 2 },
+  { id: "c4", name: "투자수익", type: "income", color: "#8b5cf6", isDefault: true, sortOrder: 3 },
+  { id: "c5", name: "기타수입", type: "income", color: "#6b7280", isDefault: true, sortOrder: 4 },
   // 지출 카테고리
-  { id: "c6", name: "식비", type: "expense", color: "#ef4444", isDefault: true },
-  { id: "c7", name: "교통", type: "expense", color: "#f97316", isDefault: true },
-  { id: "c8", name: "주거", type: "expense", color: "#eab308", isDefault: true },
-  { id: "c9", name: "의료", type: "expense", color: "#22c55e", isDefault: true },
-  { id: "c10", name: "쇼핑", type: "expense", color: "#ec4899", isDefault: true },
-  { id: "c11", name: "문화", type: "expense", color: "#8b5cf6", isDefault: true },
-  { id: "c12", name: "교육", type: "expense", color: "#3b82f6", isDefault: true },
-  { id: "c13", name: "통신", type: "expense", color: "#14b8a6", isDefault: true },
-  { id: "c14", name: "저축", type: "expense", color: "#f59e0b", isDefault: true },
-  { id: "c15", name: "기타지출", type: "expense", color: "#6b7280", isDefault: true },
+  { id: "c6", name: "식비", type: "expense", color: "#ef4444", isDefault: true, sortOrder: 0 },
+  { id: "c7", name: "교통", type: "expense", color: "#f97316", isDefault: true, sortOrder: 1 },
+  { id: "c8", name: "주거", type: "expense", color: "#eab308", isDefault: true, sortOrder: 2 },
+  { id: "c9", name: "의료", type: "expense", color: "#22c55e", isDefault: true, sortOrder: 3 },
+  { id: "c10", name: "쇼핑", type: "expense", color: "#ec4899", isDefault: true, sortOrder: 4 },
+  { id: "c11", name: "문화", type: "expense", color: "#8b5cf6", isDefault: true, sortOrder: 5 },
+  { id: "c12", name: "교육", type: "expense", color: "#3b82f6", isDefault: true, sortOrder: 6 },
+  { id: "c13", name: "통신", type: "expense", color: "#14b8a6", isDefault: true, sortOrder: 7 },
+  { id: "c14", name: "저축", type: "expense", color: "#f59e0b", isDefault: true, sortOrder: 8 },
+  { id: "c15", name: "기타지출", type: "expense", color: "#6b7280", isDefault: true, sortOrder: 9 },
 ];
 
 // 기본 자산 데이터
 export const INITIAL_ASSETS: Asset[] = [
-  { id: "a1", name: "현금", type: "cash", isDefault: true },
-  { id: "a2", name: "신한은행", type: "bank", isDefault: true },
-  { id: "a3", name: "삼성카드", type: "card", isDefault: true },
+  { id: "a1", name: "현금", type: "cash", isDefault: true, sortOrder: 0 },
+  { id: "a2", name: "신한은행", type: "bank", isDefault: true, sortOrder: 1 },
+  { id: "a3", name: "삼성카드", type: "card", isDefault: true, sortOrder: 2 },
 ];
 
 // 샘플 거래 데이터 (2026년 3월, 12건)

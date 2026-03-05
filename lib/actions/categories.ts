@@ -11,6 +11,7 @@ function toCategory(row: {
   type: string;
   color: string;
   is_default: boolean;
+  sort_order: number;
 }): Category {
   return {
     id: row.id,
@@ -18,6 +19,7 @@ function toCategory(row: {
     type: row.type as TransactionType,
     color: row.color,
     isDefault: row.is_default,
+    sortOrder: row.sort_order,
   };
 }
 
@@ -26,19 +28,30 @@ export async function getCategories(): Promise<Category[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("categories")
-    .select("id, name, type, color, is_default")
-    .order("is_default", { ascending: false })
-    .order("created_at", { ascending: true });
+    .select("id, name, type, color, is_default, sort_order")
+    .order("sort_order", { ascending: true });
 
   if (error) throw new Error(error.message);
   return (data ?? []).map(toCategory);
 }
 
 // 카테고리 추가
-export async function addCategory(data: Omit<Category, "id">): Promise<void> {
+export async function addCategory(data: Omit<Category, "id" | "sortOrder">): Promise<void> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error("인증이 필요합니다");
+
+  // 현재 최대 sort_order 조회
+  const { data: maxRow } = await supabase
+    .from("categories")
+    .select("sort_order")
+    .eq("user_id", user.id)
+    .eq("type", data.type)
+    .order("sort_order", { ascending: false })
+    .limit(1)
+    .single();
+
+  const nextOrder = (maxRow?.sort_order ?? -1) + 1;
 
   const { error } = await supabase.from("categories").insert({
     user_id: user.id,
@@ -46,6 +59,7 @@ export async function addCategory(data: Omit<Category, "id">): Promise<void> {
     type: data.type,
     color: data.color,
     is_default: data.isDefault,
+    sort_order: nextOrder,
   });
 
   if (error) throw new Error(error.message);
@@ -73,11 +87,23 @@ export async function updateCategory(
   revalidatePath("/settings/categories");
 }
 
+// 카테고리 순서 일괄 저장
+export async function reorderCategories(orderedIds: string[]): Promise<void> {
+  const supabase = await createClient();
+
+  await Promise.all(
+    orderedIds.map((id, index) =>
+      supabase.from("categories").update({ sort_order: index }).eq("id", id)
+    )
+  );
+
+  revalidatePath("/settings/categories");
+}
+
 // 카테고리 삭제 (기본 카테고리는 삭제 불가)
 export async function deleteCategory(id: string): Promise<void> {
   const supabase = await createClient();
 
-  // 기본 카테고리 여부 확인
   const { data: cat } = await supabase
     .from("categories")
     .select("is_default")
