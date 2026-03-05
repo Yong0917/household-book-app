@@ -10,13 +10,13 @@ export default function SettingsPage() {
   return (
     <>
       {/* 설정 헤더 */}
-      <header className="h-14 flex items-center px-5 border-b border-border/50">
-        <h1 className="text-[18px] font-bold tracking-tight">설정</h1>
+      <header className="h-14 flex items-center px-5 border-b border-border/40">
+        <h1 className="text-[17px] font-bold tracking-tight">설정</h1>
       </header>
 
       {/* 데이터 관리 섹션 */}
       <div className="mt-7 px-4">
-        <p className="mb-2 px-1 text-[11px] font-bold text-muted-foreground/70 uppercase tracking-widest">데이터</p>
+        <p className="mb-2 px-1 text-[10px] font-bold text-muted-foreground/55 uppercase tracking-[0.14em]">데이터</p>
         <div className="rounded-2xl border border-border/60 overflow-hidden bg-card divide-y divide-border/50">
           {/* 분류 관리 */}
           <Link
@@ -53,7 +53,7 @@ export default function SettingsPage() {
 
       {/* 환경설정 섹션 */}
       <div className="mt-5 px-4">
-        <p className="mb-2 px-1 text-[11px] font-bold text-muted-foreground/70 uppercase tracking-widest">환경설정</p>
+        <p className="mb-2 px-1 text-[10px] font-bold text-muted-foreground/55 uppercase tracking-[0.14em]">환경설정</p>
         <div className="rounded-2xl border border-border/60 overflow-hidden bg-card">
           <div className="flex items-center justify-between px-4 py-4">
             <div className="flex items-center gap-3.5">
@@ -81,7 +81,7 @@ export default function SettingsPage() {
 
       {/* 회원탈퇴 */}
       <div className="mt-5 px-4 pb-6">
-        <p className="mb-2 px-1 text-[11px] font-bold text-muted-foreground/70 uppercase tracking-widest">계정 관리</p>
+        <p className="mb-2 px-1 text-[10px] font-bold text-muted-foreground/55 uppercase tracking-[0.14em]">계정 관리</p>
         <div className="rounded-2xl border border-destructive/30 overflow-hidden bg-card">
           <DeleteAccountButton />
         </div>

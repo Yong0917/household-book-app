@@ -16,7 +16,7 @@ export function BottomTabBar() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 h-16 bg-background/96 backdrop-blur-md border-t border-border/50 flex items-stretch"
+      className="fixed bottom-0 left-0 right-0 z-50 h-16 bg-background/97 backdrop-blur-xl border-t border-border/40 flex items-stretch"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
       {tabs.map(({ href, icon: Icon, label, match }) => {
@@ -29,22 +29,22 @@ export function BottomTabBar() {
           >
             <div
               className={cn(
-                "w-14 h-7 flex items-center justify-center rounded-full transition-all duration-200",
-                isActive ? "bg-primary/10" : ""
+                "w-12 h-6 flex items-center justify-center rounded-full transition-all duration-200",
+                isActive ? "bg-primary/8" : ""
               )}
             >
               <Icon
                 className={cn(
-                  "h-[19px] w-[19px] transition-all duration-200",
-                  isActive ? "text-primary" : "text-muted-foreground/55"
+                  "h-[18px] w-[18px] transition-all duration-200",
+                  isActive ? "text-primary" : "text-muted-foreground/45"
                 )}
-                strokeWidth={isActive ? 2.4 : 1.7}
+                strokeWidth={isActive ? 2.3 : 1.6}
               />
             </div>
             <span
               className={cn(
-                "text-[10.5px] transition-all duration-200 tracking-tight",
-                isActive ? "text-primary font-bold" : "text-muted-foreground/55 font-medium"
+                "text-[10px] transition-all duration-200 tracking-tight",
+                isActive ? "text-primary font-bold" : "text-muted-foreground/45 font-medium"
               )}
             >
               {label}

@@ -74,43 +74,46 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
   return (
     <>
       {/* 월간 수입/지출/순합계 요약 */}
-      <div className="flex items-center px-5 py-4 border-b border-border/50">
-        <div className="flex-1 flex flex-col gap-1">
-          <p className="text-[10.5px] text-muted-foreground/70 font-semibold uppercase tracking-widest">수입</p>
-          {isLoading ? (
-            <div className="h-4 w-20 bg-muted-foreground/10 rounded-md animate-pulse" />
-          ) : (
-            <p className="text-[14px] font-bold text-income tabular-nums leading-none">
-              {income.toLocaleString("ko-KR")}원
-            </p>
-          )}
-        </div>
-        <div className="h-9 w-px bg-border/60 mx-2" />
-        <div className="flex-1 flex flex-col items-center gap-1">
-          <p className="text-[10.5px] text-muted-foreground/70 font-semibold uppercase tracking-widest">지출</p>
-          {isLoading ? (
-            <div className="h-4 w-20 bg-muted-foreground/10 rounded-md animate-pulse" />
-          ) : (
-            <p className="text-[14px] font-bold text-expense tabular-nums leading-none">
-              {expense.toLocaleString("ko-KR")}원
-            </p>
-          )}
-        </div>
-        <div className="h-9 w-px bg-border/60 mx-2" />
-        <div className="flex-1 flex flex-col items-end gap-1">
-          <p className="text-[10.5px] text-muted-foreground/70 font-semibold uppercase tracking-widest">순합계</p>
-          {isLoading ? (
-            <div className="h-4 w-20 bg-muted-foreground/10 rounded-md animate-pulse" />
-          ) : (
-            <p
-              className={`text-[14px] font-bold tabular-nums leading-none ${
-                net >= 0 ? "text-income" : "text-expense"
-              }`}
-            >
-              {net >= 0 ? "+" : ""}
-              {net.toLocaleString("ko-KR")}원
-            </p>
-          )}
+      <div className="px-4 py-3 border-b border-border/40">
+        <div className="grid grid-cols-3 divide-x divide-border/40 bg-muted/20 rounded-xl px-1 py-3">
+          <div className="flex flex-col gap-1.5 pl-3 pr-2">
+            <p className="text-[9.5px] text-muted-foreground/55 font-bold uppercase tracking-[0.12em]">수입</p>
+            {isLoading ? (
+              <div className="h-4 w-16 bg-muted-foreground/10 rounded animate-pulse" />
+            ) : (
+              <p className="text-[13.5px] font-semibold text-income tabular-nums leading-none tracking-tight">
+                {income.toLocaleString("ko-KR")}
+                <span className="text-[11px] font-medium ml-0.5">원</span>
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5 px-3 items-center">
+            <p className="text-[9.5px] text-muted-foreground/55 font-bold uppercase tracking-[0.12em]">지출</p>
+            {isLoading ? (
+              <div className="h-4 w-16 bg-muted-foreground/10 rounded animate-pulse" />
+            ) : (
+              <p className="text-[13.5px] font-semibold text-expense tabular-nums leading-none tracking-tight">
+                {expense.toLocaleString("ko-KR")}
+                <span className="text-[11px] font-medium ml-0.5">원</span>
+              </p>
+            )}
+          </div>
+          <div className="flex flex-col gap-1.5 pl-3 pr-2 items-end">
+            <p className="text-[9.5px] text-muted-foreground/55 font-bold uppercase tracking-[0.12em]">잔액</p>
+            {isLoading ? (
+              <div className="h-4 w-16 bg-muted-foreground/10 rounded animate-pulse" />
+            ) : (
+              <p
+                className={`text-[13.5px] font-semibold tabular-nums leading-none tracking-tight ${
+                  net >= 0 ? "text-income" : "text-expense"
+                }`}
+              >
+                {net >= 0 ? "+" : ""}
+                {net.toLocaleString("ko-KR")}
+                <span className="text-[11px] font-medium ml-0.5">원</span>
+              </p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -174,26 +177,26 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
           return (
             <div key={dateKey}>
               {/* 날짜 구분 헤더 */}
-              <div className="flex items-end justify-between px-5 pt-4 pb-2.5 bg-background border-b border-border/40">
+              <div className="flex items-center justify-between px-5 pt-3.5 pb-2 bg-muted/10 border-b border-border/30">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-[26px] font-bold tabular-nums leading-none text-foreground/90">
+                  <span className="text-[22px] font-bold tabular-nums leading-none text-foreground/85 tracking-tight">
                     {format(dayDate, "d")}
                   </span>
-                  <span className="text-[12px] text-muted-foreground font-medium">
+                  <span className="text-[11.5px] text-muted-foreground/70 font-medium tracking-tight">
                     {format(dayDate, "M월", { locale: ko })} · {format(dayDate, "EEEE", { locale: ko })}
                   </span>
                   {isToday(dayDate) && (
-                    <span className="text-[9.5px] bg-income/12 text-income font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider">TODAY</span>
+                    <span className="text-[9px] bg-income/10 text-income font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">TODAY</span>
                   )}
                 </div>
-                <div className="flex gap-2 text-[11.5px] tabular-nums pb-0.5">
+                <div className="flex gap-2.5 text-[11px] tabular-nums tracking-tight">
                   {dayIncome > 0 && (
-                    <span className="text-income font-semibold">
+                    <span className="text-income font-medium">
                       +{dayIncome.toLocaleString("ko-KR")}
                     </span>
                   )}
                   {dayExpense > 0 && (
-                    <span className="text-expense font-semibold">
+                    <span className="text-expense font-medium">
                       −{dayExpense.toLocaleString("ko-KR")}
                     </span>
                   )}

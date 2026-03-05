@@ -141,72 +141,72 @@ export function LedgerTabView() {
   return (
     <div className="flex flex-col min-h-[calc(100dvh-4rem)]" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       {/* 헤더: 월 네비게이션(좌) + 검색 버튼(우) */}
-      <div className="sticky top-0 z-20 bg-background/96 backdrop-blur-md border-b border-border/50">
+      <div className="sticky top-0 z-20 bg-background/97 backdrop-blur-xl border-b border-border/40">
         <div className="flex items-center justify-between px-2 h-13">
           {/* 월 네비게이션 */}
           <div className="flex items-center gap-0.5">
             <button
               onClick={() => setCurrentMonth((prev) => subMonths(prev, 1))}
-              className="p-2 rounded-full hover:bg-muted/70 active:bg-muted transition-colors"
+              className="p-2 rounded-full hover:bg-muted/60 active:bg-muted transition-colors"
               aria-label="이전 달"
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-[15px] w-[15px] text-foreground/70" />
             </button>
 
             <button
               onClick={openPicker}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-muted/70 transition-colors"
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl hover:bg-muted/60 transition-colors"
             >
-              <span className="text-[16px] font-bold tracking-tight">
+              <span className="text-[15.5px] font-bold tracking-tight">
                 {format(currentMonth, "yyyy년 M월", { locale: ko })}
               </span>
-              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground/70" />
+              <ChevronDown className="h-3 w-3 text-muted-foreground/50" />
             </button>
 
             <button
               onClick={() => setCurrentMonth((prev) => addMonths(prev, 1))}
-              className="p-2 rounded-full hover:bg-muted/70 active:bg-muted transition-colors"
+              className="p-2 rounded-full hover:bg-muted/60 active:bg-muted transition-colors"
               aria-label="다음 달"
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-[15px] w-[15px] text-foreground/70" />
             </button>
           </div>
 
           {/* 검색 버튼 */}
           <button
             onClick={openSearch}
-            className="p-2 rounded-full hover:bg-muted/70 active:bg-muted transition-colors mr-1"
+            className="p-2 rounded-full hover:bg-muted/60 active:bg-muted transition-colors mr-1"
             aria-label="검색"
           >
-            <Search className="h-[18px] w-[18px] text-foreground/75" />
+            <Search className="h-[17px] w-[17px] text-foreground/65" />
           </button>
         </div>
       </div>
 
       {/* 탭 바 */}
-      <div className="flex h-11 border-b border-border/50 sticky top-13 z-20 bg-background/96 backdrop-blur-md">
+      <div className="flex h-10 border-b border-border/40 sticky top-13 z-20 bg-background/97 backdrop-blur-xl">
         <button
           onClick={() => setTab("list")}
           className={cn(
-            "flex-1 text-[13px] font-semibold transition-all relative",
-            tab === "list" ? "text-primary" : "text-muted-foreground/50"
+            "flex-1 text-[12.5px] font-semibold transition-all relative tracking-tight",
+            tab === "list" ? "text-primary" : "text-muted-foreground/40"
           )}
         >
           일일
           {tab === "list" && (
-            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-[2px] bg-primary rounded-full" />
+            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[2px] bg-primary rounded-full" />
           )}
         </button>
         <button
           onClick={() => setTab("calendar")}
           className={cn(
-            "flex-1 text-[13px] font-semibold transition-all relative",
-            tab === "calendar" ? "text-primary" : "text-muted-foreground/50"
+            "flex-1 text-[12.5px] font-semibold transition-all relative tracking-tight",
+            tab === "calendar" ? "text-primary" : "text-muted-foreground/40"
           )}
         >
           달력
           {tab === "calendar" && (
-            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-[2px] bg-primary rounded-full" />
+            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[2px] bg-primary rounded-full" />
           )}
         </button>
       </div>

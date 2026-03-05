@@ -122,14 +122,14 @@ export function IncomeView() {
       </header>
 
       {/* 수입/지출 전환 탭 */}
-      <div className="flex border-b border-border/60">
+      <div className="flex border-b border-border/40">
         <Link
           href="/statistics/income"
           className={cn(
-            "flex-1 py-3 text-center text-[13px] font-medium transition-colors relative",
+            "flex-1 py-3 text-center text-[12.5px] font-semibold transition-colors relative tracking-tight",
             pathname === "/statistics/income"
               ? "text-income"
-              : "text-muted-foreground/60"
+              : "text-muted-foreground/40"
           )}
         >
           수입
@@ -140,10 +140,10 @@ export function IncomeView() {
         <Link
           href="/statistics/expense"
           className={cn(
-            "flex-1 py-3 text-center text-[13px] font-medium transition-colors relative",
+            "flex-1 py-3 text-center text-[12.5px] font-semibold transition-colors relative tracking-tight",
             pathname === "/statistics/expense"
               ? "text-expense"
-              : "text-muted-foreground/60"
+              : "text-muted-foreground/40"
           )}
         >
           지출
@@ -155,13 +155,13 @@ export function IncomeView() {
 
       {/* 총 수입 금액 표시 */}
       <div className="text-center py-6 px-5">
-        <p className="text-[11px] text-muted-foreground uppercase tracking-widest mb-2">이번 달 총 수입</p>
+        <p className="text-[10px] text-muted-foreground/60 uppercase tracking-[0.14em] font-bold mb-2.5">이번 달 총 수입</p>
         {isLoading ? (
           <div className="h-10 w-36 bg-muted-foreground/10 rounded-lg animate-pulse mx-auto" />
         ) : (
           <p className="text-[2rem] font-bold text-income tabular-nums tracking-tight">
             {total.toLocaleString("ko-KR")}
-            <span className="text-2xl font-semibold ml-0.5">원</span>
+            <span className="text-[1.4rem] font-semibold ml-1">원</span>
           </p>
         )}
       </div>
