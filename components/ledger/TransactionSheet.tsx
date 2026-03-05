@@ -46,6 +46,13 @@ interface TransactionSheetProps {
 const selectClass =
   "border border-input rounded-xl px-3.5 py-3 w-full bg-background text-[13.5px] focus:outline-none focus:ring-1 focus:ring-ring appearance-none";
 
+// 키보드 내리기 (select/date/time 탭 시 이전 포커스 해제)
+const dismissKeyboard = () => {
+  if (document.activeElement instanceof HTMLElement) {
+    document.activeElement.blur();
+  }
+};
+
 export function TransactionSheet({
   open,
   onOpenChange,
@@ -259,7 +266,7 @@ export function TransactionSheet({
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 mb-2">
                   카테고리
                 </label>
-                <select {...register("categoryId")} className={selectClass}>
+                <select {...register("categoryId")} className={selectClass} onTouchStart={dismissKeyboard}>
                   <option value="">카테고리를 선택하세요</option>
                   {filteredCategories.map((c) => (
                     <option key={c.id} value={c.id}>
@@ -277,7 +284,7 @@ export function TransactionSheet({
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 mb-2">
                   자산
                 </label>
-                <select {...register("assetId")} className={selectClass}>
+                <select {...register("assetId")} className={selectClass} onTouchStart={dismissKeyboard}>
                   <option value="">자산을 선택하세요</option>
                   {assets.map((a) => (
                     <option key={a.id} value={a.id}>
@@ -300,11 +307,13 @@ export function TransactionSheet({
                     type="date"
                     {...register("date")}
                     className="border border-input rounded-xl px-3.5 py-3 w-full bg-background text-[13px] focus:outline-none focus:ring-1 focus:ring-ring"
+                    onTouchStart={dismissKeyboard}
                   />
                   <input
                     type="time"
                     {...register("time")}
                     className="border border-input rounded-xl px-3.5 py-3 w-full bg-background text-[13px] focus:outline-none focus:ring-1 focus:ring-ring"
+                    onTouchStart={dismissKeyboard}
                   />
                 </div>
               </div>
