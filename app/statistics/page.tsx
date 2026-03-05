@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, isSameMonth, parseISO } from "date-fns";
+import { useSwipeMonth } from "@/hooks/useSwipeMonth";
 import { ko } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { DonutChart } from "@/components/statistics/DonutChart";
@@ -73,6 +74,8 @@ export default function StatisticsPage() {
     loadData();
   }, [loadData]);
 
+  const { onTouchStart, onTouchEnd } = useSwipeMonth(setCurrentMonth, !isPickerOpen);
+
   const openPicker = () => {
     setPickerYear(currentMonth.getFullYear());
     setIsPickerOpen(true);
@@ -106,7 +109,7 @@ export default function StatisticsPage() {
   const isExpense = activeTab === "expense";
 
   return (
-    <>
+    <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       {/* 월 이동 헤더 */}
       <header className="sticky top-0 bg-background/96 backdrop-blur-md border-b border-border/50 z-10">
         <div className="flex items-center justify-center gap-0.5 px-4 h-13">
@@ -249,6 +252,6 @@ export default function StatisticsPage() {
           </div>
         </>
       )}
-    </>
+    </div>
   );
 }

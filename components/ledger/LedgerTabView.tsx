@@ -13,6 +13,7 @@ import { getTransactionsByMonth } from "@/lib/actions/transactions";
 import { getCategories } from "@/lib/actions/categories";
 import { getAssets } from "@/lib/actions/assets";
 import type { Transaction, Category, Asset } from "@/lib/mock/types";
+import { useSwipeMonth } from "@/hooks/useSwipeMonth";
 
 type Tab = "list" | "calendar";
 
@@ -122,6 +123,11 @@ export function LedgerTabView() {
     }
   };
 
+  const { onTouchStart, onTouchEnd } = useSwipeMonth(
+    setCurrentMonth,
+    !isPickerOpen && !isSearchOpen
+  );
+
   // 뒤로가기 버튼으로 검색 닫기
   useEffect(() => {
     if (!isSearchOpen) return;
@@ -133,7 +139,7 @@ export function LedgerTabView() {
   }, [isSearchOpen]);
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       {/* 헤더: 월 네비게이션(좌) + 검색 버튼(우) */}
       <div className="sticky top-0 z-20 bg-background/96 backdrop-blur-md border-b border-border/50">
         <div className="flex items-center justify-between px-2 h-13">
