@@ -4,6 +4,7 @@ import { ChevronRight, Tag, Wallet, LogOut, Palette } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
 import { ExportButton } from "@/components/settings/ExportButton";
+import { DeleteAccountButton } from "@/components/settings/DeleteAccountButton";
 
 export default function SettingsPage() {
   return (
@@ -69,12 +70,20 @@ export default function SettingsPage() {
       {/* 로그아웃 */}
       <div className="mt-5 px-4">
         <div className="rounded-2xl border border-border/60 overflow-hidden bg-card">
-          <LogoutButton className="flex w-full items-center gap-3.5 px-4 py-4 text-destructive hover:bg-destructive/5 active:bg-destructive/10 transition-colors">
-            <div className="w-8 h-8 rounded-xl bg-destructive/10 flex items-center justify-center">
-              <LogOut className="h-4 w-4 text-destructive" />
+          <LogoutButton className="flex w-full items-center gap-3.5 px-4 py-4 text-foreground hover:bg-muted/40 active:bg-muted/60 transition-colors">
+            <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
+              <LogOut className="h-4 w-4 text-foreground/70" />
             </div>
             <span className="text-[14.5px] font-medium">로그아웃</span>
           </LogoutButton>
+        </div>
+      </div>
+
+      {/* 회원탈퇴 */}
+      <div className="mt-5 px-4 pb-6">
+        <p className="mb-2 px-1 text-[11px] font-bold text-muted-foreground/70 uppercase tracking-widest">계정 관리</p>
+        <div className="rounded-2xl border border-destructive/30 overflow-hidden bg-card">
+          <DeleteAccountButton />
         </div>
       </div>
     </>
