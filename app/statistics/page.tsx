@@ -109,7 +109,7 @@ export default function StatisticsPage() {
   const isExpense = activeTab === "expense";
 
   return (
-    <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+    <div className="min-h-[calc(100dvh-4rem)]" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       {/* 월 이동 헤더 */}
       <header className="sticky top-0 bg-background/96 backdrop-blur-md border-b border-border/50 z-10">
         <div className="flex items-center justify-center gap-0.5 px-4 h-13">

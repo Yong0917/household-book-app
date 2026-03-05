@@ -139,7 +139,7 @@ export function LedgerTabView() {
   }, [isSearchOpen]);
 
   return (
-    <div className="flex flex-col" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+    <div className="flex flex-col min-h-[calc(100dvh-4rem)]" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       {/* 헤더: 월 네비게이션(좌) + 검색 버튼(우) */}
       <div className="sticky top-0 z-20 bg-background/96 backdrop-blur-md border-b border-border/50">
         <div className="flex items-center justify-between px-2 h-13">
