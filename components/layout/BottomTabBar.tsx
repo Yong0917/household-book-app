@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 const tabs = [
   { href: "/ledger/daily", icon: BookOpen, label: "가계부", match: "/ledger" },
-  { href: "/statistics/income", icon: BarChart2, label: "통계", match: "/statistics" },
+  { href: "/statistics", icon: BarChart2, label: "통계", match: "/statistics" },
   { href: "/settings", icon: Settings, label: "설정", match: "/settings" },
 ];
 
