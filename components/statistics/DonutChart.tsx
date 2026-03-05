@@ -59,6 +59,7 @@ const renderCustomLabel = (props: PieLabelRenderProps) => {
 }
 
 export interface DonutChartData {
+  id?: string;
   name: string;
   value: number;
   color: string;
@@ -67,9 +68,10 @@ export interface DonutChartData {
 interface DonutChartProps {
   data: DonutChartData[];
   total: number;
+  onCategoryClick?: (item: DonutChartData) => void;
 }
 
-export function DonutChart({ data, total }: DonutChartProps) {
+export function DonutChart({ data, total, onCategoryClick }: DonutChartProps) {
   // 데이터가 없는 경우 빈 상태 표시
   if (data.length === 0) {
     return (
@@ -107,9 +109,13 @@ export function DonutChart({ data, total }: DonutChartProps) {
 
 
       {/* 카테고리 목록 */}
-      <div className="mt-4 space-y-3 px-4">
+      <div className="mt-4 space-y-1 px-4 pb-2">
         {data.map((item, index) => (
-          <div key={index} className="flex items-center justify-between">
+          <button
+            key={index}
+            onClick={() => onCategoryClick?.(item)}
+            className="flex items-center justify-between w-full py-2.5 px-1 rounded-xl active:bg-muted/50 transition-colors"
+          >
             {/* 카테고리 색상 아이콘 */}
             <Circle
               className="h-4 w-4 flex-shrink-0"
@@ -117,7 +123,7 @@ export function DonutChart({ data, total }: DonutChartProps) {
             />
 
             {/* 카테고리명 */}
-            <span className="flex-1 ml-3 text-sm">{item.name}</span>
+            <span className="flex-1 ml-3 text-sm text-left">{item.name}</span>
 
             {/* 금액 */}
             <span className="text-sm font-medium">
@@ -125,10 +131,10 @@ export function DonutChart({ data, total }: DonutChartProps) {
             </span>
 
             {/* 비율 */}
-            <span className="text-xs text-muted-foreground ml-2">
+            <span className="text-xs text-muted-foreground ml-2 w-8 text-right">
               {total > 0 ? Math.round((item.value / total) * 100) : 0}%
             </span>
-          </div>
+          </button>
         ))}
       </div>
     </div>

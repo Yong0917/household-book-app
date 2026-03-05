@@ -2,6 +2,7 @@
 
 // 통계 페이지 - 수입/지출 탭 통합 (기본: 지출)
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, isSameMonth, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -17,6 +18,7 @@ const MONTH_LABELS = [
 ];
 
 export default function StatisticsPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<TransactionType>("expense");
   const [currentMonth, setCurrentMonth] = useState<Date>(() => startOfMonth(new Date()));
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -64,7 +66,7 @@ export default function StatisticsPage() {
   const chartData = Array.from(categoryMap.entries())
     .map(([catId, value]) => {
       const cat = categories.find((c) => c.id === catId);
-      return { name: cat?.name ?? "기타", value, color: cat?.color ?? "#6b7280" };
+      return { id: catId, name: cat?.name ?? "기타", value, color: cat?.color ?? "#6b7280" };
     })
     .sort((a, b) => b.value - a.value);
 
@@ -148,7 +150,16 @@ export default function StatisticsPage() {
       </div>
 
       {/* 도넛 차트 */}
-      <DonutChart data={chartData} total={total} />
+      <DonutChart
+        data={chartData}
+        total={total}
+        onCategoryClick={(item) => {
+          if (item.id) {
+            const monthStr = format(currentMonth, "yyyy-MM");
+            router.push(`/statistics/category/${item.id}?month=${monthStr}&type=${activeTab}`);
+          }
+        }}
+      />
 
       {/* 월 선택 팝업 */}
       {isPickerOpen && (
