@@ -5,7 +5,8 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { DailyView } from "./DailyView";
 import { CalendarView } from "./CalendarView";
-import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { SearchView } from "./SearchView";
+import { ChevronLeft, ChevronRight, ChevronDown, Search } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth } from "date-fns";
 import { ko } from "date-fns/locale";
 
@@ -22,6 +23,9 @@ export function LedgerTabView() {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
 
+  // 검색 모드
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+
   const openPicker = () => {
     setPickerYear(currentMonth.getFullYear());
     setIsPickerOpen(true);
@@ -32,43 +36,64 @@ export function LedgerTabView() {
     setIsPickerOpen(false);
   };
 
+  const openSearch = () => setIsSearchOpen(true);
+
+  // 검색 화면이 열려있을 때는 SearchView만 표시
+  if (isSearchOpen) {
+    return (
+      <SearchView onBack={() => setIsSearchOpen(false)} />
+    );
+  }
+
   return (
     <div className="flex flex-col">
-      {/* 월 네비게이션 헤더 (sticky top-0) */}
+      {/* 헤더: 월 네비게이션(좌) + 검색·필터 버튼(우) */}
       <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b border-border/60">
-        <div className="flex items-center justify-center gap-0.5 px-4 h-12">
-          {/* 이전 달 버튼 */}
-          <button
-            onClick={() => setCurrentMonth((prev) => subMonths(prev, 1))}
-            className="p-2 rounded-full hover:bg-muted/80 transition-colors"
-            aria-label="이전 달"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </button>
+        <div className="flex items-center justify-between px-2 h-12">
+          {/* 월 네비게이션 (왼쪽 정렬) */}
+          <div className="flex items-center gap-0.5">
+            {/* 이전 달 */}
+            <button
+              onClick={() => setCurrentMonth((prev) => subMonths(prev, 1))}
+              className="p-2 rounded-full hover:bg-muted/80 transition-colors"
+              aria-label="이전 달"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
 
-          {/* 월 텍스트 버튼 - 클릭 시 월 선택 팝업 */}
-          <button
-            onClick={openPicker}
-            className="flex items-center gap-1 px-3 py-1.5 rounded-lg hover:bg-muted/80 transition-colors"
-          >
-            <span className="text-[15px] font-semibold tracking-tight">
-              {format(currentMonth, "yyyy년 M월", { locale: ko })}
-            </span>
-            <ChevronDown className="h-3 w-3 text-muted-foreground" />
-          </button>
+            {/* 월 텍스트 - 클릭 시 월 선택 팝업 */}
+            <button
+              onClick={openPicker}
+              className="flex items-center gap-1 px-2 py-1.5 rounded-lg hover:bg-muted/80 transition-colors"
+            >
+              <span className="text-[15px] font-semibold tracking-tight">
+                {format(currentMonth, "yyyy년 M월", { locale: ko })}
+              </span>
+              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+            </button>
 
-          {/* 다음 달 버튼 */}
+            {/* 다음 달 */}
+            <button
+              onClick={() => setCurrentMonth((prev) => addMonths(prev, 1))}
+              className="p-2 rounded-full hover:bg-muted/80 transition-colors"
+              aria-label="다음 달"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* 검색 버튼 (오른쪽) */}
           <button
-            onClick={() => setCurrentMonth((prev) => addMonths(prev, 1))}
+            onClick={openSearch}
             className="p-2 rounded-full hover:bg-muted/80 transition-colors"
-            aria-label="다음 달"
+            aria-label="검색"
           >
-            <ChevronRight className="h-4 w-4" />
+            <Search className="h-[18px] w-[18px]" />
           </button>
         </div>
       </div>
 
-      {/* 탭 바 (sticky top-12, 월 헤더 아래) */}
+      {/* 탭 바 (sticky, 헤더 아래) */}
       <div className="flex h-11 border-b border-border/60 sticky top-12 z-20 bg-background/95 backdrop-blur-sm">
         <button
           onClick={() => setTab("list")}
@@ -105,14 +130,14 @@ export function LedgerTabView() {
       {/* 월 선택 팝업 */}
       {isPickerOpen && (
         <>
-          {/* 배경 오버레이 (클릭 시 닫기) */}
+          {/* 배경 오버레이 */}
           <div
             className="fixed inset-0 z-30"
             onClick={() => setIsPickerOpen(false)}
           />
-          {/* 팝업 카드 - 가로 중앙 정렬 */}
-          <div className="fixed top-12 left-1/2 -translate-x-1/2 z-40 bg-background border border-border/60 rounded-2xl shadow-xl shadow-foreground/8 p-5 w-[21rem]">
-            {/* 연도 선택 헤더 */}
+          {/* 팝업 카드 */}
+          <div className="fixed top-12 left-4 z-40 bg-background border border-border/60 rounded-2xl shadow-xl shadow-foreground/8 p-5 w-[21rem]">
+            {/* 연도 선택 */}
             <div className="flex items-center justify-between mb-4">
               <button
                 onClick={() => setPickerYear((y) => y - 1)}
