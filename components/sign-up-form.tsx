@@ -40,7 +40,7 @@ export function SignUpForm({
         password,
         options: {
           // 이메일 인증 후 리다이렉트 경로 (버그 수정: /protected → /ledger/daily)
-          emailRedirectTo: `${window.location.origin}/ledger/daily`,
+          emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? window.location.origin}/auth/confirm?next=/ledger/daily`,
         },
       });
       if (error) throw error;
