@@ -323,6 +323,9 @@ export function SearchView({ onBack, initialFilterOpen = false }: SearchViewProp
                       <span className="text-[11.5px] text-muted-foreground/70 font-medium tracking-tight">
                         {format(dayDate, "yyyy.MM", { locale: ko })}
                       </span>
+                      <span className="text-[11.5px] font-medium tracking-tight text-muted-foreground/70">
+                        {format(dayDate, "EEE", { locale: ko })}
+                      </span>
                     </div>
                     <div className="flex gap-2.5 text-[11px] tabular-nums tracking-tight">
                       {dayIncome > 0 && (
