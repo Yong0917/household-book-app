@@ -1,4 +1,4 @@
-# 가계부 앱 (household-book-app) MVP PRD
+# 가계부 앱 (moneylog-app) MVP PRD
 
 ## 핵심 정보
 
