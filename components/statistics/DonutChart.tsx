@@ -172,10 +172,10 @@ export function DonutChart({ data, total, onCategoryClick }: DonutChartProps) {
                 strokeWidth={1.2}
                 strokeOpacity={0.75}
               />
-              <text x={textX} y={l.adjustedY - 7} textAnchor={anchor} fontSize={11.5} fill="white" fontWeight={600}>
+              <text x={textX} y={l.adjustedY - 7} textAnchor={anchor} fontSize={11.5} fill="currentColor" fontWeight={600}>
                 {l.d.name}
               </text>
-              <text x={textX} y={l.adjustedY + 8} textAnchor={anchor} fontSize={11} fill="rgba(255,255,255,0.55)">
+              <text x={textX} y={l.adjustedY + 8} textAnchor={anchor} fontSize={11} fill="currentColor" opacity={0.55}>
                 {(l.d.pct * 100).toFixed(1)} %
               </text>
             </g>
