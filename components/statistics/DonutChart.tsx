@@ -189,10 +189,7 @@ export function DonutChart({ data, total, onCategoryClick }: DonutChartProps) {
           <button
             key={index}
             onClick={() => onCategoryClick?.(item)}
-            className="flex items-center justify-between w-full py-3.5 px-1 active:bg-muted/50 transition-colors"
-            style={{
-              borderBottom: index < data.length - 1 ? "1px solid rgba(255,255,255,0.07)" : "none",
-            }}
+            className={`flex items-center justify-between w-full py-3.5 px-1 active:bg-muted/50 transition-colors ${index < data.length - 1 ? "border-b border-border/50" : ""}`}
           >
             <span className="h-[14px] w-[14px] rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
             <span className="flex-1 ml-3 text-[13.5px] text-left font-medium">{item.name}</span>

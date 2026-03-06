@@ -175,9 +175,9 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
             });
 
           return (
-            <div key={dateKey}>
+            <div key={dateKey} className="mt-2 first:mt-0">
               {/* 날짜 구분 헤더 */}
-              <div className="flex items-center justify-between px-5 pt-3.5 pb-2 bg-muted/10 border-b border-border/30">
+              <div className="flex items-center justify-between px-5 pt-3 pb-2.5 bg-muted/30 border-y border-border/60">
                 <div className="flex items-baseline gap-2">
                   <span className="text-[22px] font-bold tabular-nums leading-none text-foreground/85 tracking-tight">
                     {format(dayDate, "d")}

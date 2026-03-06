@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ArrowLeft, SlidersHorizontal, Search, X } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { ko } from "date-fns/locale";
 import { searchTransactions } from "@/lib/actions/transactions";
 import { getCategories } from "@/lib/actions/categories";
 import { getAssets } from "@/lib/actions/assets";
@@ -293,44 +294,87 @@ export function SearchView({ onBack, initialFilterOpen = false }: SearchViewProp
         </div>
       )}
 
-      {/* 검색 결과 목록 */}
-      {transactions.length > 0 && (
-        <div>
-          {transactions.map((t) => {
-            const cat = categories.find((c) => c.id === t.categoryId);
-            const asset = assets.find((a) => a.id === t.assetId);
-            return (
-              <div
-                key={t.id}
-                className="flex items-center px-4 py-3.5 border-b border-border/30"
-              >
-                {/* 날짜 + 분류 */}
-                <div className="w-[90px] flex-shrink-0">
-                  <p className="text-xs text-muted-foreground tabular-nums">
-                    {format(parseISO(t.transactionAt), "yyyy-MM-dd")}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground/60 mt-0.5">{cat?.name ?? "기타"}</p>
+      {/* 검색 결과 목록 (날짜별 그룹) */}
+      {transactions.length > 0 && (() => {
+        // 날짜별 그룹화 (내림차순)
+        const grouped = transactions.reduce<Record<string, Transaction[]>>((acc, t) => {
+          const key = format(parseISO(t.transactionAt), "yyyy-MM-dd");
+          if (!acc[key]) acc[key] = [];
+          acc[key].push(t);
+          return acc;
+        }, {});
+        const sortedDates = Object.keys(grouped).sort().reverse();
+
+        return (
+          <div>
+            {sortedDates.map((dateKey) => {
+              const dayTxs = grouped[dateKey];
+              const dayDate = parseISO(dateKey);
+              const dayIncome = dayTxs.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
+              const dayExpense = dayTxs.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
+              return (
+                <div key={dateKey} className="mt-2 first:mt-0">
+                  {/* 날짜 구분 헤더 */}
+                  <div className="flex items-center justify-between px-5 pt-3 pb-2.5 bg-muted/30 border-y border-border/60">
+                    <div className="flex items-baseline gap-2">
+                      <span className="text-[22px] font-bold tabular-nums leading-none text-foreground/85 tracking-tight">
+                        {format(dayDate, "d")}
+                      </span>
+                      <span className="text-[11.5px] text-muted-foreground/70 font-medium tracking-tight">
+                        {format(dayDate, "yyyy.MM", { locale: ko })}
+                      </span>
+                    </div>
+                    <div className="flex gap-2.5 text-[11px] tabular-nums tracking-tight">
+                      {dayIncome > 0 && (
+                        <span className="text-income font-medium">+{dayIncome.toLocaleString("ko-KR")}</span>
+                      )}
+                      {dayExpense > 0 && (
+                        <span className="text-expense font-medium">−{dayExpense.toLocaleString("ko-KR")}</span>
+                      )}
+                    </div>
+                  </div>
+                  {/* 해당 날짜 항목들 */}
+                  {dayTxs
+                    .sort((a, b) => b.transactionAt.localeCompare(a.transactionAt))
+                    .map((t) => {
+                      const cat = categories.find((c) => c.id === t.categoryId);
+                      const asset = assets.find((a) => a.id === t.assetId);
+                      return (
+                        <div
+                          key={t.id}
+                          className="flex items-center px-4 py-3.5 border-b border-border/30"
+                        >
+                          {/* 시간 + 분류 */}
+                          <div className="w-[70px] flex-shrink-0">
+                            <p className="text-xs text-muted-foreground tabular-nums">
+                              {format(parseISO(t.transactionAt), "HH:mm")}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground/60 mt-0.5">{cat?.name ?? "기타"}</p>
+                          </div>
+                          {/* 내용 + 자산 */}
+                          <div className="flex-1 min-w-0 px-2">
+                            <p className="text-sm font-medium truncate">
+                              {t.description ?? cat?.name ?? "기타"}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground/70 mt-0.5">{asset?.name ?? "기타"}</p>
+                          </div>
+                          {/* 금액 */}
+                          <p
+                            className={`text-sm font-semibold tabular-nums flex-shrink-0 ${
+                              t.type === "income" ? "text-income" : "text-expense"
+                            }`}
+                          >
+                            {t.amount.toLocaleString("ko-KR")}원
+                          </p>
+                        </div>
+                      );
+                    })}
                 </div>
-                {/* 내용 + 자산 */}
-                <div className="flex-1 min-w-0 px-2">
-                  <p className="text-sm font-medium truncate">
-                    {t.description ?? cat?.name ?? "기타"}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground/70 mt-0.5">{asset?.name ?? "기타"}</p>
-                </div>
-                {/* 금액 */}
-                <p
-                  className={`text-sm font-semibold tabular-nums flex-shrink-0 ${
-                    t.type === "income" ? "text-income" : "text-expense"
-                  }`}
-                >
-                  {t.amount.toLocaleString("ko-KR")}원
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* 검색어/필터 없을 때 안내 */}
       {!hasSearched && !isLoading && (
