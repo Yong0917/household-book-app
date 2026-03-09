@@ -30,6 +30,8 @@ export function LedgerTabView() {
 
   // 검색 모드
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  // SearchView 안에서 시트(수정 화면)가 열려있는지 추적 (뒤로가기 처리용)
+  const isSearchSheetOpenRef = useRef(false);
 
   // 공유 데이터 상태 (DailyView, CalendarView에 props로 전달)
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -129,12 +131,14 @@ export function LedgerTabView() {
   );
 
   // 뒤로가기 버튼으로 검색 닫기
+  // 시트가 열려있는 동안은 SearchView의 popstate 핸들러가 처리하므로 여기서는 무시
   useEffect(() => {
     if (!isSearchOpen) return;
     const handlePopState = () => {
+      if (isSearchSheetOpenRef.current) return;
       setIsSearchOpen(false);
     };
-    window.addEventListener("popstate", handlePopState, { once: true });
+    window.addEventListener("popstate", handlePopState);
     return () => window.removeEventListener("popstate", handlePopState);
   }, [isSearchOpen]);
 
@@ -233,7 +237,10 @@ export function LedgerTabView() {
 
       {/* 검색 뷰 오버레이 */}
       {isSearchOpen && (
-        <SearchView onBack={closeSearch} />
+        <SearchView
+          onBack={closeSearch}
+          onSheetOpenChange={(open) => { isSearchSheetOpenRef.current = open; }}
+        />
       )}
 
       {/* 월 선택 팝업 */}

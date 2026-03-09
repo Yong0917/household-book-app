@@ -8,6 +8,7 @@ import { ko } from "date-fns/locale";
 import { searchTransactions } from "@/lib/actions/transactions";
 import { getCategories } from "@/lib/actions/categories";
 import { getAssets } from "@/lib/actions/assets";
+import { TransactionSheet } from "@/components/ledger/TransactionSheet";
 import type { Transaction, Category, Asset } from "@/lib/mock/types";
 
 interface FilterState {
@@ -42,9 +43,10 @@ function hasFilter(f: FilterState) {
 interface SearchViewProps {
   onBack: () => void;
   initialFilterOpen?: boolean;
+  onSheetOpenChange?: (open: boolean) => void; // LedgerTabView에 시트 열림 상태 전달
 }
 
-export function SearchView({ onBack, initialFilterOpen = false }: SearchViewProps) {
+export function SearchView({ onBack, initialFilterOpen = false, onSheetOpenChange }: SearchViewProps) {
   const [keyword, setKeyword] = useState("");
   const [filter, setFilter] = useState<FilterState>(DEFAULT_FILTER);
   const [isFilterOpen, setIsFilterOpen] = useState(initialFilterOpen);
@@ -53,6 +55,8 @@ export function SearchView({ onBack, initialFilterOpen = false }: SearchViewProp
   const [assets, setAssets] = useState<Asset[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
   // 카테고리/자산 로드
   useEffect(() => {
@@ -116,6 +120,35 @@ export function SearchView({ onBack, initialFilterOpen = false }: SearchViewProp
     }));
 
   const clearFilter = () => setFilter(DEFAULT_FILTER);
+
+  // 거래 항목 클릭 → 수정 시트 열기
+  const handleItemClick = (t: Transaction) => {
+    setSelectedTransaction(t);
+    setIsSheetOpen(true);
+    onSheetOpenChange?.(true);
+  };
+
+  // 시트 닫힘 처리 (스와이프/닫기 버튼)
+  const handleSheetOpenChange = (open: boolean) => {
+    setIsSheetOpen(open);
+    onSheetOpenChange?.(open);
+  };
+
+  // 뒤로가기 버튼으로 시트 닫기
+  useEffect(() => {
+    if (!isSheetOpen) return;
+    const handlePopState = () => {
+      setIsSheetOpen(false);
+      onSheetOpenChange?.(false);
+    };
+    window.addEventListener("popstate", handlePopState, { once: true });
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [isSheetOpen, onSheetOpenChange]);
+
+  // 수정 성공 후 재검색
+  const handleEditSuccess = () => {
+    doSearch(keyword, filter);
+  };
 
   const activeFilterCount =
     (filter.startDate || filter.endDate ? 1 : 0) +
@@ -345,7 +378,8 @@ export function SearchView({ onBack, initialFilterOpen = false }: SearchViewProp
                       return (
                         <div
                           key={t.id}
-                          className="flex items-center px-4 py-3.5 border-b border-border/30"
+                          onClick={() => handleItemClick(t)}
+                          className="flex items-center px-4 py-3.5 border-b border-border/30 cursor-pointer active:bg-muted/40 transition-colors"
                         >
                           {/* 시간 + 분류 */}
                           <div className="w-[70px] flex-shrink-0">
@@ -399,6 +433,19 @@ export function SearchView({ onBack, initialFilterOpen = false }: SearchViewProp
         <div className="flex items-center justify-center py-12">
           <div className="h-5 w-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
         </div>
+      )}
+
+      {/* 거래 수정 바텀 시트 */}
+      {selectedTransaction && (
+        <TransactionSheet
+          open={isSheetOpen}
+          onOpenChange={handleSheetOpenChange}
+          mode="edit"
+          transaction={selectedTransaction}
+          categories={categories}
+          assets={assets}
+          onSuccess={handleEditSuccess}
+        />
       )}
     </div>
   );
