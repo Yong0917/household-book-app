@@ -148,9 +148,16 @@ export async function getUnprocessedRecurring(
     ...(skipped ?? []).map((s) => s.recurring_id as string),
   ]);
 
+  // 해당 달의 실제 마지막 날 (예: 2월 → 28 or 29, 4월 → 30)
+  const lastDayOfMonth = new Date(year, month, 0).getDate();
+
   // 활성 고정비 중 day_of_month 범위 내 + 미처리 + 미건너뜀 항목
+  // day_of_month가 해당 달 마지막 날보다 크면 마지막 날로 clamp (예: 31일 설정 → 2월엔 28일로 처리)
   const all = await getRecurringTransactions();
-  return all.filter((r) => r.dayOfMonth <= maxDay && !excludeIds.has(r.id));
+  return all.filter((r) => {
+    const effectiveDay = Math.min(r.dayOfMonth, lastDayOfMonth);
+    return effectiveDay <= maxDay && !excludeIds.has(r.id);
+  });
 }
 
 // 고정비 건너뛰기 (해당 달에 등록하지 않음으로 처리)
