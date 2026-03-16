@@ -16,6 +16,7 @@ import {
   getBiometricEmail,
   authenticateWithBiometric,
   updateBiometricTokens,
+  clearBiometric,
 } from "@/lib/biometric";
 
 export function LoginForm({
@@ -45,15 +46,22 @@ export function LoginForm({
     setError(null);
 
     try {
-      const { accessToken, refreshToken } = await authenticateWithBiometric();
-      const supabase = createClient();
+      // 1단계: 기기 생체인증 검증
+      const { refreshToken } = await authenticateWithBiometric();
 
-      const { data, error: sessionError } = await supabase.auth.setSession({
-        access_token: accessToken,
+      // 2단계: refresh token으로 Supabase 세션 복원
+      const supabase = createClient();
+      const { data, error: sessionError } = await supabase.auth.refreshSession({
         refresh_token: refreshToken,
       });
 
-      if (sessionError) throw sessionError;
+      if (sessionError) {
+        // refresh token 만료 시 저장 데이터 삭제 후 비밀번호 로그인 안내
+        clearBiometric();
+        setBiometricAvailable(false);
+        setError("세션이 만료되었습니다. 비밀번호로 다시 로그인해 주세요.");
+        return;
+      }
 
       // 갱신된 토큰으로 저장 데이터 업데이트
       if (data.session) {
@@ -62,9 +70,13 @@ export function LoginForm({
 
       router.push("/ledger/daily");
     } catch (err: unknown) {
-      // 사용자가 취소한 경우는 에러 메시지 표시 안 함
       const message = err instanceof Error ? err.message : "";
-      if (!message.includes("cancel") && !message.includes("NotAllowed")) {
+      // 사용자가 직접 취소한 경우는 에러 메시지 표시 안 함
+      const isCancelled =
+        message.toLowerCase().includes("cancel") ||
+        message.toLowerCase().includes("notallowed") ||
+        message.toLowerCase().includes("not allowed");
+      if (!isCancelled) {
         setError("생체인증에 실패했습니다. 비밀번호로 로그인해 주세요.");
       }
     } finally {
