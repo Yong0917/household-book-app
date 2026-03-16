@@ -1,9 +1,10 @@
 "use client";
 
 // 통계 페이지 - 수입/지출 탭 통합 (기본: 지출)
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
-import { format, addMonths, subMonths, startOfMonth, isSameMonth, parseISO } from "date-fns";
+import { format, addMonths, subMonths, startOfMonth, isSameMonth, parseISO, parse, isValid } from "date-fns";
 import { useSwipeMonth } from "@/hooks/useSwipeMonth";
 import { ko } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -20,10 +21,41 @@ const MONTH_LABELS = [
 ];
 
 export default function StatisticsPage() {
+  return (
+    <Suspense fallback={null}>
+      <StatisticsContent />
+    </Suspense>
+  );
+}
+
+function parseMonthParam(param: string | null): Date {
+  if (!param) return startOfMonth(new Date());
+  const parsed = parse(param, "yyyy-MM", new Date());
+  return isValid(parsed) ? startOfMonth(parsed) : startOfMonth(new Date());
+}
+
+function StatisticsContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TransactionType>("expense");
-  const [currentMonth, setCurrentMonth] = useState<Date>(() => startOfMonth(new Date()));
+  const [currentMonth, setCurrentMonthState] = useState<Date>(() =>
+    parseMonthParam(searchParams.get("month"))
+  );
   const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
+  const [pickerYear, setPickerYear] = useState(() => currentMonth.getFullYear());
+
+  const setCurrentMonth = useCallback((updater: Date | ((prev: Date) => Date)) => {
+    setCurrentMonthState((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      return next;
+    });
+  }, []);
+
+  // currentMonth 변경 시 URL 업데이트
+  useEffect(() => {
+    const param = format(currentMonth, "yyyy-MM");
+    router.replace(`?month=${param}`, { scroll: false });
+  }, [currentMonth, router]);
 
   // 카테고리 상세 드로어
   const [detailOpen, setDetailOpen] = useState(false);
@@ -32,6 +64,7 @@ export default function StatisticsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [trendData, setTrendData] = useState<{ year: number; month: number; label: string; income: number; expense: number }[]>([]);
+  const [trendLoading, setTrendLoading] = useState(true);
   const [trendCount, setTrendCount] = useState(6);
 
   // 월별 트랜잭션 캐시
@@ -40,11 +73,15 @@ export default function StatisticsPage() {
   const catsRef = useRef<Category[]>([]);
   // 추이 데이터: 선택 달 또는 기간 변경 시 재로드
   useEffect(() => {
+    setTrendLoading(true);
     getMonthlyTrend(
       currentMonth.getFullYear(),
       currentMonth.getMonth() + 1,
       trendCount
-    ).then(setTrendData);
+    ).then((data) => {
+      setTrendData(data);
+      setTrendLoading(false);
+    });
   }, [currentMonth, trendCount]);
 
   const loadData = useCallback(async () => {
@@ -207,8 +244,30 @@ export default function StatisticsPage() {
       />
 
       {/* 월별 추이 차트 */}
-      {trendData.length > 0 && (
-        <div className="mt-2 mx-4 mb-2 rounded-2xl border border-border/40 bg-muted/20 overflow-hidden">
+      <div className="mt-2 mx-4 mb-2 rounded-2xl border border-border/40 bg-muted/20 overflow-hidden">
+        {trendLoading ? (
+          <div className="px-4 pt-4 pb-3">
+            {/* 헤더 스켈레톤 */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="h-4 w-24 rounded-full bg-muted animate-pulse" />
+              <div className="flex gap-1.5">
+                <div className="h-6 w-10 rounded-full bg-muted animate-pulse" />
+                <div className="h-6 w-10 rounded-full bg-muted animate-pulse" />
+                <div className="h-6 w-8 rounded-full bg-muted animate-pulse" />
+              </div>
+            </div>
+            {/* 차트 영역 스켈레톤 */}
+            <div className="h-[160px] flex items-end gap-2 px-2 pb-1">
+              {[45, 35, 55, 40, 70, 50, 60, 38, 65, 42, 58, 48].slice(0, trendCount).map((h, i) => (
+                <div
+                  key={i}
+                  className="flex-1 rounded-t-sm bg-muted animate-pulse"
+                  style={{ height: `${h}%` }}
+                />
+              ))}
+            </div>
+          </div>
+        ) : (
           <MonthlyTrendChart
             data={trendData}
             activeTab={activeTab}
@@ -218,8 +277,8 @@ export default function StatisticsPage() {
             onCountChange={setTrendCount}
             onBarClick={(year, month) => setCurrentMonth(new Date(year, month - 1, 1))}
           />
-        </div>
-      )}
+        )}
+      </div>
 
       {/* 카테고리 상세 드로어 */}
       <CategoryDetailSheet

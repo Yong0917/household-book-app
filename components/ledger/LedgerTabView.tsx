@@ -2,12 +2,13 @@
 
 // 가계부 탭 뷰 ("일일" 목록 / "달력" 전환) + 공유 월 상태 관리
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { DailyView } from "./DailyView";
 import { CalendarView } from "./CalendarView";
 import { SearchView } from "./SearchView";
 import { ChevronLeft, ChevronRight, ChevronDown, Search } from "lucide-react";
-import { format, addMonths, subMonths, startOfMonth } from "date-fns";
+import { format, addMonths, subMonths, startOfMonth, parse, isValid } from "date-fns";
 import { ko } from "date-fns/locale";
 import { getTransactionsByMonth } from "@/lib/actions/transactions";
 import { getCategories } from "@/lib/actions/categories";
@@ -22,11 +23,34 @@ const MONTH_LABELS = [
   "7월", "8월", "9월", "10월", "11월", "12월",
 ];
 
+function parseMonthParam(param: string | null): Date {
+  if (!param) return startOfMonth(new Date());
+  const parsed = parse(param, "yyyy-MM", new Date());
+  return isValid(parsed) ? startOfMonth(parsed) : startOfMonth(new Date());
+}
+
 export function LedgerTabView() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>("list");
-  const [currentMonth, setCurrentMonth] = useState<Date>(() => startOfMonth(new Date()));
+  const [currentMonth, setCurrentMonthState] = useState<Date>(() =>
+    parseMonthParam(searchParams.get("month"))
+  );
   const [isPickerOpen, setIsPickerOpen] = useState(false);
-  const [pickerYear, setPickerYear] = useState(() => new Date().getFullYear());
+  const [pickerYear, setPickerYear] = useState(() => currentMonth.getFullYear());
+
+  const setCurrentMonth = useCallback((updater: Date | ((prev: Date) => Date)) => {
+    setCurrentMonthState((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      return next;
+    });
+  }, []);
+
+  // currentMonth 변경 시 URL 업데이트
+  useEffect(() => {
+    const param = format(currentMonth, "yyyy-MM");
+    router.replace(`?month=${param}`, { scroll: false });
+  }, [currentMonth, router]);
 
   // 검색 모드
   const [isSearchOpen, setIsSearchOpen] = useState(false);
