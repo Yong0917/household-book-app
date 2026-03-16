@@ -2,12 +2,13 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { BookOpen, BarChart2, Settings } from "lucide-react";
+import { BookOpen, BarChart2, Settings, StickyNote } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
   { href: "/ledger/daily", icon: BookOpen, label: "가계부", match: "/ledger" },
   { href: "/statistics", icon: BarChart2, label: "통계", match: "/statistics" },
+  { href: "/notes", icon: StickyNote, label: "메모", match: "/notes" },
   { href: "/settings", icon: Settings, label: "설정", match: "/settings" },
 ];
 
