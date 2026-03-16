@@ -1,6 +1,6 @@
 // 설정 페이지 (서버 컴포넌트)
 import Link from "next/link";
-import { ChevronRight, Tag, Wallet, LogOut, Palette } from "lucide-react";
+import { ChevronRight, Tag, Wallet, LogOut, Palette, RefreshCw } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
 import { ExportButton } from "@/components/settings/ExportButton";
@@ -43,6 +43,20 @@ export default function SettingsPage() {
                 <Wallet className="h-4 w-4 text-foreground/70" />
               </div>
               <span className="text-[14.5px] font-medium">자산 관리</span>
+            </div>
+            <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+          </Link>
+
+          {/* 고정비 관리 */}
+          <Link
+            href="/settings/recurring"
+            className="flex items-center justify-between px-4 py-4 hover:bg-muted/40 active:bg-muted/60 transition-colors"
+          >
+            <div className="flex items-center gap-3.5">
+              <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
+                <RefreshCw className="h-4 w-4 text-foreground/70" />
+              </div>
+              <span className="text-[14.5px] font-medium">고정비 관리</span>
             </div>
             <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
           </Link>
