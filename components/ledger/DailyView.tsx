@@ -9,11 +9,15 @@ import {
   parseISO,
   isToday,
   compareAsc,
+  startOfMonth,
 } from "date-fns";
 import { ko } from "date-fns/locale";
 import { TransactionList } from "@/components/ledger/TransactionList";
 import { TransactionSheet } from "@/components/ledger/TransactionSheet";
-import type { Transaction, Category, Asset } from "@/lib/mock/types";
+import { RecurringBanner } from "@/components/ledger/RecurringBanner";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { skipRecurring } from "@/lib/actions/recurring";
+import type { Transaction, Category, Asset, RecurringTransaction } from "@/lib/mock/types";
 
 interface DailyViewProps {
   currentMonth: Date;
@@ -22,13 +26,18 @@ interface DailyViewProps {
   assets: Asset[];
   isLoading: boolean;
   onSuccess: () => void;
+  recurringItems?: RecurringTransaction[];
 }
 
-export function DailyView({ currentMonth, transactions, categories, assets, isLoading, onSuccess }: DailyViewProps) {
+export function DailyView({ currentMonth, transactions, categories, assets, isLoading, onSuccess, recurringItems = [] }: DailyViewProps) {
   // 바텀 시트 열림 상태
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  // 건너뜀 확인 모달
+  const [skipTarget, setSkipTarget] = useState<RecurringTransaction | null>(null);
   // 수정 중인 거래 (null이면 create 모드)
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  // 고정비에서 열릴 때 pre-fill용
+  const [selectedRecurring, setSelectedRecurring] = useState<RecurringTransaction | null>(null);
 
   // 현재 월 거래 필터링 (transaction_at이 해당 월인지 확인)
   const filtered = transactions.filter((t) =>
@@ -63,7 +72,30 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
   // FAB 클릭 → 추가 시트 열기
   const handleAddClick = () => {
     setSelectedTransaction(null);
+    setSelectedRecurring(null);
     setIsSheetOpen(true);
+  };
+
+  // 고정비 배너 클릭 → pre-fill 시트 열기
+  const handleRecurringClick = (recurring: RecurringTransaction) => {
+    setSelectedTransaction(null);
+    setSelectedRecurring(recurring);
+    setIsSheetOpen(true);
+  };
+
+  // 고정비 건너뜀 확인 모달 열기
+  const handleRecurringSkip = (recurring: RecurringTransaction) => {
+    setSkipTarget(recurring);
+  };
+
+  // 건너뜀 확정
+  const confirmSkip = async () => {
+    if (!skipTarget) return;
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth() + 1;
+    await skipRecurring(skipTarget.id, year, month);
+    setSkipTarget(null);
+    onSuccess();
   };
 
   // FAB의 기본 날짜: 현재 월이면 오늘, 아니면 해당 월 1일
@@ -71,8 +103,21 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
     ? format(new Date(), "yyyy-MM-dd")
     : format(currentMonth, "yyyy-MM-dd");
 
+  // 미래 달이 아닐 때 고정비 배너 표시 (현재 달 + 과거 달)
+  const isFutureMonth = currentMonth > startOfMonth(new Date());
+
   return (
     <>
+      {/* 고정비 배너 (미래 달 제외, 미처리 항목이 있을 때만) */}
+      {!isFutureMonth && (
+        <RecurringBanner
+          items={recurringItems}
+          categories={categories}
+          onItemClick={handleRecurringClick}
+          onItemSkip={handleRecurringSkip}
+        />
+      )}
+
       {/* 월간 수입/지출/순합계 요약 */}
       <div className="px-4 py-3 border-b border-border/40">
         <div className="grid grid-cols-3 divide-x divide-border/40 bg-muted/20 rounded-xl px-1 py-3">
@@ -221,13 +266,32 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
         </button>
       )}
 
+      {/* 고정비 건너뜀 확인 모달 */}
+      <ConfirmDialog
+        open={!!skipTarget}
+        onOpenChange={(open) => { if (!open) setSkipTarget(null); }}
+        title="이번 달 건너뛸까요?"
+        description={(() => {
+          if (!skipTarget) return undefined;
+          const cat = categories.find((c) => c.id === skipTarget.categoryId);
+          const label = skipTarget.description || cat?.name || "고정비";
+          return `'${label}'을(를) 이번 달 등록하지 않고 건너뜁니다.`;
+        })()}
+        confirmLabel="건너뛰기"
+        onConfirm={confirmSkip}
+      />
+
       {/* 거래 등록/수정 바텀 시트 */}
       <TransactionSheet
         open={isSheetOpen}
-        onOpenChange={setIsSheetOpen}
+        onOpenChange={(open) => {
+          setIsSheetOpen(open);
+          if (!open) setSelectedRecurring(null);
+        }}
         mode={selectedTransaction ? "edit" : "create"}
         transaction={selectedTransaction ?? undefined}
         initialDate={defaultDate}
+        initialRecurring={selectedRecurring ?? undefined}
         categories={categories}
         assets={assets}
         onSuccess={onSuccess}

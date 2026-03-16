@@ -13,7 +13,8 @@ import { ko } from "date-fns/locale";
 import { getTransactionsByMonth } from "@/lib/actions/transactions";
 import { getCategories } from "@/lib/actions/categories";
 import { getAssets } from "@/lib/actions/assets";
-import type { Transaction, Category, Asset } from "@/lib/mock/types";
+import { getUnprocessedRecurring } from "@/lib/actions/recurring";
+import type { Transaction, Category, Asset, RecurringTransaction } from "@/lib/mock/types";
 import { useSwipeMonth } from "@/hooks/useSwipeMonth";
 
 type Tab = "list" | "calendar";
@@ -61,6 +62,7 @@ export function LedgerTabView() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
+  const [recurringItems, setRecurringItems] = useState<RecurringTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // 월별 트랜잭션 캐시 (같은 달로 돌아올 때 재사용)
@@ -90,27 +92,38 @@ export function LedgerTabView() {
 
     if (cached) {
       // 트랜잭션은 캐시, 정적 데이터만 로드
-      const [cats, assts] = await Promise.all([getCategories(), getAssets()]);
+      const [cats, assts, recurring] = await Promise.all([
+        getCategories(),
+        getAssets(),
+        getUnprocessedRecurring(year, month),
+      ]);
       setCategories(cats);
       setAssets(assts);
+      setRecurringItems(recurring);
       setTransactions(cached);
       staticLoadedRef.current = true;
     } else if (hasStatic) {
-      // 정적 데이터는 캐시, 트랜잭션만 로드
-      const txs = await getTransactionsByMonth(year, month);
+      // 정적 데이터는 캐시, 트랜잭션 + 고정비만 로드
+      const [txs, recurring] = await Promise.all([
+        getTransactionsByMonth(year, month),
+        getUnprocessedRecurring(year, month),
+      ]);
       txCacheRef.current.set(key, txs);
       setTransactions(txs);
+      setRecurringItems(recurring);
     } else {
       // 모두 로드
-      const [txs, cats, assts] = await Promise.all([
+      const [txs, cats, assts, recurring] = await Promise.all([
         getTransactionsByMonth(year, month),
         getCategories(),
         getAssets(),
+        getUnprocessedRecurring(year, month),
       ]);
       txCacheRef.current.set(key, txs);
       setTransactions(txs);
       setCategories(cats);
       setAssets(assts);
+      setRecurringItems(recurring);
       staticLoadedRef.current = true;
     }
 
@@ -248,6 +261,7 @@ export function LedgerTabView() {
             assets={assets}
             isLoading={isLoading}
             onSuccess={handleSuccess}
+            recurringItems={recurringItems}
           />
         : <CalendarView
             currentMonth={currentMonth}

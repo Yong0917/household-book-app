@@ -17,7 +17,7 @@ import {
   updateTransaction,
   deleteTransaction,
 } from "@/lib/actions/transactions";
-import type { Transaction, Category, Asset } from "@/lib/mock/types";
+import type { Transaction, Category, Asset, RecurringTransaction } from "@/lib/mock/types";
 
 // 폼 검증 스키마
 const schema = z.object({
@@ -38,6 +38,7 @@ interface TransactionSheetProps {
   mode: "create" | "edit";
   transaction?: Transaction;
   initialDate?: string; // 'yyyy-MM-dd' 형식
+  initialRecurring?: RecurringTransaction; // 고정비에서 열릴 때 pre-fill
   categories: Category[];
   assets: Asset[];
   onSuccess?: () => void; // 저장/삭제 성공 후 콜백
@@ -61,10 +62,19 @@ export function TransactionSheet({
   mode,
   transaction,
   initialDate,
+  initialRecurring,
   categories,
   assets,
   onSuccess,
 }: TransactionSheetProps) {
+  // 고정비 day_of_month 기준 날짜 계산 (말일 초과 시 클램프)
+  const getRecurringDate = (dayOfMonth: number): string => {
+    const now = new Date();
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const day = Math.min(dayOfMonth, lastDay);
+    return format(new Date(now.getFullYear(), now.getMonth(), day), "yyyy-MM-dd");
+  };
+
   // 기본값 계산
   const getDefaultValues = (): FormData => {
     if (mode === "edit" && transaction) {
@@ -77,6 +87,18 @@ export function TransactionSheet({
         date: format(dt, "yyyy-MM-dd"),
         time: format(dt, "HH:mm"),
         description: transaction.description ?? "",
+      };
+    }
+    // 고정비 pre-fill
+    if (initialRecurring) {
+      return {
+        type: initialRecurring.type,
+        amount: initialRecurring.amount,
+        categoryId: initialRecurring.categoryId,
+        assetId: initialRecurring.assetId,
+        date: getRecurringDate(initialRecurring.dayOfMonth),
+        time: "00:00",
+        description: initialRecurring.description ?? "",
       };
     }
     return {
@@ -130,11 +152,11 @@ export function TransactionSheet({
   });
 
   // 금액 표시용 state (콤마 포함 문자열)
-  const [displayAmount, setDisplayAmount] = useState<string>(() =>
-    mode === "edit" && transaction
-      ? transaction.amount.toLocaleString("ko-KR")
-      : ""
-  );
+  const [displayAmount, setDisplayAmount] = useState<string>(() => {
+    if (mode === "edit" && transaction) return transaction.amount.toLocaleString("ko-KR");
+    if (initialRecurring) return initialRecurring.amount.toLocaleString("ko-KR");
+    return "";
+  });
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const raw = e.target.value.replace(/[^0-9]/g, "");
@@ -153,11 +175,13 @@ export function TransactionSheet({
     if (open) {
       const defaults = getDefaultValues();
       reset(defaults);
-      setDisplayAmount(
-        mode === "edit" && transaction
-          ? transaction.amount.toLocaleString("ko-KR")
-          : ""
-      );
+      if (mode === "edit" && transaction) {
+        setDisplayAmount(transaction.amount.toLocaleString("ko-KR"));
+      } else if (initialRecurring) {
+        setDisplayAmount(initialRecurring.amount.toLocaleString("ko-KR"));
+      } else {
+        setDisplayAmount("");
+      }
       history.pushState({ transactionSheet: true }, "");
 
       const handlePopState = () => {
@@ -199,7 +223,10 @@ export function TransactionSheet({
     if (mode === "edit" && transaction) {
       await updateTransaction(transaction.id, payload);
     } else {
-      await addTransaction(payload);
+      await addTransaction({
+        ...payload,
+        recurringId: initialRecurring?.id,
+      });
     }
     handleClose();
     onSuccess?.();
