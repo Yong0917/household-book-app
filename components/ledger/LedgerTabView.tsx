@@ -80,15 +80,19 @@ export function LedgerTabView() {
     const cached = txCacheRef.current.get(key);
     const hasStatic = staticLoadedRef.current;
 
-    // 트랜잭션 캐시 히트 + 정적 데이터 이미 로드됨 → 즉시 반영
-    if (cached && hasStatic) {
-      setTransactions(cached);
-      return;
-    }
-
-    setIsLoading(true);
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth() + 1;
+
+    setIsLoading(true);
+
+    // 트랜잭션 캐시 히트 + 정적 데이터 이미 로드됨 → 고정비만 재조회
+    if (cached && hasStatic) {
+      const recurring = await getUnprocessedRecurring(year, month);
+      setTransactions(cached);
+      setRecurringItems(recurring);
+      setIsLoading(false);
+      return;
+    }
 
     if (cached) {
       // 트랜잭션은 캐시, 정적 데이터만 로드
