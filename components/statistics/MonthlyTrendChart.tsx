@@ -90,11 +90,13 @@ export function MonthlyTrendChart({
         </div>
       </div>
 
-      <ResponsiveContainer width="100%" height={160}>
+      <ResponsiveContainer width="100%" height={160} style={{ outline: "none" }}>
         <BarChart
           data={data}
           margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
           barCategoryGap="28%"
+          style={{ outline: "none" }}
+          tabIndex={-1}
         >
           <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.07} />
           <XAxis
