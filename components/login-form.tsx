@@ -8,8 +8,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { BookOpen } from "lucide-react";
+import { useEffect, useState } from "react";
+import { BookOpen, Fingerprint } from "lucide-react";
+import {
+  isBiometricAvailable,
+  isBiometricRegistered,
+  getBiometricEmail,
+  authenticateWithBiometric,
+  updateBiometricTokens,
+} from "@/lib/biometric";
 
 export function LoginForm({
   className,
@@ -19,7 +26,51 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricEmail, setBiometricEmail] = useState<string | null>(null);
+  const [isBiometricLoading, setIsBiometricLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    isBiometricAvailable().then((available) => {
+      if (available && isBiometricRegistered()) {
+        setBiometricAvailable(true);
+        setBiometricEmail(getBiometricEmail());
+      }
+    });
+  }, []);
+
+  const handleBiometricLogin = async () => {
+    setIsBiometricLoading(true);
+    setError(null);
+
+    try {
+      const { accessToken, refreshToken } = await authenticateWithBiometric();
+      const supabase = createClient();
+
+      const { data, error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+
+      if (sessionError) throw sessionError;
+
+      // 갱신된 토큰으로 저장 데이터 업데이트
+      if (data.session) {
+        updateBiometricTokens(data.session.access_token, data.session.refresh_token);
+      }
+
+      router.push("/ledger/daily");
+    } catch (err: unknown) {
+      // 사용자가 취소한 경우는 에러 메시지 표시 안 함
+      const message = err instanceof Error ? err.message : "";
+      if (!message.includes("cancel") && !message.includes("NotAllowed")) {
+        setError("생체인증에 실패했습니다. 비밀번호로 로그인해 주세요.");
+      }
+    } finally {
+      setIsBiometricLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,6 +114,30 @@ export function LoginForm({
 
       {/* 폼 영역 */}
       <div className="space-y-6">
+        {/* 생체인증 로그인 버튼 — 등록된 경우만 표시 */}
+        {biometricAvailable && (
+          <div className="space-y-3">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full h-14 text-[15px] font-semibold flex items-center gap-2.5 border-border/60"
+              onClick={handleBiometricLogin}
+              disabled={isBiometricLoading}
+            >
+              <Fingerprint className="h-5 w-5" />
+              {isBiometricLoading ? "인증 중..." : "생체인증으로 로그인"}
+            </Button>
+            {biometricEmail && (
+              <p className="text-center text-[12px] text-muted-foreground">{biometricEmail}</p>
+            )}
+            <div className="flex items-center gap-3">
+              <div className="h-px flex-1 bg-border/50" />
+              <span className="text-[11px] text-muted-foreground/60 uppercase tracking-wide">또는</span>
+              <div className="h-px flex-1 bg-border/50" />
+            </div>
+          </div>
+        )}
+
         {/* 폼 타이틀 */}
         <div className="space-y-1">
           <h2 className="text-[22px] font-bold tracking-tight">로그인</h2>

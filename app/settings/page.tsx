@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ChevronRight, Tag, Wallet, LogOut, Palette, RefreshCw } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
+import { BiometricSetting } from "@/components/settings/BiometricSetting";
 import { ExportButton } from "@/components/settings/ExportButton";
 import { ImportButton } from "@/components/settings/ImportButton";
 import { DeleteAccountButton } from "@/components/settings/DeleteAccountButton";
@@ -72,7 +73,7 @@ export default function SettingsPage() {
       {/* 환경설정 섹션 */}
       <div className="mt-5 px-4">
         <p className="mb-2 px-1 text-[10px] font-bold text-muted-foreground/55 uppercase tracking-[0.14em]">환경설정</p>
-        <div className="rounded-2xl border border-border/60 overflow-hidden bg-card">
+        <div className="rounded-2xl border border-border/60 overflow-hidden bg-card divide-y divide-border/50">
           <div className="flex items-center justify-between px-4 py-4">
             <div className="flex items-center gap-3.5">
               <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
@@ -82,6 +83,8 @@ export default function SettingsPage() {
             </div>
             <ThemeSelector />
           </div>
+          {/* 생체인증 — 지원하는 기기에서만 표시 */}
+          <BiometricSetting />
         </div>
       </div>
 
