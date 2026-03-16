@@ -152,6 +152,62 @@ export async function deleteTransaction(id: string): Promise<void> {
   revalidatePath("/statistics");
 }
 
+// 월별 추이 데이터 조회 (최근 N개월)
+export async function getMonthlyTrend(
+  baseYear: number,
+  baseMonth: number,
+  count: number = 6
+): Promise<{ year: number; month: number; label: string; income: number; expense: number }[]> {
+  const supabase = await createClient();
+
+  const KST_OFFSET = 9 * 60 * 60 * 1000;
+
+  // 시작 달 계산 (baseMonth 포함 이전 count개월)
+  const base = new Date(baseYear, baseMonth - 1, 1);
+  const startYear = new Date(base.getFullYear(), base.getMonth() - (count - 1), 1).getFullYear();
+  const startMonthNum = new Date(base.getFullYear(), base.getMonth() - (count - 1), 1).getMonth() + 1;
+
+  const start = new Date(Date.UTC(startYear, startMonthNum - 1, 1) - KST_OFFSET).toISOString();
+  const end = new Date(Date.UTC(baseYear, baseMonth, 1) - KST_OFFSET).toISOString();
+
+  const { data, error } = await supabase
+    .from("transactions")
+    .select("type, amount, transaction_at")
+    .gte("transaction_at", start)
+    .lt("transaction_at", end);
+
+  if (error) throw new Error(error.message);
+
+  // 월별 집계 맵 초기화
+  type Entry = { year: number; month: number; income: number; expense: number };
+  const monthMap = new Map<string, Entry>();
+
+  for (let i = 0; i < count; i++) {
+    const d = new Date(base.getFullYear(), base.getMonth() - (count - 1 - i), 1);
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    monthMap.set(`${y}-${String(m).padStart(2, "0")}`, { year: y, month: m, income: 0, expense: 0 });
+  }
+
+  // KST 기준으로 월 집계
+  for (const row of data ?? []) {
+    const kst = new Date(Date.parse(row.transaction_at) + KST_OFFSET);
+    const y = kst.getUTCFullYear();
+    const m = kst.getUTCMonth() + 1;
+    const key = `${y}-${String(m).padStart(2, "0")}`;
+    const entry = monthMap.get(key);
+    if (entry) {
+      if (row.type === "income") entry.income += row.amount;
+      else entry.expense += row.amount;
+    }
+  }
+
+  return Array.from(monthMap.values()).map((e) => ({
+    ...e,
+    label: `${e.month}월`,
+  }));
+}
+
 // 메모 자동완성 추천 목록 조회
 export async function getMemoSuggestions(keyword: string): Promise<string[]> {
   if (!keyword.trim()) return [];

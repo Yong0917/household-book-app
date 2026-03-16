@@ -9,7 +9,8 @@ import { ko } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { DonutChart } from "@/components/statistics/DonutChart";
 import { CategoryDetailSheet } from "@/components/statistics/CategoryDetailSheet";
-import { getTransactionsByMonth } from "@/lib/actions/transactions";
+import { MonthlyTrendChart } from "@/components/statistics/MonthlyTrendChart";
+import { getTransactionsByMonth, getMonthlyTrend } from "@/lib/actions/transactions";
 import { getCategories } from "@/lib/actions/categories";
 import type { Transaction, Category, TransactionType } from "@/lib/mock/types";
 
@@ -30,11 +31,21 @@ export default function StatisticsPage() {
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [trendData, setTrendData] = useState<{ year: number; month: number; label: string; income: number; expense: number }[]>([]);
+  const [trendCount, setTrendCount] = useState(6);
 
   // 월별 트랜잭션 캐시
   const txCacheRef = useRef<Map<string, Transaction[]>>(new Map());
   // categories는 한 번만 로드
   const catsRef = useRef<Category[]>([]);
+  // 추이 데이터: 선택 달 또는 기간 변경 시 재로드
+  useEffect(() => {
+    getMonthlyTrend(
+      currentMonth.getFullYear(),
+      currentMonth.getMonth() + 1,
+      trendCount
+    ).then(setTrendData);
+  }, [currentMonth, trendCount]);
 
   const loadData = useCallback(async () => {
     const key = format(currentMonth, "yyyy-MM");
@@ -194,6 +205,21 @@ export default function StatisticsPage() {
           }
         }}
       />
+
+      {/* 월별 추이 차트 */}
+      {trendData.length > 0 && (
+        <div className="mt-2 mx-4 mb-2 rounded-2xl border border-border/40 bg-muted/20 overflow-hidden">
+          <MonthlyTrendChart
+            data={trendData}
+            activeTab={activeTab}
+            currentYear={currentMonth.getFullYear()}
+            currentMonth={currentMonth.getMonth() + 1}
+            count={trendCount}
+            onCountChange={setTrendCount}
+            onBarClick={(year, month) => setCurrentMonth(new Date(year, month - 1, 1))}
+          />
+        </div>
+      )}
 
       {/* 카테고리 상세 드로어 */}
       <CategoryDetailSheet
