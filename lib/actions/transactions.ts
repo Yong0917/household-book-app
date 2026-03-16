@@ -50,7 +50,7 @@ export async function getTransactionsByMonth(
 
 // 거래 추가
 export async function addTransaction(
-  data: Omit<Transaction, "id">
+  data: Omit<Transaction, "id"> & { recurringId?: string }
 ): Promise<void> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -64,6 +64,7 @@ export async function addTransaction(
     asset_id: data.assetId,
     description: data.description ?? null,
     transaction_at: data.transactionAt,
+    recurring_id: data.recurringId ?? null,
   });
 
   if (error) throw new Error(error.message);

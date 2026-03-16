@@ -30,3 +30,14 @@ export interface Transaction {
   description?: string;
   transactionAt: string; // ISO 날짜 문자열 (예: '2026-03-04T09:00:00')
 }
+
+export interface RecurringTransaction {
+  id: string;
+  type: TransactionType;
+  amount: number;
+  categoryId: string;
+  assetId: string;
+  description?: string;
+  dayOfMonth: number; // 매월 몇 일 (1~31)
+  isActive: boolean;
+}
