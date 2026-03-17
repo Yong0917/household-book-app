@@ -5,6 +5,7 @@ import { LogoutButton } from "@/components/logout-button";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
 import { ExportButton } from "@/components/settings/ExportButton";
 import { ImportButton } from "@/components/settings/ImportButton";
+import { BackupButton } from "@/components/settings/BackupButton";
 import { DeleteAccountButton } from "@/components/settings/DeleteAccountButton";
 
 export default function SettingsPage() {
@@ -66,6 +67,9 @@ export default function SettingsPage() {
 
           {/* 엑셀 가져오기 */}
           <ImportButton />
+
+          {/* 전체 데이터 백업 */}
+          <BackupButton />
         </div>
       </div>
 
