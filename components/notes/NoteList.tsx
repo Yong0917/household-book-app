@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Pin, Plus, StickyNote } from "lucide-react";
+import { Pin, Plus, Search, StickyNote } from "lucide-react";
 import { format, isToday, isYesterday, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -12,6 +12,7 @@ import {
   updateNote,
   deleteNote,
   togglePinNote,
+  searchNotes,
   type Note,
 } from "@/lib/actions/notes";
 
@@ -63,6 +64,24 @@ export function NoteList({ initialNotes }: NoteListProps) {
   const [notes, setNotes] = useState<Note[]>(initialNotes);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [query, setQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Note[] | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!query.trim()) {
+      setSearchResults(null);
+      return;
+    }
+    debounceRef.current = setTimeout(async () => {
+      const results = await searchNotes(query);
+      setSearchResults(results);
+    }, 300);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [query]);
 
   const pinned = notes.filter((n) => n.is_pinned);
   const unpinned = notes.filter((n) => !n.is_pinned);
@@ -124,8 +143,48 @@ export function NoteList({ initialNotes }: NoteListProps) {
 
   return (
     <>
+      {/* 검색 인풋 */}
+      <div className="px-4 pb-5 shrink-0">
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-muted/60 border border-border/40">
+          <Search className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+          <input
+            type="text"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="메모 검색..."
+            className="flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground/40"
+          />
+          {query && (
+            <button
+              onClick={() => setQuery("")}
+              className="text-muted-foreground/50 hover:text-foreground transition-colors"
+            >
+              <span className="text-xs">✕</span>
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="flex-1 overflow-auto px-4 pb-6">
-        {notes.length === 0 ? (
+        {/* 검색 중 */}
+        {query.trim() ? (
+          searchResults === null ? (
+            <div className="flex justify-center pt-12">
+              <p className="text-sm text-muted-foreground/40">검색 중...</p>
+            </div>
+          ) : searchResults.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground/40 pt-24">
+              <Search className="h-12 w-12" strokeWidth={1.2} />
+              <p className="text-sm">검색 결과가 없습니다</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {searchResults.map((note) => (
+                <NoteCard key={note.id} note={note} onClick={() => openNote(note)} />
+              ))}
+            </div>
+          )
+        ) : notes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-3 text-muted-foreground/40 pt-24">
             <StickyNote className="h-12 w-12" strokeWidth={1.2} />
             <p className="text-sm">메모가 없습니다</p>

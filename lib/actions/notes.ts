@@ -92,6 +92,23 @@ export async function getNote(id: string): Promise<Note | null> {
   return data;
 }
 
+export async function searchNotes(query: string): Promise<Note[]> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  if (!query.trim()) return [];
+
+  const { data, error } = await supabase
+    .from("notes")
+    .select("id, title, content, is_pinned, created_at, updated_at")
+    .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
+    .order("updated_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
 export async function togglePinNote(id: string, currentPinned: boolean): Promise<void> {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
