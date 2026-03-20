@@ -225,8 +225,9 @@ export default function CategoryDetailPage() {
                 width={36}
               />
               <Tooltip
-                formatter={(value: number | undefined) => [
-                  value != null ? `${value.toLocaleString("ko-KR")}원` : "",
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                formatter={(value: any) => [
+                  value != null ? `${Number(value).toLocaleString("ko-KR")}원` : "",
                   "",
                 ]}
                 labelStyle={{ color: "#9ca3af", fontSize: 11 }}
