@@ -12,7 +12,7 @@ export default async function NotesLayout({
   if (!data?.claims) redirect("/auth/login");
 
   return (
-    <div className="min-h-dvh pb-16 flex flex-col">
+    <div className="h-dvh overflow-hidden flex flex-col">
       {children}
       <BottomTabBar />
     </div>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ChevronLeft, Copy, Pin, PinOff, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { ImageUploader } from "@/components/notes/ImageUploader";
 import {
   updateNote,
   deleteNote,
@@ -22,17 +23,19 @@ export function NoteEditor({ note: initialNote }: NoteEditorProps) {
   const [note, setNote] = useState<Note>(initialNote);
   const [title, setTitle] = useState(initialNote.title ?? "");
   const [content, setContent] = useState(initialNote.content ?? "");
+  const [images, setImages] = useState<string[]>(initialNote.images ?? []);
   const [saving, setSaving] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   async function handleSave() {
     setSaving(true);
     try {
-      await updateNote(note.id, { title, content });
+      await updateNote(note.id, { title, content, images });
       setNote((prev) => ({
         ...prev,
         title: title || null,
         content: content || null,
+        images,
         updated_at: new Date().toISOString(),
       }));
     } finally {
@@ -56,6 +59,7 @@ export function NoteEditor({ note: initialNote }: NoteEditorProps) {
       await addNote({
         title: note.title ? `${note.title} (복사본)` : undefined,
         content: note.content ?? undefined,
+        // 이미지는 복사하지 않음 (Storage 파일 공유 문제 방지)
       });
       router.push("/notes");
     } finally {
@@ -134,20 +138,30 @@ export function NoteEditor({ note: initialNote }: NoteEditorProps) {
         </div>
 
         {/* 편집 영역 */}
-        <div className="flex-1 flex flex-col overflow-auto px-5 pt-4 pb-8">
+        <div className="flex-1 flex flex-col overflow-hidden px-5 pt-4">
+          {/* 제목 */}
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="제목"
-            className="w-full text-xl font-semibold bg-transparent border-none outline-none placeholder:text-muted-foreground/40 mb-3"
+            className="w-full text-xl font-semibold bg-transparent border-none outline-none placeholder:text-muted-foreground/40 mb-3 shrink-0"
           />
+          {/* 본문 — 내부 스크롤 */}
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="메모를 입력하세요..."
-            className="flex-1 w-full min-h-[60vh] text-sm bg-transparent border-none outline-none resize-none placeholder:text-muted-foreground/40 leading-relaxed"
+            className="flex-1 w-full text-sm bg-transparent border-none outline-none resize-none placeholder:text-muted-foreground/40 leading-relaxed overflow-auto"
           />
+          {/* 이미지 업로더 — 하단 고정 */}
+          <div className="shrink-0 pb-24 pt-2">
+            <ImageUploader
+              images={images}
+              onChange={setImages}
+              disabled={saving}
+            />
+          </div>
         </div>
       </div>
 

@@ -12,9 +12,5 @@ export default async function NoteDetailPage({ params }: NoteDetailPageProps) {
 
   if (!note) notFound();
 
-  return (
-    <div className="flex flex-col h-dvh">
-      <NoteEditor note={note} />
-    </div>
-  );
+  return <NoteEditor note={note} />;
 }

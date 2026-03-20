@@ -34,6 +34,7 @@ function NoteCard({
   note: Note;
   onClick: () => void;
 }) {
+  const thumbnail = note.images?.[0];
   return (
     <button
       onClick={onClick}
@@ -51,10 +52,23 @@ function NoteCard({
         {note.content && (
           <p className="text-xs text-muted-foreground truncate">{note.content}</p>
         )}
+        {note.images && note.images.length > 0 && !note.content && (
+          <p className="text-xs text-muted-foreground/40">사진 {note.images.length}장</p>
+        )}
       </div>
-      <span className="text-[10px] text-muted-foreground/40 shrink-0">
-        {formatDate(note.updated_at)}
-      </span>
+      <div className="flex items-center gap-2 shrink-0">
+        {thumbnail && (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={thumbnail}
+            alt=""
+            className="w-10 h-10 rounded-lg object-cover border border-border/40"
+          />
+        )}
+        <span className="text-[10px] text-muted-foreground/40">
+          {formatDate(note.updated_at)}
+        </span>
+      </div>
     </button>
   );
 }
@@ -95,13 +109,13 @@ export function NoteList({ initialNotes }: NoteListProps) {
     router.push(`/notes/${note.id}`);
   }
 
-  async function handleSave(data: { title: string; content: string }) {
+  async function handleSave(data: { title: string; content: string; images: string[] }) {
     if (selectedNote) {
       await updateNote(selectedNote.id, data);
       setNotes((prev) =>
         prev.map((n) =>
           n.id === selectedNote.id
-            ? { ...n, title: data.title || null, content: data.content || null, updated_at: new Date().toISOString() }
+            ? { ...n, title: data.title || null, content: data.content || null, images: data.images, updated_at: new Date().toISOString() }
             : n
         )
       );
