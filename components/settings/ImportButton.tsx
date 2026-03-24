@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { Upload, X, FileSpreadsheet, Check, AlertTriangle } from "lucide-react";
 import { Drawer } from "vaul";
-import * as XLSX from "xlsx";
+import type * as XLSXType from "xlsx";
 import { cn } from "@/lib/utils";
 
 type Step = "upload" | "mapping" | "importing" | "result";
@@ -145,8 +145,9 @@ export function ImportButton() {
   function handleFileChange(f: File) {
     setError(null);
     const reader = new FileReader();
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
+        const XLSX = await import("xlsx") as typeof XLSXType;
         const data = e.target?.result;
         const wb = XLSX.read(data, { type: "array", cellDates: false });
         const ws = wb.Sheets[wb.SheetNames[0]];
