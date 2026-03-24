@@ -12,7 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { deleteAccount } from "@/lib/actions/account";
+import { requestAccountDeletion } from "@/lib/actions/account";
 
 export function DeleteAccountButton() {
   const [open, setOpen] = useState(false);
@@ -20,7 +20,7 @@ export function DeleteAccountButton() {
 
   const handleConfirm = () => {
     startTransition(async () => {
-      await deleteAccount();
+      await requestAccountDeletion();
     });
   };
 
@@ -30,8 +30,12 @@ export function DeleteAccountButton() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>정말 탈퇴하시겠어요?</AlertDialogTitle>
-            <AlertDialogDescription>
-              탈퇴하면 모든 거래 내역, 분류, 자산 정보가 <strong>영구적으로 삭제</strong>되며 복구할 수 없습니다.
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>탈퇴 요청 후 <strong className="text-foreground">30일간 유예기간</strong>이 주어집니다.</p>
+                <p>유예기간 동안 언제든지 로그인해 계정을 복구할 수 있습니다.</p>
+                <p>30일이 지나면 모든 데이터가 <strong className="text-destructive">영구적으로 삭제</strong>됩니다.</p>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -41,7 +45,7 @@ export function DeleteAccountButton() {
               disabled={isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {isPending ? "탈퇴 처리 중..." : "회원탈퇴"}
+              {isPending ? "처리 중..." : "탈퇴 요청"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
