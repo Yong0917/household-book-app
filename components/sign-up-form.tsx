@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BookOpen } from "lucide-react";
+import { translateAuthError } from "@/lib/auth-errors";
 
 export function SignUpForm({
   className,
@@ -29,7 +30,7 @@ export function SignUpForm({
     setError(null);
 
     if (password !== repeatPassword) {
-      setError("Passwords do not match");
+      setError("비밀번호가 일치하지 않습니다.");
       setIsLoading(false);
       return;
     }
@@ -46,7 +47,7 @@ export function SignUpForm({
       if (error) throw error;
       router.push("/auth/sign-up-success");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(translateAuthError(error));
     } finally {
       setIsLoading(false);
     }

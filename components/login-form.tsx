@@ -10,6 +10,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BookOpen } from "lucide-react";
+import { translateAuthError } from "@/lib/auth-errors";
 
 export function LoginForm({
   className,
@@ -36,7 +37,7 @@ export function LoginForm({
       // 인증 성공 후 가계부 메인 페이지로 이동
       router.push("/ledger/daily");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(translateAuthError(error));
     } finally {
       setIsLoading(false);
     }

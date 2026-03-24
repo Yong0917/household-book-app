@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useState } from "react";
 import { BookOpen } from "lucide-react";
+import { translateAuthError } from "@/lib/auth-errors";
 
 export function ForgotPasswordForm({
   className,
@@ -34,7 +35,7 @@ export function ForgotPasswordForm({
       if (error) throw error;
       setSuccess(true);
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(translateAuthError(error));
     } finally {
       setIsLoading(false);
     }

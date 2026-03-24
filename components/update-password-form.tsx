@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BookOpen } from "lucide-react";
+import { translateAuthError } from "@/lib/auth-errors";
 
 export function UpdatePasswordForm({
   className,
@@ -31,7 +32,7 @@ export function UpdatePasswordForm({
       // 비밀번호 변경 성공 후 가계부 메인 페이지로 이동 (버그 수정: /protected → /ledger/daily)
       router.push("/ledger/daily");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(translateAuthError(error));
     } finally {
       setIsLoading(false);
     }
