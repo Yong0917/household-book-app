@@ -1,7 +1,7 @@
 "use client";
 
 // 달력 보기 컴포넌트 - 데이터는 LedgerTabView에서 props로 전달
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   startOfMonth,
   endOfMonth,
@@ -37,6 +37,10 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ currentMonth, transactions, categories, assets, isLoading, onSuccess }: CalendarViewProps) {
+  // 카테고리/자산 Map (O(1) 룩업)
+  const categoryMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
+  const assetMap = useMemo(() => new Map(assets.map((a) => [a.id, a])), [assets]);
+
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [isDaySheetOpen, setIsDaySheetOpen] = useState(false);
   const [isTransactionSheetOpen, setIsTransactionSheetOpen] = useState(false);
@@ -77,31 +81,31 @@ export function CalendarView({ currentMonth, transactions, categories, assets, i
   const rows = Math.ceil((startOffset + days.length) / 7);
 
   // 날짜 클릭 → 날짜 바텀시트 열기
-  const handleDayClick = (day: Date) => {
+  const handleDayClick = useCallback((day: Date) => {
     setSelectedDate(day);
     setIsDaySheetOpen(true);
-  };
+  }, []);
 
   // 거래 클릭 → 날짜 시트 닫고 수정 시트 열기
-  const handleTransactionClick = (id: string) => {
+  const handleTransactionClick = useCallback((id: string) => {
     const tx = transactions.find((t) => t.id === id) ?? null;
     setSelectedTransaction(tx);
     setIsDaySheetOpen(false);
     setTimeout(() => setIsTransactionSheetOpen(true), 300);
-  };
+  }, [transactions]);
 
   // 날짜 시트에서 "이 날 거래 추가" 클릭
-  const handleDaySheetAdd = () => {
+  const handleDaySheetAdd = useCallback(() => {
     setSelectedTransaction(null);
     setIsDaySheetOpen(false);
     setTimeout(() => setIsTransactionSheetOpen(true), 300);
-  };
+  }, []);
 
   // FAB 클릭 → 거래 추가 시트 열기
-  const handleFabClick = () => {
+  const handleFabClick = useCallback(() => {
     setSelectedTransaction(null);
     setIsTransactionSheetOpen(true);
-  };
+  }, []);
 
   // 선택한 날짜의 거래 목록
   const selectedDayTransactions = selectedDate
@@ -111,14 +115,14 @@ export function CalendarView({ currentMonth, transactions, categories, assets, i
     : [];
 
   const selectedDayItems = selectedDayTransactions.map((t) => {
-    const cat = categories.find((c) => c.id === t.categoryId);
+    const cat = categoryMap.get(t.categoryId);
     return {
       id: t.id,
       type: t.type,
       categoryName: cat?.name ?? "기타",
       categoryColor: cat?.color,
       description: t.description,
-      assetName: assets.find((a) => a.id === t.assetId)?.name ?? "기타",
+      assetName: assetMap.get(t.assetId)?.name ?? "기타",
       amount: t.amount,
     };
   });

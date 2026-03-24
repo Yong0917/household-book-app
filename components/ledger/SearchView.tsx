@@ -1,7 +1,7 @@
 "use client";
 
 // 거래 검색 + 필터 뷰
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { ArrowLeft, SlidersHorizontal, Search, X } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -44,27 +44,33 @@ interface SearchViewProps {
   onBack: () => void;
   initialFilterOpen?: boolean;
   onSheetOpenChange?: (open: boolean) => void; // LedgerTabView에 시트 열림 상태 전달
+  categories?: Category[];
+  assets?: Asset[];
 }
 
-export function SearchView({ onBack, initialFilterOpen = false, onSheetOpenChange }: SearchViewProps) {
+export function SearchView({ onBack, initialFilterOpen = false, onSheetOpenChange, categories: propCategories, assets: propAssets }: SearchViewProps) {
   const [keyword, setKeyword] = useState("");
   const [filter, setFilter] = useState<FilterState>(DEFAULT_FILTER);
   const [isFilterOpen, setIsFilterOpen] = useState(initialFilterOpen);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [assets, setAssets] = useState<Asset[]>([]);
+  const [categories, setCategories] = useState<Category[]>(propCategories ?? []);
+  const [assets, setAssets] = useState<Asset[]>(propAssets ?? []);
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
-  // 카테고리/자산 로드
+  // 카테고리/자산 로드 (props로 전달되지 않은 경우에만)
   useEffect(() => {
-    Promise.all([getCategories(), getAssets()]).then(([cats, assts]) => {
+    if (propCategories && propAssets) return;
+    Promise.all([
+      propCategories ? Promise.resolve(propCategories) : getCategories(),
+      propAssets ? Promise.resolve(propAssets) : getAssets(),
+    ]).then(([cats, assts]) => {
       setCategories(cats);
       setAssets(assts);
     });
-  }, []);
+  }, [propCategories, propAssets]);
 
   // 검색 실행
   const doSearch = useCallback(async (kw: string, f: FilterState) => {
@@ -99,6 +105,10 @@ export function SearchView({ onBack, initialFilterOpen = false, onSheetOpenChang
     }, 300);
     return () => clearTimeout(timer);
   }, [keyword, filter, doSearch]);
+
+  // 카테고리/자산 Map (O(1) 룩업)
+  const categoryMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
+  const assetMap = useMemo(() => new Map(assets.map((a) => [a.id, a])), [assets]);
 
   const income = transactions.filter((t) => t.type === "income").reduce((s, t) => s + t.amount, 0);
   const expense = transactions.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
@@ -373,8 +383,8 @@ export function SearchView({ onBack, initialFilterOpen = false, onSheetOpenChang
                   {dayTxs
                     .sort((a, b) => b.transactionAt.localeCompare(a.transactionAt))
                     .map((t) => {
-                      const cat = categories.find((c) => c.id === t.categoryId);
-                      const asset = assets.find((a) => a.id === t.assetId);
+                      const cat = categoryMap.get(t.categoryId);
+                      const asset = assetMap.get(t.assetId);
                       return (
                         <div
                           key={t.id}

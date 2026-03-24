@@ -349,6 +349,8 @@ export function LedgerTabView({ initialData, initialMonthKey }: LedgerTabViewPro
         <SearchView
           onBack={closeSearch}
           onSheetOpenChange={(open) => { isSearchSheetOpenRef.current = open; }}
+          categories={categories}
+          assets={assets}
         />
       )}
 

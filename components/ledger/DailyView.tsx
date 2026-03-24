@@ -1,7 +1,7 @@
 "use client";
 
 // 가계부 월간 목록 뷰 (날짜별 그룹화) - 데이터는 LedgerTabView에서 props로 전달
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Plus } from "lucide-react";
 import {
   format,
@@ -39,6 +39,10 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
   // 고정비에서 열릴 때 pre-fill용
   const [selectedRecurring, setSelectedRecurring] = useState<RecurringTransaction | null>(null);
 
+  // 카테고리/자산 Map (O(1) 룩업)
+  const categoryMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
+  const assetMap = useMemo(() => new Map(assets.map((a) => [a.id, a])), [assets]);
+
   // 현재 월 거래 필터링 + 수입/지출 집계 + 날짜별 그룹화 (한 번의 순회로 통합)
   const { income, expense, net, grouped, sortedDates } = useMemo(() => {
     let inc = 0;
@@ -64,25 +68,25 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
   }, [transactions, currentMonth]);
 
   // 거래 항목 클릭 → 수정 시트 열기
-  const handleItemClick = (id: string) => {
+  const handleItemClick = useCallback((id: string) => {
     const tx = transactions.find((t) => t.id === id) ?? null;
     setSelectedTransaction(tx);
     setIsSheetOpen(true);
-  };
+  }, [transactions]);
 
   // FAB 클릭 → 추가 시트 열기
-  const handleAddClick = () => {
+  const handleAddClick = useCallback(() => {
     setSelectedTransaction(null);
     setSelectedRecurring(null);
     setIsSheetOpen(true);
-  };
+  }, []);
 
   // 고정비 배너 클릭 → pre-fill 시트 열기
-  const handleRecurringClick = (recurring: RecurringTransaction) => {
+  const handleRecurringClick = useCallback((recurring: RecurringTransaction) => {
     setSelectedTransaction(null);
     setSelectedRecurring(recurring);
     setIsSheetOpen(true);
-  };
+  }, []);
 
   // 고정비 건너뜀 확인 모달 열기
   const handleRecurringSkip = (recurring: RecurringTransaction) => {
@@ -209,7 +213,7 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
           const listItems = [...dayTransactions]
             .sort((a, b) => compareAsc(parseISO(b.transactionAt), parseISO(a.transactionAt)))
             .map((t) => {
-              const cat = categories.find((c) => c.id === t.categoryId);
+              const cat = categoryMap.get(t.categoryId);
               const time = format(parseISO(t.transactionAt), "HH:mm");
               return {
                 id: t.id,
@@ -217,7 +221,7 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
                 categoryName: cat?.name ?? "기타",
                 categoryColor: cat?.color,
                 description: t.description,
-                assetName: assets.find((a) => a.id === t.assetId)?.name ?? "기타",
+                assetName: assetMap.get(t.assetId)?.name ?? "기타",
                 amount: t.amount,
                 time,
               };

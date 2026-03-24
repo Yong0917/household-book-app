@@ -131,15 +131,18 @@ function StatisticsContent() {
     (t) => t.type === activeTab && isSameMonth(parseISO(t.transactionAt), currentMonth)
   );
 
+  // 카테고리 Map (O(1) 룩업)
+  const categoryLookup = new Map(categories.map((c) => [c.id, c]));
+
   // 카테고리별 집계
-  const categoryMap = new Map<string, number>();
+  const categoryAmountMap = new Map<string, number>();
   filtered.forEach((t) => {
-    categoryMap.set(t.categoryId, (categoryMap.get(t.categoryId) ?? 0) + t.amount);
+    categoryAmountMap.set(t.categoryId, (categoryAmountMap.get(t.categoryId) ?? 0) + t.amount);
   });
 
-  const chartData = Array.from(categoryMap.entries())
+  const chartData = Array.from(categoryAmountMap.entries())
     .map(([catId, value]) => {
-      const cat = categories.find((c) => c.id === catId);
+      const cat = categoryLookup.get(catId);
       return { id: catId, name: cat?.name ?? "기타", value, color: cat?.color ?? "#6b7280" };
     })
     .sort((a, b) => b.value - a.value);
