@@ -2,7 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import type { Transaction, TransactionType } from "@/lib/mock/types";
+import type { Transaction, TransactionType, Category, Asset, RecurringTransaction } from "@/lib/mock/types";
+import { getCategories } from "./categories";
+import { getAssets } from "./assets";
+import { getUnprocessedRecurring } from "./recurring";
 
 // DB 행 → 앱 타입 변환
 function toTransaction(row: {
@@ -48,16 +51,46 @@ export async function getTransactionsByMonth(
   return (data ?? []).map(toTransaction);
 }
 
+// 통계 페이지 월별 전체 데이터 단일 조회 (3번 왕복 → 1번으로 최적화)
+export async function getStatisticsPageData(year: number, month: number, trendCount: number): Promise<{
+  transactions: Transaction[];
+  categories: Category[];
+  trend: { year: number; month: number; label: string; income: number; expense: number }[];
+}> {
+  const [transactions, categories, trend] = await Promise.all([
+    getTransactionsByMonth(year, month),
+    getCategories(),
+    getMonthlyTrend(year, month, trendCount),
+  ]);
+  return { transactions, categories, trend };
+}
+
+// 가계부 페이지 월별 전체 데이터 단일 조회 (4번 왕복 → 1번으로 최적화)
+export async function getLedgerMonthData(year: number, month: number): Promise<{
+  transactions: Transaction[];
+  categories: Category[];
+  assets: Asset[];
+  recurring: RecurringTransaction[];
+}> {
+  const [transactions, categories, assets, recurring] = await Promise.all([
+    getTransactionsByMonth(year, month),
+    getCategories(),
+    getAssets(),
+    getUnprocessedRecurring(year, month),
+  ]);
+  return { transactions, categories, assets, recurring };
+}
+
 // 거래 추가
 export async function addTransaction(
   data: Omit<Transaction, "id"> & { recurringId?: string }
 ): Promise<void> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("인증이 필요합니다");
+  const { data: authData } = await supabase.auth.getClaims();
+  if (!authData) throw new Error("인증이 필요합니다");
 
   const { error } = await supabase.from("transactions").insert({
-    user_id: user.id,
+    user_id: authData.claims.sub as string,
     type: data.type,
     amount: data.amount,
     category_id: data.categoryId,

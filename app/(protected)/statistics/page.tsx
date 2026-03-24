@@ -2,7 +2,7 @@
 
 // 통계 페이지 - 수입/지출 탭 통합 (기본: 지출)
 import { useState, useEffect, useCallback, useRef, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, isSameMonth, parseISO, parse, isValid } from "date-fns";
 import { useSwipeMonth } from "@/hooks/useSwipeMonth";
@@ -10,9 +10,12 @@ import { ko } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { DonutChart } from "@/components/statistics/DonutChart";
 import { CategoryDetailSheet } from "@/components/statistics/CategoryDetailSheet";
-import { MonthlyTrendChart } from "@/components/statistics/MonthlyTrendChart";
-import { getTransactionsByMonth, getMonthlyTrend } from "@/lib/actions/transactions";
-import { getCategories } from "@/lib/actions/categories";
+import dynamic from "next/dynamic";
+const MonthlyTrendChart = dynamic(
+  () => import("@/components/statistics/MonthlyTrendChart").then((m) => ({ default: m.MonthlyTrendChart })),
+  { ssr: false }
+);
+import { getStatisticsPageData } from "@/lib/actions/transactions";
 import type { Transaction, Category, TransactionType } from "@/lib/mock/types";
 
 const MONTH_LABELS = [
@@ -35,7 +38,6 @@ function parseMonthParam(param: string | null): Date {
 }
 
 function StatisticsContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TransactionType>("expense");
   const [currentMonth, setCurrentMonthState] = useState<Date>(() =>
@@ -44,6 +46,9 @@ function StatisticsContent() {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerYear, setPickerYear] = useState(() => currentMonth.getFullYear());
 
+  // 마운트 후 사용자가 직접 월을 변경한 경우에만 URL 업데이트 (초기 마운트 스킵)
+  const isMountedRef = useRef(false);
+
   const setCurrentMonth = useCallback((updater: Date | ((prev: Date) => Date)) => {
     setCurrentMonthState((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
@@ -51,11 +56,15 @@ function StatisticsContent() {
     });
   }, []);
 
-  // currentMonth 변경 시 URL 업데이트
+  // 사용자가 월을 변경했을 때만 URL 업데이트 (Next.js RSC fetch 방지)
   useEffect(() => {
+    if (!isMountedRef.current) {
+      isMountedRef.current = true;
+      return;
+    }
     const param = format(currentMonth, "yyyy-MM");
-    router.replace(`?month=${param}`, { scroll: false });
-  }, [currentMonth, router]);
+    window.history.replaceState(null, "", `?month=${param}`);
+  }, [currentMonth]);
 
   // 카테고리 상세 드로어
   const [detailOpen, setDetailOpen] = useState(false);
@@ -67,60 +76,43 @@ function StatisticsContent() {
   const [trendLoading, setTrendLoading] = useState(true);
   const [trendCount, setTrendCount] = useState(6);
 
-  // 월별 트랜잭션 캐시
-  const txCacheRef = useRef<Map<string, Transaction[]>>(new Map());
-  // categories는 한 번만 로드
-  const catsRef = useRef<Category[]>([]);
-  // 추이 데이터: 선택 달 또는 기간 변경 시 재로드
+  // 전체 데이터 캐시 (트랜잭션 + 카테고리 + 추이, 달/기간 변경 시 재사용)
+  const cacheRef = useRef<Map<string, {
+    transactions: Transaction[];
+    categories: Category[];
+    trend: typeof trendData;
+  }>>(new Map());
+  // 현재 로딩 중인 키 추적 (중복 호출 방지)
+  const fetchingKeyRef = useRef<string | null>(null);
+
+  // 달 또는 추이 기간 변경 시 데이터 단일 조회
   useEffect(() => {
-    setTrendLoading(true);
-    getMonthlyTrend(
-      currentMonth.getFullYear(),
-      currentMonth.getMonth() + 1,
-      trendCount
-    ).then((data) => {
-      setTrendData(data);
-      setTrendLoading(false);
-    });
-  }, [currentMonth, trendCount]);
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth() + 1;
+    const key = `${format(currentMonth, "yyyy-MM")}-${trendCount}`;
 
-  const loadData = useCallback(async () => {
-    const key = format(currentMonth, "yyyy-MM");
-    const cached = txCacheRef.current.get(key);
-    const hasCategories = catsRef.current.length > 0;
+    if (fetchingKeyRef.current === key) return;
+    fetchingKeyRef.current = key;
 
-    if (cached && hasCategories) {
-      setTransactions(cached);
+    const cached = cacheRef.current.get(key);
+    if (cached) {
+      setTransactions(cached.transactions);
+      setCategories(cached.categories);
+      setTrendData(cached.trend);
+      fetchingKeyRef.current = null;
       return;
     }
 
-    const year = currentMonth.getFullYear();
-    const month = currentMonth.getMonth() + 1;
-
-    if (cached) {
-      const cats = await getCategories();
-      catsRef.current = cats;
-      setCategories(cats);
-      setTransactions(cached);
-    } else if (hasCategories) {
-      const txs = await getTransactionsByMonth(year, month);
-      txCacheRef.current.set(key, txs);
-      setTransactions(txs);
-    } else {
-      const [txs, cats] = await Promise.all([
-        getTransactionsByMonth(year, month),
-        getCategories(),
-      ]);
-      txCacheRef.current.set(key, txs);
-      catsRef.current = cats;
-      setTransactions(txs);
-      setCategories(cats);
-    }
-  }, [currentMonth]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+    setTrendLoading(true);
+    getStatisticsPageData(year, month, trendCount).then((data) => {
+      cacheRef.current.set(key, data);
+      setTransactions(data.transactions);
+      setCategories(data.categories);
+      setTrendData(data.trend);
+      setTrendLoading(false);
+      fetchingKeyRef.current = null;
+    });
+  }, [currentMonth, trendCount]);
 
   const { onTouchStart, onTouchEnd } = useSwipeMonth(setCurrentMonth, !isPickerOpen);
 

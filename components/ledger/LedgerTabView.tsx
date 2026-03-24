@@ -2,7 +2,7 @@
 
 // 가계부 탭 뷰 ("일일" 목록 / "달력" 전환) + 공유 월 상태 관리
 import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { DailyView } from "./DailyView";
 import { CalendarView } from "./CalendarView";
@@ -10,10 +10,7 @@ import { SearchView } from "./SearchView";
 import { ChevronLeft, ChevronRight, ChevronDown, Search } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, parse, isValid } from "date-fns";
 import { ko } from "date-fns/locale";
-import { getTransactionsByMonth } from "@/lib/actions/transactions";
-import { getCategories } from "@/lib/actions/categories";
-import { getAssets } from "@/lib/actions/assets";
-import { getUnprocessedRecurring } from "@/lib/actions/recurring";
+import { getLedgerMonthData } from "@/lib/actions/transactions";
 import type { Transaction, Category, Asset, RecurringTransaction } from "@/lib/mock/types";
 import { useSwipeMonth } from "@/hooks/useSwipeMonth";
 
@@ -31,7 +28,6 @@ function parseMonthParam(param: string | null): Date {
 }
 
 export function LedgerTabView() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>("list");
   const [currentMonth, setCurrentMonthState] = useState<Date>(() =>
@@ -40,6 +36,9 @@ export function LedgerTabView() {
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerYear, setPickerYear] = useState(() => currentMonth.getFullYear());
 
+  // 마운트 후 사용자가 직접 월을 변경한 경우에만 URL 업데이트 (초기 마운트 스킵)
+  const isMountedRef = useRef(false);
+
   const setCurrentMonth = useCallback((updater: Date | ((prev: Date) => Date)) => {
     setCurrentMonthState((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
@@ -47,11 +46,15 @@ export function LedgerTabView() {
     });
   }, []);
 
-  // currentMonth 변경 시 URL 업데이트
+  // 사용자가 월을 변경했을 때만 URL 업데이트 (Next.js RSC fetch 방지)
   useEffect(() => {
+    if (!isMountedRef.current) {
+      isMountedRef.current = true;
+      return;
+    }
     const param = format(currentMonth, "yyyy-MM");
-    router.replace(`?month=${param}`, { scroll: false });
-  }, [currentMonth, router]);
+    window.history.replaceState(null, "", `?month=${param}`);
+  }, [currentMonth]);
 
   // 검색 모드
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -65,73 +68,42 @@ export function LedgerTabView() {
   const [recurringItems, setRecurringItems] = useState<RecurringTransaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // 월별 트랜잭션 캐시 (같은 달로 돌아올 때 재사용)
-  const txCacheRef = useRef<Map<string, Transaction[]>>(new Map());
-  // categories/assets는 한 번만 로드
-  const staticLoadedRef = useRef(false);
+  // 월별 전체 데이터 캐시 (같은 달로 돌아올 때 재사용)
+  const cacheRef = useRef<Map<string, { transactions: Transaction[]; categories: Category[]; assets: Asset[]; recurring: RecurringTransaction[] }>>(new Map());
+  // 현재 로딩 중인 키 추적 (중복 호출 방지)
+  const fetchingKeyRef = useRef<string | null>(null);
 
   const loadData = useCallback(async (invalidateCache = false) => {
     const key = format(currentMonth, "yyyy-MM");
-
-    if (invalidateCache) {
-      txCacheRef.current.delete(key);
-    }
-
-    const cached = txCacheRef.current.get(key);
-    const hasStatic = staticLoadedRef.current;
-
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth() + 1;
 
+    // 같은 달을 이미 로딩 중이면 스킵 (React StrictMode 중복 방지)
+    if (fetchingKeyRef.current === key && !invalidateCache) return;
+    fetchingKeyRef.current = key;
+
+    if (invalidateCache) cacheRef.current.delete(key);
+
     setIsLoading(true);
-
-    // 트랜잭션 캐시 히트 + 정적 데이터 이미 로드됨 → 고정비만 재조회
-    if (cached && hasStatic) {
-      const recurring = await getUnprocessedRecurring(year, month);
-      setTransactions(cached);
-      setRecurringItems(recurring);
+    try {
+      const cached = cacheRef.current.get(key);
+      if (cached) {
+        setTransactions(cached.transactions);
+        setCategories(cached.categories);
+        setAssets(cached.assets);
+        setRecurringItems(cached.recurring);
+      } else {
+        const data = await getLedgerMonthData(year, month);
+        cacheRef.current.set(key, data);
+        setTransactions(data.transactions);
+        setCategories(data.categories);
+        setAssets(data.assets);
+        setRecurringItems(data.recurring);
+      }
+    } finally {
       setIsLoading(false);
-      return;
+      fetchingKeyRef.current = null;
     }
-
-    if (cached) {
-      // 트랜잭션은 캐시, 정적 데이터만 로드
-      const [cats, assts, recurring] = await Promise.all([
-        getCategories(),
-        getAssets(),
-        getUnprocessedRecurring(year, month),
-      ]);
-      setCategories(cats);
-      setAssets(assts);
-      setRecurringItems(recurring);
-      setTransactions(cached);
-      staticLoadedRef.current = true;
-    } else if (hasStatic) {
-      // 정적 데이터는 캐시, 트랜잭션 + 고정비만 로드
-      const [txs, recurring] = await Promise.all([
-        getTransactionsByMonth(year, month),
-        getUnprocessedRecurring(year, month),
-      ]);
-      txCacheRef.current.set(key, txs);
-      setTransactions(txs);
-      setRecurringItems(recurring);
-    } else {
-      // 모두 로드
-      const [txs, cats, assts, recurring] = await Promise.all([
-        getTransactionsByMonth(year, month),
-        getCategories(),
-        getAssets(),
-        getUnprocessedRecurring(year, month),
-      ]);
-      txCacheRef.current.set(key, txs);
-      setTransactions(txs);
-      setCategories(cats);
-      setAssets(assts);
-      setRecurringItems(recurring);
-      staticLoadedRef.current = true;
-    }
-
-    setIsLoading(false);
   }, [currentMonth]);
 
   useEffect(() => {
