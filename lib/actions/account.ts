@@ -7,13 +7,14 @@ import { redirect } from "next/navigation";
 export async function requestAccountDeletion(): Promise<void> {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("인증이 필요합니다.");
+  const { data: authData } = await supabase.auth.getClaims();
+  if (!authData) throw new Error("인증이 필요합니다.");
+  const userId = authData.claims.sub as string;
 
   // 탈퇴 요청 테이블에 삽입 (Edge Function 크론 잡용)
   const { error: dbError } = await supabase
     .from("user_deletion_requests")
-    .upsert({ user_id: user.id });
+    .upsert({ user_id: userId });
   if (dbError) throw new Error("탈퇴 요청 처리 중 오류가 발생했습니다.");
 
   // 유저 메타데이터에 기록 (미들웨어에서 JWT 클레임으로 빠르게 감지)
@@ -29,14 +30,14 @@ export async function requestAccountDeletion(): Promise<void> {
 export async function cancelAccountDeletion(): Promise<void> {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("인증이 필요합니다.");
+  const { data: authData } = await supabase.auth.getClaims();
+  if (!authData) throw new Error("인증이 필요합니다.");
 
   // 탈퇴 요청 테이블에서 제거
   await supabase
     .from("user_deletion_requests")
     .delete()
-    .eq("user_id", user.id);
+    .eq("user_id", authData.claims.sub as string);
 
   // 유저 메타데이터에서 탈퇴 요청 정보 제거
   await supabase.auth.updateUser({

@@ -7,14 +7,14 @@ export default async function ProtectedLayout({
   children: React.ReactNode;
 }) {
   const supabase = await createClient();
-  const { data } = await supabase.auth.getClaims();
-  if (!data?.claims) redirect("/auth/login");
 
-  // 탈퇴 예정 계정이면 복구 페이지로 이동
-  const { data: deletion } = await supabase
-    .from("user_deletion_requests")
-    .select("user_id")
-    .maybeSingle();
+  // 인증 확인과 탈퇴 상태 확인을 병렬로 실행
+  const [{ data }, { data: deletion }] = await Promise.all([
+    supabase.auth.getClaims(),
+    supabase.from("user_deletion_requests").select("user_id").maybeSingle(),
+  ]);
+
+  if (!data?.claims) redirect("/auth/login");
   if (deletion) redirect("/auth/account-recovery");
 
   return <>{children}</>;

@@ -38,14 +38,15 @@ export async function getCategories(): Promise<Category[]> {
 // 카테고리 추가
 export async function addCategory(data: Omit<Category, "id" | "sortOrder">): Promise<void> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("인증이 필요합니다");
+  const { data: authData } = await supabase.auth.getClaims();
+  if (!authData) throw new Error("인증이 필요합니다");
+  const userId = authData.claims.sub as string;
 
   // 현재 최대 sort_order 조회
   const { data: maxRow } = await supabase
     .from("categories")
     .select("sort_order")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .eq("type", data.type)
     .order("sort_order", { ascending: false })
     .limit(1)
@@ -54,7 +55,7 @@ export async function addCategory(data: Omit<Category, "id" | "sortOrder">): Pro
   const nextOrder = (maxRow?.sort_order ?? -1) + 1;
 
   const { error } = await supabase.from("categories").insert({
-    user_id: user.id,
+    user_id: userId,
     name: data.name,
     type: data.type,
     color: data.color,

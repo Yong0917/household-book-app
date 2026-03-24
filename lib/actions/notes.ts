@@ -15,8 +15,8 @@ export interface Note {
 
 export async function getNotes(): Promise<Note[]> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
+  const { data: authData } = await supabase.auth.getClaims();
+  if (!authData) return [];
 
   const { data, error } = await supabase
     .from("notes")
@@ -30,13 +30,14 @@ export async function getNotes(): Promise<Note[]> {
 
 export async function addNote(data: { title?: string; content?: string; images?: string[] }): Promise<Note> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("인증이 필요합니다.");
+  const { data: authData } = await supabase.auth.getClaims();
+  if (!authData) throw new Error("인증이 필요합니다.");
+  const userId = authData.claims.sub as string;
 
   const { data: note, error } = await supabase
     .from("notes")
     .insert({
-      user_id: user.id,
+      user_id: userId,
       title: data.title || null,
       content: data.content || null,
       images: data.images ?? [],
@@ -54,8 +55,9 @@ export async function updateNote(
   data: { title?: string; content?: string; images?: string[] }
 ): Promise<void> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("인증이 필요합니다.");
+  const { data: authData } = await supabase.auth.getClaims();
+  if (!authData) throw new Error("인증이 필요합니다.");
+  const userId = authData.claims.sub as string;
 
   const payload: Record<string, unknown> = {
     title: data.title || null,
@@ -67,7 +69,7 @@ export async function updateNote(
     .from("notes")
     .update(payload)
     .eq("id", id)
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
 
   if (error) throw new Error(error.message);
   revalidatePath("/notes");
@@ -75,15 +77,16 @@ export async function updateNote(
 
 export async function deleteNote(id: string): Promise<void> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("인증이 필요합니다.");
+  const { data: authData } = await supabase.auth.getClaims();
+  if (!authData) throw new Error("인증이 필요합니다.");
+  const userId = authData.claims.sub as string;
 
   // 메모에 첨부된 이미지를 Storage에서 먼저 삭제
   const { data: note } = await supabase
     .from("notes")
     .select("images")
     .eq("id", id)
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .single();
 
   if (note?.images?.length) {
@@ -101,7 +104,7 @@ export async function deleteNote(id: string): Promise<void> {
     .from("notes")
     .delete()
     .eq("id", id)
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
 
   if (error) throw new Error(error.message);
   revalidatePath("/notes");
@@ -109,14 +112,15 @@ export async function deleteNote(id: string): Promise<void> {
 
 export async function getNote(id: string): Promise<Note | null> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return null;
+  const { data: authData } = await supabase.auth.getClaims();
+  if (!authData) return null;
+  const userId = authData.claims.sub as string;
 
   const { data, error } = await supabase
     .from("notes")
     .select("id, title, content, images, is_pinned, created_at, updated_at")
     .eq("id", id)
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .single();
 
   if (error) return null;
@@ -125,8 +129,8 @@ export async function getNote(id: string): Promise<Note | null> {
 
 export async function searchNotes(query: string): Promise<Note[]> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) return [];
+  const { data: authData } = await supabase.auth.getClaims();
+  if (!authData) return [];
 
   if (!query.trim()) return [];
 
@@ -142,14 +146,15 @@ export async function searchNotes(query: string): Promise<Note[]> {
 
 export async function togglePinNote(id: string, currentPinned: boolean): Promise<void> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("인증이 필요합니다.");
+  const { data: authData } = await supabase.auth.getClaims();
+  if (!authData) throw new Error("인증이 필요합니다.");
+  const userId = authData.claims.sub as string;
 
   const { error } = await supabase
     .from("notes")
     .update({ is_pinned: !currentPinned })
     .eq("id", id)
-    .eq("user_id", user.id);
+    .eq("user_id", userId);
 
   if (error) throw new Error(error.message);
   revalidatePath("/notes");

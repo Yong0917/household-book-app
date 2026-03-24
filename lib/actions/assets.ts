@@ -36,14 +36,15 @@ export async function getAssets(): Promise<Asset[]> {
 // 자산 추가
 export async function addAsset(data: Omit<Asset, "id" | "sortOrder">): Promise<void> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("인증이 필요합니다");
+  const { data: authData } = await supabase.auth.getClaims();
+  if (!authData) throw new Error("인증이 필요합니다");
+  const userId = authData.claims.sub as string;
 
   // 현재 최대 sort_order 조회
   const { data: maxRow } = await supabase
     .from("assets")
     .select("sort_order")
-    .eq("user_id", user.id)
+    .eq("user_id", userId)
     .order("sort_order", { ascending: false })
     .limit(1)
     .single();
@@ -51,7 +52,7 @@ export async function addAsset(data: Omit<Asset, "id" | "sortOrder">): Promise<v
   const nextOrder = (maxRow?.sort_order ?? -1) + 1;
 
   const { error } = await supabase.from("assets").insert({
-    user_id: user.id,
+    user_id: userId,
     name: data.name,
     type: data.type,
     is_default: data.isDefault,

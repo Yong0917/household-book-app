@@ -45,11 +45,11 @@ export async function addRecurring(
   data: Omit<RecurringTransaction, "id" | "isActive">
 ): Promise<void> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("인증이 필요합니다");
+  const { data: authData } = await supabase.auth.getClaims();
+  if (!authData) throw new Error("인증이 필요합니다");
 
   const { error } = await supabase.from("recurring_transactions").insert({
-    user_id: user.id,
+    user_id: authData.claims.sub as string,
     type: data.type,
     amount: data.amount,
     category_id: data.categoryId,
@@ -167,11 +167,11 @@ export async function skipRecurring(
   month: number
 ): Promise<void> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) throw new Error("인증이 필요합니다");
+  const { data: authData } = await supabase.auth.getClaims();
+  if (!authData) throw new Error("인증이 필요합니다");
 
   const { error } = await supabase.from("recurring_skips").upsert(
-    { user_id: user.id, recurring_id: recurringId, year, month },
+    { user_id: authData.claims.sub as string, recurring_id: recurringId, year, month },
     { onConflict: "recurring_id,year,month" }
   );
 
