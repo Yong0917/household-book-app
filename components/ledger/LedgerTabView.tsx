@@ -14,6 +14,43 @@ import { getLedgerMonthData } from "@/lib/actions/transactions";
 import type { Transaction, Category, Asset, RecurringTransaction } from "@/lib/mock/types";
 import { useSwipeMonth } from "@/hooks/useSwipeMonth";
 
+// localStorage 캐시 키
+const LS_KEY = "ledger_cache_v1";
+
+type CacheEntry = {
+  transactions: Transaction[];
+  categories: Category[];
+  assets: Asset[];
+  recurring: RecurringTransaction[];
+};
+
+// localStorage에서 특정 월 캐시 읽기
+function readLocalCache(key: string): CacheEntry | null {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    const store = JSON.parse(raw) as Record<string, CacheEntry>;
+    return store[key] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// localStorage에 특정 월 캐시 저장 (최근 3개월만 유지)
+function writeLocalCache(key: string, data: CacheEntry): void {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    const store = raw ? (JSON.parse(raw) as Record<string, CacheEntry>) : {};
+    store[key] = data;
+    // 최근 3개 키만 유지 (오래된 항목 제거)
+    const keys = Object.keys(store).sort().reverse();
+    if (keys.length > 3) keys.slice(3).forEach((k) => delete store[k]);
+    localStorage.setItem(LS_KEY, JSON.stringify(store));
+  } catch {
+    // localStorage 사용 불가 환경 무시
+  }
+}
+
 type Tab = "list" | "calendar";
 
 const MONTH_LABELS = [
@@ -27,7 +64,14 @@ function parseMonthParam(param: string | null): Date {
   return isValid(parsed) ? startOfMonth(parsed) : startOfMonth(new Date());
 }
 
-export function LedgerTabView() {
+interface LedgerTabViewProps {
+  // 서버 컴포넌트에서 SSR 시점에 미리 fetch한 현재 달 데이터 (선택적)
+  initialData?: CacheEntry;
+  // SSR 데이터에 해당하는 달 키 (예: "2026-03")
+  initialMonthKey?: string;
+}
+
+export function LedgerTabView({ initialData, initialMonthKey }: LedgerTabViewProps = {}) {
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>("list");
   const [currentMonth, setCurrentMonthState] = useState<Date>(() =>
@@ -66,12 +110,51 @@ export function LedgerTabView() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [recurringItems, setRecurringItems] = useState<RecurringTransaction[]>([]);
+  // SSR initialData 또는 localStorage 캐시가 있으면 즉시 표시 (로딩 스피너 없음)
   const [isLoading, setIsLoading] = useState(true);
 
-  // 월별 전체 데이터 캐시 (같은 달로 돌아올 때 재사용)
-  const cacheRef = useRef<Map<string, { transactions: Transaction[]; categories: Category[]; assets: Asset[]; recurring: RecurringTransaction[] }>>(new Map());
+  // 인메모리 캐시 (같은 달로 돌아올 때 재사용)
+  const cacheRef = useRef<Map<string, CacheEntry>>(new Map());
   // 현재 로딩 중인 키 추적 (중복 호출 방지)
   const fetchingKeyRef = useRef<string | null>(null);
+  // 초기 데이터가 이미 표시 중인지 추적 (로딩 스피너 생략 판단용)
+  const hasInitialDataRef = useRef(false);
+
+  // 초기 마운트 시 SSR 데이터 또는 localStorage 캐시로 즉시 표시
+  useEffect(() => {
+    const key = format(currentMonth, "yyyy-MM");
+
+    // 1순위: 서버에서 넘겨준 SSR 초기 데이터
+    if (initialData && initialMonthKey === key) {
+      cacheRef.current.set(key, initialData);
+      setTransactions(initialData.transactions);
+      setCategories(initialData.categories);
+      setAssets(initialData.assets);
+      setRecurringItems(initialData.recurring);
+      setIsLoading(false);
+      hasInitialDataRef.current = true;
+      // SSR 데이터도 localStorage에 저장 (PWA 다음 재시작 시 즉시 표시)
+      writeLocalCache(key, initialData);
+      return;
+    }
+
+    // 2순위: localStorage 캐시 (PWA 재시작 시 즉시 표시)
+    const lsCache = readLocalCache(key);
+    if (lsCache) {
+      cacheRef.current.set(key, lsCache);
+      setTransactions(lsCache.transactions);
+      setCategories(lsCache.categories);
+      setAssets(lsCache.assets);
+      setRecurringItems(lsCache.recurring);
+      setIsLoading(false);
+      hasInitialDataRef.current = true;
+      // 캐시로 즉시 표시 후 백그라운드에서 최신 데이터 fetch (stale-while-revalidate)
+      // loadData useEffect에서 캐시를 인메모리에서 찾아 리턴하지 않도록
+      // 인메모리 캐시에서는 제거하여 fresh fetch 유도
+      cacheRef.current.delete(key);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 마운트 시 1회만 실행
 
   const loadData = useCallback(async (invalidateCache = false) => {
     const key = format(currentMonth, "yyyy-MM");
@@ -82,26 +165,38 @@ export function LedgerTabView() {
     if (fetchingKeyRef.current === key && !invalidateCache) return;
     fetchingKeyRef.current = key;
 
-    if (invalidateCache) cacheRef.current.delete(key);
-
-    setIsLoading(true);
-    try {
+    if (invalidateCache) {
+      cacheRef.current.delete(key);
+    } else {
+      // 인메모리 캐시 히트 (SSR 데이터 또는 이전 fetch 결과)
       const cached = cacheRef.current.get(key);
       if (cached) {
         setTransactions(cached.transactions);
         setCategories(cached.categories);
         setAssets(cached.assets);
         setRecurringItems(cached.recurring);
-      } else {
-        const data = await getLedgerMonthData(year, month);
-        cacheRef.current.set(key, data);
-        setTransactions(data.transactions);
-        setCategories(data.categories);
-        setAssets(data.assets);
-        setRecurringItems(data.recurring);
+        setIsLoading(false);
+        fetchingKeyRef.current = null;
+        return;
       }
+    }
+
+    // 캐시 미스 또는 강제 갱신: 로딩 표시 후 fetch
+    // 초기 데이터(SSR/localStorage)가 이미 화면에 표시 중이면 로딩 스피너 생략
+    if (!hasInitialDataRef.current) setIsLoading(true);
+
+    try {
+      const data = await getLedgerMonthData(year, month);
+      cacheRef.current.set(key, data);
+      // localStorage에 저장 (PWA 다음 재시작 시 즉시 표시)
+      writeLocalCache(key, data);
+      setTransactions(data.transactions);
+      setCategories(data.categories);
+      setAssets(data.assets);
+      setRecurringItems(data.recurring);
     } finally {
       setIsLoading(false);
+      hasInitialDataRef.current = false;
       fetchingKeyRef.current = null;
     }
   }, [currentMonth]);

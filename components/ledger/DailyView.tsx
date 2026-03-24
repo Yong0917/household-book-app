@@ -1,7 +1,7 @@
 "use client";
 
 // 가계부 월간 목록 뷰 (날짜별 그룹화) - 데이터는 LedgerTabView에서 props로 전달
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus } from "lucide-react";
 import {
   format,
@@ -39,28 +39,29 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
   // 고정비에서 열릴 때 pre-fill용
   const [selectedRecurring, setSelectedRecurring] = useState<RecurringTransaction | null>(null);
 
-  // 현재 월 거래 필터링 (transaction_at이 해당 월인지 확인)
-  const filtered = transactions.filter((t) =>
-    isSameMonth(parseISO(t.transactionAt), currentMonth)
-  );
+  // 현재 월 거래 필터링 + 수입/지출 집계 + 날짜별 그룹화 (한 번의 순회로 통합)
+  const { income, expense, net, grouped, sortedDates } = useMemo(() => {
+    let inc = 0;
+    let exp = 0;
+    const grp: Record<string, Transaction[]> = {};
 
-  // 월간 수입/지출/순합계 계산
-  const income = filtered
-    .filter((t) => t.type === "income")
-    .reduce((sum, t) => sum + t.amount, 0);
-  const expense = filtered
-    .filter((t) => t.type === "expense")
-    .reduce((sum, t) => sum + t.amount, 0);
-  const net = income - expense;
+    for (const t of transactions) {
+      if (!isSameMonth(parseISO(t.transactionAt), currentMonth)) continue;
+      if (t.type === "income") inc += t.amount;
+      else exp += t.amount;
+      const key = format(parseISO(t.transactionAt), "yyyy-MM-dd");
+      if (!grp[key]) grp[key] = [];
+      grp[key].push(t);
+    }
 
-  // 날짜별 그룹화 (내림차순 정렬)
-  const grouped = filtered.reduce<Record<string, Transaction[]>>((acc, t) => {
-    const key = format(parseISO(t.transactionAt), "yyyy-MM-dd");
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(t);
-    return acc;
-  }, {});
-  const sortedDates = Object.keys(grouped).sort().reverse();
+    return {
+      income: inc,
+      expense: exp,
+      net: inc - exp,
+      grouped: grp,
+      sortedDates: Object.keys(grp).sort().reverse(),
+    };
+  }, [transactions, currentMonth]);
 
   // 거래 항목 클릭 → 수정 시트 열기
   const handleItemClick = (id: string) => {
@@ -99,12 +100,15 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
   };
 
   // FAB의 기본 날짜: 현재 월이면 오늘, 아니면 해당 월 1일
-  const defaultDate = isSameMonth(new Date(), currentMonth)
-    ? format(new Date(), "yyyy-MM-dd")
-    : format(currentMonth, "yyyy-MM-dd");
+  const defaultDate = useMemo(() => {
+    const today = new Date();
+    return isSameMonth(today, currentMonth)
+      ? format(today, "yyyy-MM-dd")
+      : format(currentMonth, "yyyy-MM-dd");
+  }, [currentMonth]);
 
   // 미래 달이 아닐 때 고정비 배너 표시 (현재 달 + 과거 달)
-  const isFutureMonth = currentMonth > startOfMonth(new Date());
+  const isFutureMonth = useMemo(() => currentMonth > startOfMonth(new Date()), [currentMonth]);
 
   return (
     <>
