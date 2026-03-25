@@ -263,6 +263,9 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
         })
       )}
 
+      {/* 하단 BottomTabBar + safe area 여백 */}
+      <div style={{ height: "calc(5rem + env(safe-area-inset-bottom))" }} />
+
       {/* 거래 추가 FAB 버튼 - 시트 열리면 숨김 */}
       {!isSheetOpen && (
         <button

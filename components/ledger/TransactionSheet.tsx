@@ -434,7 +434,7 @@ export function TransactionSheet({
           </div>
 
           {/* 저장 버튼 - 항상 하단 고정 */}
-          <div className="px-5 pb-6 pt-3 flex-shrink-0">
+          <div className="px-5 pt-3 flex-shrink-0" style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}>
             <button
               type="button"
               onClick={handleSubmit(onSubmit)}
