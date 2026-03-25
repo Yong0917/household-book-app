@@ -5,6 +5,22 @@ import { createClient } from "@/lib/supabase/client";
 import { useState } from "react";
 import { Provider } from "@supabase/supabase-js";
 
+// 인앱 브라우저 감지 (카카오톡, 인스타그램, 네이버, 페이스북 등)
+function isInAppBrowser(): boolean {
+  if (typeof window === "undefined") return false;
+  const ua = navigator.userAgent || "";
+  return /FBAN|FBAV|Instagram|Line\/|KAKAOTALK|NAVER|naver|DaumDevice|NaverApp|Twitter/i.test(ua);
+}
+
+// Android에서 Chrome으로 현재 페이지 열기 시도
+function tryOpenInChrome(): boolean {
+  if (!/Android/i.test(navigator.userAgent)) return false;
+  const url = window.location.href;
+  const host = url.replace(/^https?:\/\//, "");
+  window.location.href = `intent://${host}#Intent;scheme=https;package=com.android.chrome;end`;
+  return true;
+}
+
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
@@ -35,8 +51,18 @@ interface SocialLoginButtonsProps {
 
 export function SocialLoginButtons({ redirectTo = "/ledger/daily" }: SocialLoginButtonsProps) {
   const [loadingProvider, setLoadingProvider] = useState<Provider | null>(null);
+  const [showInAppWarning, setShowInAppWarning] = useState(false);
 
   const handleSocialLogin = async (provider: Provider) => {
+    // Google 로그인 시 인앱 브라우저 차단 처리
+    if (provider === "google" && isInAppBrowser()) {
+      // Android는 Chrome으로 리다이렉트 시도, iOS는 안내 메시지
+      if (!tryOpenInChrome()) {
+        setShowInAppWarning(true);
+      }
+      return;
+    }
+
     const supabase = createClient();
     setLoadingProvider(provider);
 
@@ -54,6 +80,24 @@ export function SocialLoginButtons({ redirectTo = "/ledger/daily" }: SocialLogin
 
   return (
     <div className="space-y-3">
+      {/* 인앱 브라우저 경고 */}
+      {showInAppWarning && (
+        <div className="rounded-xl border border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950/30 p-4 text-[13px] text-orange-700 dark:text-orange-400">
+          <p className="font-semibold mb-1">외부 브라우저에서 열어주세요</p>
+          <p className="text-[12px] leading-relaxed text-orange-600 dark:text-orange-500">
+            현재 앱 내 브라우저에서는 Google 로그인이 지원되지 않습니다.
+            화면 우측 상단 메뉴 → <strong>&apos;외부 브라우저로 열기&apos;</strong> 를 선택한 뒤 다시 시도해주세요.
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowInAppWarning(false)}
+            className="mt-2 text-[12px] underline"
+          >
+            닫기
+          </button>
+        </div>
+      )}
+
       {/* 구분선 */}
       <div className="flex items-center gap-3">
         <div className="flex-1 h-px bg-border" />
