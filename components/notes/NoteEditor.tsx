@@ -81,7 +81,8 @@ export function NoteEditor({ note: initialNote }: NoteEditorProps) {
     <>
       <div className="flex flex-col h-full">
         {/* 상단 툴바 */}
-        <div className="flex items-center justify-between px-4 h-14 border-b border-border/40 shrink-0">
+        <div className="px-4 border-b border-border/40 shrink-0" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+        <div className="flex items-center justify-between h-14">
           {/* 왼쪽: 뒤로가기 */}
           <button
             onClick={() => router.push("/notes")}
@@ -135,6 +136,7 @@ export function NoteEditor({ note: initialNote }: NoteEditorProps) {
               {saving ? "저장 중..." : "저장"}
             </button>
           </div>
+        </div>
         </div>
 
         {/* 편집 영역 */}

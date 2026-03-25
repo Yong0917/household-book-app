@@ -238,8 +238,9 @@ export function NoteList({ initialNotes }: NoteListProps) {
       {/* FAB */}
       <button
         onClick={openNew}
+        style={{ bottom: "calc(5rem + env(safe-area-inset-bottom))" }}
         className={cn(
-          "fixed bottom-20 right-5 z-40",
+          "fixed right-5 z-40",
           "w-14 h-14 rounded-full bg-primary text-primary-foreground shadow-lg",
           "flex items-center justify-center",
           "active:scale-95 transition-transform"

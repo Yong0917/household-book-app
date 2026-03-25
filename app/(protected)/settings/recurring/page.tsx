@@ -16,7 +16,8 @@ export default async function RecurringPage() {
   return (
     <>
       {/* 고정비 관리 헤더 */}
-      <header className="h-14 flex items-center gap-3 px-4 border-b">
+      <header className="sticky top-0 bg-background border-b z-10 px-4" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+      <div className="h-14 flex items-center gap-3">
         <Link
           href="/settings"
           className="p-1.5 rounded-full hover:bg-muted transition-colors"
@@ -25,6 +26,7 @@ export default async function RecurringPage() {
           <ArrowLeft className="h-5 w-5" />
         </Link>
         <h1 className="text-lg font-semibold">고정비 관리</h1>
+      </div>
       </header>
 
       {/* 고정비 목록 컴포넌트 */}

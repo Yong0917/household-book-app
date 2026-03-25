@@ -136,9 +136,9 @@ export default function CategoryDetailPage() {
   };
 
   return (
-    <div className="min-h-dvh pb-16">
+    <div className="min-h-dvh" style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom))" }}>
       {/* 헤더 */}
-      <header className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border/60 z-10">
+      <header className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border/60 z-10" style={{ paddingTop: "env(safe-area-inset-top)" }}>
         <div className="flex items-center justify-between px-2 h-12">
           {/* 뒤로가기 + 카테고리명 */}
           <div className="flex items-center gap-1">
@@ -343,7 +343,7 @@ export default function CategoryDetailPage() {
       {isPickerOpen && (
         <>
           <div className="fixed inset-0 z-30" onClick={() => setIsPickerOpen(false)} />
-          <div className="fixed top-[52px] right-4 z-40 bg-background border border-border/60 rounded-2xl shadow-xl shadow-foreground/8 p-5 w-[21rem]">
+          <div className="fixed right-4 z-40 bg-background border border-border/60 rounded-2xl shadow-xl shadow-foreground/8 p-5 w-[21rem]" style={{ top: "calc(3rem + env(safe-area-inset-top))" }}>
             {/* 연도 선택 헤더 */}
             <div className="flex items-center justify-between mb-4">
               <button
