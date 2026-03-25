@@ -335,6 +335,8 @@ export function CalendarView({ currentMonth, transactions, categories, assets, i
                 이 날 거래 추가
               </button>
             </div>
+            {/* 하단 safe area 여백 (홈 인디케이터 영역) */}
+            <div className="flex-shrink-0" style={{ height: "env(safe-area-inset-bottom)" }} />
           </Drawer.Content>
         </Drawer.Portal>
       </Drawer.Root>
