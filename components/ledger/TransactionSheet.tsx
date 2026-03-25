@@ -7,7 +7,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Drawer } from "vaul";
 import { format, parseISO } from "date-fns";
-import { X } from "lucide-react";
+import { X, Plus } from "lucide-react";
+import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -348,14 +349,25 @@ export function TransactionSheet({
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 mb-2">
                   카테고리
                 </label>
-                <select {...register("categoryId")} className={selectClass} onTouchStart={dismissKeyboard}>
-                  <option value="">카테고리를 선택하세요</option>
-                  {filteredCategories.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
+                {filteredCategories.length === 0 ? (
+                  <Link
+                    href="/settings/categories"
+                    onClick={() => onOpenChange(false)}
+                    className="flex items-center justify-center gap-2 border border-dashed border-input rounded-xl px-3.5 py-3 w-full text-[13.5px] text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    카테고리 추가
+                  </Link>
+                ) : (
+                  <select {...register("categoryId")} className={selectClass} onTouchStart={dismissKeyboard}>
+                    <option value="">카테고리를 선택하세요</option>
+                    {filteredCategories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 {errors.categoryId && (
                   <p className="text-destructive text-[11px] mt-1.5">{errors.categoryId.message}</p>
                 )}
@@ -366,14 +378,25 @@ export function TransactionSheet({
                 <label className="block text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70 mb-2">
                   자산
                 </label>
-                <select {...register("assetId")} className={selectClass} onTouchStart={dismissKeyboard}>
-                  <option value="">자산을 선택하세요</option>
-                  {assets.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name}
-                    </option>
-                  ))}
-                </select>
+                {assets.length === 0 ? (
+                  <Link
+                    href="/settings/assets"
+                    onClick={() => onOpenChange(false)}
+                    className="flex items-center justify-center gap-2 border border-dashed border-input rounded-xl px-3.5 py-3 w-full text-[13.5px] text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-colors"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    자산 추가
+                  </Link>
+                ) : (
+                  <select {...register("assetId")} className={selectClass} onTouchStart={dismissKeyboard}>
+                    <option value="">자산을 선택하세요</option>
+                    {assets.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 {errors.assetId && (
                   <p className="text-destructive text-[11px] mt-1.5">{errors.assetId.message}</p>
                 )}
