@@ -43,7 +43,7 @@ export default function DeleteAccountPage() {
         <h2 className="text-base font-semibold text-gray-900 mb-3">직접 삭제 요청</h2>
         <p>
           앱에 접근할 수 없는 경우 아래 이메일로 계정 삭제를 요청할 수 있습니다.
-          이메일 제목에 <strong>"계정 삭제 요청"</strong>과 가입한 이메일 주소를 포함해 주세요.
+          이메일 제목에 <strong>&ldquo;계정 삭제 요청&rdquo;</strong>과 가입한 이메일 주소를 포함해 주세요.
         </p>
         <p className="mt-2 font-medium">
           이메일:{" "}
