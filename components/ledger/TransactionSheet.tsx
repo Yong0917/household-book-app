@@ -434,7 +434,7 @@ export function TransactionSheet({
           </div>
 
           {/* 저장 버튼 - 항상 하단 고정 */}
-          <div className="px-5 pt-3 flex-shrink-0" style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}>
+          <div className="px-5 pb-6 pt-3 flex-shrink-0">
             <button
               type="button"
               onClick={handleSubmit(onSubmit)}
@@ -447,6 +447,8 @@ export function TransactionSheet({
               {isSubmitting ? "저장 중..." : "저장"}
             </button>
           </div>
+          {/* 하단 safe area 여백 (홈 인디케이터 영역) */}
+          <div className="flex-shrink-0" style={{ height: "env(safe-area-inset-bottom)" }} />
         </Drawer.Content>
       </Drawer.Portal>
     </Drawer.Root>
