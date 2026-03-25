@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useState } from "react";
-import { BookOpen } from "lucide-react";
+import { BookOpen, Mail, KeyRound } from "lucide-react";
 import { translateAuthError } from "@/lib/auth-errors";
 
 export function ForgotPasswordForm({
@@ -41,6 +41,52 @@ export function ForgotPasswordForm({
     }
   };
 
+  if (success) {
+    return (
+      <div className={cn("min-h-svh flex flex-col items-center justify-center px-6 py-12", className)} {...props}>
+        <div className="w-full max-w-sm flex flex-col items-center text-center">
+          {/* 아이콘 영역 */}
+          <div className="relative mb-6">
+            <div className="w-24 h-24 bg-blue-500/10 rounded-full flex items-center justify-center">
+              <Mail className="h-11 w-11 text-blue-500" />
+            </div>
+            <div className="absolute -bottom-1 -right-1 w-7 h-7 bg-orange-500 rounded-full flex items-center justify-center shadow-md">
+              <KeyRound className="h-3.5 w-3.5 text-white" />
+            </div>
+          </div>
+
+          {/* 타이틀 */}
+          <h1 className="text-2xl font-bold tracking-tight mb-2">
+            이메일을 확인해 주세요
+          </h1>
+          <p className="text-sm text-muted-foreground leading-relaxed mb-8">
+            비밀번호 재설정 링크를 보냈어요.
+            <br />
+            링크를 클릭해 새 비밀번호를 설정하세요.
+          </p>
+
+          {/* 안내 박스 */}
+          <div className="w-full bg-muted/50 rounded-xl px-4 py-3.5 mb-8 text-left space-y-1.5">
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              📬 메일이 오지 않으면 스팸함을 확인해 주세요.
+            </p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              ⏱ 재설정 링크는 1시간 동안 유효합니다.
+            </p>
+          </div>
+
+          {/* 버튼 */}
+          <Button asChild className="w-full h-12 text-base font-medium">
+            <Link href="/auth/login">로그인 화면으로</Link>
+          </Button>
+
+          {/* 하단 앱명 */}
+          <p className="mt-8 text-xs text-muted-foreground/50">머니 로그</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
@@ -60,79 +106,58 @@ export function ForgotPasswordForm({
         </p>
       </div>
 
-      {success ? (
-        /* 이메일 전송 성공 상태 */
-        <div className="space-y-6">
-          <div className="space-y-1">
-            <h2 className="text-[22px] font-bold tracking-tight">이메일을 확인하세요</h2>
-            <p className="text-[13.5px] text-muted-foreground">
-              비밀번호 재설정 링크를 이메일로 보냈습니다
-            </p>
-          </div>
-          <p className="text-[14px] text-muted-foreground leading-relaxed">
-            입력하신 이메일로 재설정 링크가 전송되었습니다. 이메일함을 확인해 주세요.
+      {/* 기본 입력 폼 */}
+      <div className="space-y-6">
+        {/* 폼 타이틀 */}
+        <div className="space-y-1">
+          <h2 className="text-[22px] font-bold tracking-tight">비밀번호 재설정</h2>
+          <p className="text-[13.5px] text-muted-foreground">
+            이메일을 입력하면 재설정 링크를 보내드립니다
           </p>
+        </div>
+
+        <form onSubmit={handleForgotPassword} className="space-y-4">
+          {/* 이메일 입력 */}
+          <div className="space-y-1.5">
+            <Label htmlFor="email" className="text-[12.5px] font-semibold text-muted-foreground uppercase tracking-wide">이메일</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="name@example.com"
+              required
+              className="h-12 text-[15px]"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+
+          {/* 에러 메시지 */}
+          {error && (
+            <p className="text-[13px] text-destructive bg-destructive/8 px-3.5 py-2.5 rounded-xl border border-destructive/15">
+              {error}
+            </p>
+          )}
+
+          {/* 재설정 링크 전송 버튼 */}
+          <Button
+            type="submit"
+            className="w-full h-12 text-[15px] font-semibold mt-2"
+            disabled={isLoading}
+          >
+            {isLoading ? "전송 중..." : "재설정 링크 보내기"}
+          </Button>
+        </form>
+
+        {/* 로그인 링크 */}
+        <p className="text-center text-[13.5px] text-muted-foreground">
           <Link
             href="/auth/login"
-            className="block text-center text-[13.5px] text-muted-foreground hover:text-foreground transition-colors"
+            className="hover:text-foreground transition-colors"
           >
             ← 로그인으로 돌아가기
           </Link>
-        </div>
-      ) : (
-        /* 기본 입력 폼 상태 */
-        <div className="space-y-6">
-          {/* 폼 타이틀 */}
-          <div className="space-y-1">
-            <h2 className="text-[22px] font-bold tracking-tight">비밀번호 재설정</h2>
-            <p className="text-[13.5px] text-muted-foreground">
-              이메일을 입력하면 재설정 링크를 보내드립니다
-            </p>
-          </div>
-
-          <form onSubmit={handleForgotPassword} className="space-y-4">
-            {/* 이메일 입력 */}
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-[12.5px] font-semibold text-muted-foreground uppercase tracking-wide">이메일</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="name@example.com"
-                required
-                className="h-12 text-[15px]"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-
-            {/* 에러 메시지 */}
-            {error && (
-              <p className="text-[13px] text-destructive bg-destructive/8 px-3.5 py-2.5 rounded-xl border border-destructive/15">
-                {error}
-              </p>
-            )}
-
-            {/* 재설정 링크 전송 버튼 */}
-            <Button
-              type="submit"
-              className="w-full h-12 text-[15px] font-semibold mt-2"
-              disabled={isLoading}
-            >
-              {isLoading ? "전송 중..." : "재설정 링크 보내기"}
-            </Button>
-          </form>
-
-          {/* 로그인 링크 */}
-          <p className="text-center text-[13.5px] text-muted-foreground">
-            <Link
-              href="/auth/login"
-              className="hover:text-foreground transition-colors"
-            >
-              ← 로그인으로 돌아가기
-            </Link>
-          </p>
-        </div>
-      )}
+        </p>
+      </div>
     </div>
   );
 }
