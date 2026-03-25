@@ -12,8 +12,10 @@ export default function SettingsPage() {
   return (
     <>
       {/* 설정 헤더 */}
-      <header className="h-14 flex items-center px-5 border-b border-border/40">
-        <h1 className="text-[17px] font-bold tracking-tight">설정</h1>
+      <header className="border-b border-border/40" style={{ paddingTop: "env(safe-area-inset-top)" }}>
+        <div className="h-14 flex items-center px-5">
+          <h1 className="text-[17px] font-bold tracking-tight">설정</h1>
+        </div>
       </header>
 
       {/* 데이터 관리 섹션 */}

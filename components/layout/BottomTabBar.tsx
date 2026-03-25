@@ -17,8 +17,11 @@ export function BottomTabBar() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 h-16 bg-background/97 backdrop-blur-xl border-t border-border/40 flex items-stretch"
-      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      className="fixed bottom-0 left-0 right-0 z-50 bg-background/97 backdrop-blur-xl border-t border-border/40 flex items-stretch"
+      style={{
+        height: "calc(4rem + env(safe-area-inset-bottom))",
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
     >
       {tabs.map(({ href, icon: Icon, label, match }) => {
         const isActive = pathname.startsWith(match);

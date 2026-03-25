@@ -7,7 +7,7 @@ export default async function NotesPage() {
   return (
     <div className="flex flex-col h-dvh">
       {/* 헤더 */}
-      <div className="px-5 pt-12 pb-4 shrink-0">
+      <div className="px-5 pb-4 shrink-0" style={{ paddingTop: "calc(env(safe-area-inset-top) + 1rem)" }}>
         <h1 className="text-2xl font-bold">메모</h1>
       </div>
 

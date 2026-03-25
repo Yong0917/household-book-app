@@ -253,7 +253,10 @@ export function LedgerTabView({ initialData, initialMonthKey }: LedgerTabViewPro
   return (
     <div className="flex flex-col min-h-[calc(100dvh-4rem)]" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       {/* 헤더: 월 네비게이션(좌) + 검색 버튼(우) */}
-      <div className="sticky top-0 z-20 bg-background/97 backdrop-blur-xl border-b border-border/40">
+      <div
+        className="sticky top-0 z-20 bg-background/97 backdrop-blur-xl border-b border-border/40"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
         <div className="flex items-center justify-between px-2 h-13">
           {/* 월 네비게이션 */}
           <div className="flex items-center gap-0.5">
@@ -296,7 +299,10 @@ export function LedgerTabView({ initialData, initialMonthKey }: LedgerTabViewPro
       </div>
 
       {/* 탭 바 */}
-      <div className="flex h-10 border-b border-border/40 sticky top-13 z-20 bg-background/97 backdrop-blur-xl">
+      <div
+        className="flex h-10 border-b border-border/40 sticky z-20 bg-background/97 backdrop-blur-xl"
+        style={{ top: "calc(3.25rem + env(safe-area-inset-top))" }}
+      >
         <button
           onClick={() => setTab("list")}
           className={cn(
@@ -363,7 +369,7 @@ export function LedgerTabView({ initialData, initialMonthKey }: LedgerTabViewPro
             onClick={() => setIsPickerOpen(false)}
           />
           {/* 팝업 카드 */}
-          <div className="fixed top-12 left-4 z-40 bg-background border border-border/60 rounded-2xl shadow-xl shadow-foreground/8 p-5 w-[21rem]">
+          <div className="fixed left-4 z-40 bg-background border border-border/60 rounded-2xl shadow-xl shadow-foreground/8 p-5 w-[21rem]" style={{ top: "calc(3.25rem + env(safe-area-inset-top))" }}>
             {/* 연도 선택 */}
             <div className="flex items-center justify-between mb-4">
               <button

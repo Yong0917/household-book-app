@@ -154,7 +154,10 @@ function StatisticsContent() {
   return (
     <div className="min-h-[calc(100dvh-4rem)]" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       {/* 월 이동 헤더 */}
-      <header className="sticky top-0 bg-background/96 backdrop-blur-md border-b border-border/50 z-10">
+      <header
+        className="sticky top-0 bg-background/96 backdrop-blur-md border-b border-border/50 z-10"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
         <div className="flex items-center justify-center gap-0.5 px-4 h-13">
           <button
             onClick={() => setCurrentMonth((prev) => subMonths(prev, 1))}
@@ -289,7 +292,7 @@ function StatisticsContent() {
       {isPickerOpen && (
         <>
           <div className="fixed inset-0 z-30" onClick={() => setIsPickerOpen(false)} />
-          <div className="fixed top-[52px] left-1/2 -translate-x-1/2 z-40 bg-background border border-border/60 rounded-2xl shadow-xl shadow-foreground/8 p-5 w-[21rem]">
+          <div className="fixed left-1/2 -translate-x-1/2 z-40 bg-background border border-border/60 rounded-2xl shadow-xl shadow-foreground/8 p-5 w-[21rem]" style={{ top: "calc(3.25rem + env(safe-area-inset-top))" }}>
             <div className="flex items-center justify-between mb-4">
               <button
                 onClick={() => setPickerYear((y) => y - 1)}

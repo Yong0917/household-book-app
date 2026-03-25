@@ -6,7 +6,7 @@ export default function LedgerLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-dvh pb-16">
+    <div className="min-h-dvh" style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom))" }}>
       {children}
       <BottomTabBar />
     </div>
