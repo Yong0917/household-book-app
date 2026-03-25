@@ -47,7 +47,11 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
 
-  if (user && request.nextUrl.pathname.startsWith("/auth")) {
+  if (
+    user &&
+    request.nextUrl.pathname.startsWith("/auth") &&
+    request.nextUrl.pathname !== "/auth/account-recovery"
+  ) {
     const url = request.nextUrl.clone();
     url.pathname = "/ledger/daily";
     return NextResponse.redirect(url);

@@ -11,6 +11,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BookOpen } from "lucide-react";
 import { translateAuthError } from "@/lib/auth-errors";
+import { SocialLoginButtons } from "@/components/social-login-buttons";
 
 export function LoginForm({
   className,
@@ -29,13 +30,17 @@ export function LoginForm({
     setError(null);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       if (error) throw error;
-      // 인증 성공 후 가계부 메인 페이지로 이동
-      router.push("/ledger/daily");
+      // 탈퇴 요청 계정이면 계정 복구 페이지로 이동
+      if (data.user?.user_metadata?.deletion_requested_at) {
+        router.push("/auth/account-recovery");
+      } else {
+        router.push("/ledger/daily");
+      }
     } catch (error: unknown) {
       setError(translateAuthError(error));
     } finally {
@@ -125,6 +130,9 @@ export function LoginForm({
             {isLoading ? "로그인 중..." : "로그인"}
           </Button>
         </form>
+
+        {/* 소셜 로그인 */}
+        <SocialLoginButtons />
 
         {/* 회원가입 링크 */}
         <p className="text-center text-[13.5px] text-muted-foreground">
