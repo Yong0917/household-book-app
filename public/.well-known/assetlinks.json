@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.moneylogs.app",
+    "sha256_cert_fingerprints": ["20:7D:18:50:1F:06:11:82:08:7E:F8:FB:69:16:6A:4E:F9:0E:44:D2:66:B1:9E:7E:F6:61:DE:EB:A6:51:99:42"]
+  }
+}]
