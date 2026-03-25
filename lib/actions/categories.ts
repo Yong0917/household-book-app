@@ -101,17 +101,9 @@ export async function reorderCategories(orderedIds: string[]): Promise<void> {
   revalidatePath("/settings/categories");
 }
 
-// 카테고리 삭제 (기본 카테고리는 삭제 불가)
+// 카테고리 삭제
 export async function deleteCategory(id: string): Promise<void> {
   const supabase = await createClient();
-
-  const { data: cat } = await supabase
-    .from("categories")
-    .select("is_default")
-    .eq("id", id)
-    .single();
-
-  if (cat?.is_default) return;
 
   const { error } = await supabase.from("categories").delete().eq("id", id);
   if (error) throw new Error(error.message);

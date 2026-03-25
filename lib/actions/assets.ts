@@ -96,17 +96,9 @@ export async function reorderAssets(orderedIds: string[]): Promise<void> {
   revalidatePath("/settings/assets");
 }
 
-// 자산 삭제 (기본 자산은 삭제 불가)
+// 자산 삭제
 export async function deleteAsset(id: string): Promise<void> {
   const supabase = await createClient();
-
-  const { data: asset } = await supabase
-    .from("assets")
-    .select("is_default")
-    .eq("id", id)
-    .single();
-
-  if (asset?.is_default) return;
 
   const { error } = await supabase.from("assets").delete().eq("id", id);
   if (error) throw new Error(error.message);

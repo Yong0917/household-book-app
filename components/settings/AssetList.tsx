@@ -24,7 +24,6 @@ import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { cn } from "@/lib/utils";
 import { addAsset, updateAsset, deleteAsset, reorderAssets } from "@/lib/actions/assets";
 import type { Asset, AssetType } from "@/lib/mock/types";
 
@@ -112,12 +111,9 @@ function SortableAssetItem({
       <Button
         variant="ghost"
         size="icon"
-        className={cn(
-          "text-muted-foreground hover:text-red-500",
-          asset.isDefault && "opacity-30 cursor-not-allowed"
-        )}
+        className="text-muted-foreground hover:text-red-500"
         onClick={() => onDelete(asset)}
-        disabled={asset.isDefault || isPending}
+        disabled={isPending}
         aria-label={`${asset.name} 삭제`}
       >
         <Trash2 className="h-4 w-4" />
@@ -209,7 +205,7 @@ export function AssetList({ initialAssets }: AssetListProps) {
   };
 
   const handleDirectDelete = (asset: Asset) => {
-    if (asset.isDefault || isPending) return;
+    if (isPending) return;
     setConfirmTarget(asset);
   };
 
@@ -321,7 +317,7 @@ export function AssetList({ initialAssets }: AssetListProps) {
 
             {/* 하단 버튼 영역 */}
             <div className="px-4 pb-8 pt-3 border-t border-border/60 space-y-2 flex-shrink-0">
-              {editingAsset && !editingAsset.isDefault && (
+              {editingAsset && (
                 <Button
                   variant="outline"
                   className="w-full text-red-500 border-red-200 hover:bg-red-50 hover:text-red-500"

@@ -112,12 +112,9 @@ function SortableCategoryItem({
       <Button
         variant="ghost"
         size="icon"
-        className={cn(
-          "text-muted-foreground hover:text-red-500",
-          category.isDefault && "opacity-30 cursor-not-allowed"
-        )}
+        className="text-muted-foreground hover:text-red-500"
         onClick={() => onDelete(category)}
-        disabled={category.isDefault || isPending}
+        disabled={isPending}
         aria-label={`${category.name} 삭제`}
       >
         <Trash2 className="h-4 w-4" />
@@ -223,7 +220,7 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
   };
 
   const handleDirectDelete = (category: Category) => {
-    if (category.isDefault || isPending) return;
+    if (isPending) return;
     setConfirmTarget(category);
   };
 
@@ -365,7 +362,7 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
 
             {/* 하단 버튼 영역 */}
             <div className="px-4 pb-8 pt-3 border-t border-border/60 space-y-2 flex-shrink-0">
-              {editingCategory && !editingCategory.isDefault && (
+              {editingCategory && (
                 <Button
                   variant="outline"
                   className="w-full text-red-500 border-red-200 hover:bg-red-50 hover:text-red-500"
