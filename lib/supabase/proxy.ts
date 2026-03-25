@@ -39,13 +39,13 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Do not run code between createServerClient and
-  // supabase.auth.getClaims(). A simple mistake could make it very hard to debug
+  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
 
-  // IMPORTANT: If you remove getClaims() and you use server-side rendering
-  // with the Supabase client, your users may be randomly logged out.
-  const { data } = await supabase.auth.getClaims();
-  const user = data?.claims;
+  // IMPORTANT: getClaims()는 JWT를 로컬에서만 검사하므로 만료된 토큰을 갱신하지 않음.
+  // getUser()를 사용하면 액세스 토큰 만료 시 리프레시 토큰으로 자동 갱신하여
+  // 앱 재시작 후 로그아웃되는 문제를 방지함.
+  const { data: { user } } = await supabase.auth.getUser();
 
   if (
     user &&
@@ -54,18 +54,6 @@ export async function updateSession(request: NextRequest) {
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/ledger/daily";
-    return NextResponse.redirect(url);
-  }
-
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith("/auth") &&
-    request.nextUrl.pathname !== "/privacy" &&
-    request.nextUrl.pathname !== "/delete-account"
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
-    const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
     return NextResponse.redirect(url);
   }
 
