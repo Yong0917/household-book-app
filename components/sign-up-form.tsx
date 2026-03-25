@@ -11,7 +11,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { BookOpen } from "lucide-react";
 import { translateAuthError } from "@/lib/auth-errors";
-import { SocialLoginButtons } from "@/components/social-login-buttons";
 
 export function SignUpForm({
   className,
@@ -140,9 +139,6 @@ export function SignUpForm({
             {isLoading ? "계정 생성 중..." : "회원가입"}
           </Button>
         </form>
-
-        {/* 소셜 로그인 */}
-        <SocialLoginButtons />
 
         {/* 로그인 링크 */}
         <p className="text-center text-[13.5px] text-muted-foreground">
