@@ -160,6 +160,7 @@ export function CategoryDetailSheet({
         transition: "transform 0.3s cubic-bezier(0.32, 0.72, 0, 1)",
       }}
     >
+      <div className="h-[env(safe-area-inset-top)] flex-shrink-0" />
       {/* 헤더 */}
       <div className="flex items-center justify-between px-3 h-13 flex-shrink-0 border-b border-border/40 bg-background/96 backdrop-blur-md">
         {/* 닫기 + 카테고리명 */}

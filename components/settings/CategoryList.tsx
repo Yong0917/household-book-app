@@ -314,6 +314,7 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
         <Drawer.Portal>
           <Drawer.Overlay className="fixed inset-0 bg-black/40 z-[60]" />
           <Drawer.Content className="fixed inset-0 bg-background flex flex-col outline-none z-[60]">
+            <div className="h-[env(safe-area-inset-top)] flex-shrink-0" />
             {/* 헤더 */}
             <div className="flex items-center justify-between px-4 h-14 border-b border-border/60 flex-shrink-0">
               <div className="w-10" />

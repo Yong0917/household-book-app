@@ -107,6 +107,7 @@ export function NoteSheet({
             <VisuallyHidden.Root>
               <Drawer.Title>메모 편집</Drawer.Title>
             </VisuallyHidden.Root>
+            <div className="h-[env(safe-area-inset-top)] flex-shrink-0" />
 
             {/* 상단 툴바 */}
             <div className="flex items-center justify-between px-4 h-14 border-b border-border/40 shrink-0">
