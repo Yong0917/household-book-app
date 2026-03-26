@@ -42,7 +42,11 @@ export function SocialLoginButtons({ redirectTo = "/ledger/daily" }: SocialLogin
 
     // Android WebView 감지: 서버에서 세션 교환 후 커스텀 스킴으로 앱 복귀
     // android=1 파라미터를 통해 서버가 HTML 리다이렉트를 반환하도록 함
-    const isAndroid = !!(window as unknown as { AndroidBridge?: unknown }).AndroidBridge;
+    // 1차: AndroidBridge JS 인터페이스로 감지
+    // 2차: User-Agent에 MoneyLogsApp 포함 여부로 폴백 감지
+    const androidBridge = (window as unknown as { AndroidBridge?: { getPlatform?: () => string } }).AndroidBridge;
+    const isAndroid = androidBridge?.getPlatform?.() === "android"
+      || navigator.userAgent.includes("MoneyLogsApp/Android");
     const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}${isAndroid ? "&android=1" : ""}`;
 
     await supabase.auth.signInWithOAuth({

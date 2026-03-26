@@ -69,10 +69,15 @@ export async function GET(request: NextRequest) {
     document.getElementById('msg').textContent = '앱으로 이동 중...';
     window.location.replace('${setSessionUrl}');
   } else {
-    // Chrome(외부 브라우저) → intent URL 버튼 표시
-    document.getElementById('msg').textContent = '아래 버튼을 눌러\\n가계부 앱으로 돌아가세요';
-    document.getElementById('btn').style.display = 'block';
-    document.getElementById('hint').style.display = 'block';
+    // Chrome Custom Tab → intent URL로 자동 이동 (앱 실행 + Custom Tab 닫힘)
+    document.getElementById('msg').textContent = '앱으로 이동 중...';
+    window.location.replace('${intentUrl}');
+    // 자동 이동 실패 시 버튼 표시 (1.5초 후 폴백)
+    setTimeout(function() {
+      document.getElementById('msg').textContent = '아래 버튼을 눌러 앱으로 돌아가세요';
+      document.getElementById('btn').style.display = 'block';
+      document.getElementById('hint').style.display = 'block';
+    }, 1500);
   }
 </script>
 </body>
