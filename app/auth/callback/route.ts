@@ -16,12 +16,20 @@ export async function GET(request: NextRequest) {
 
     if (!error) {
       if (isAndroid) {
-        // Android Chrome Custom Tab: 세션 교환 완료 후 커스텀 스킴으로 앱에 복귀 신호 전달
-        // Chrome은 커스텀 스킴을 처리 못해 OS에 넘기고, OS가 앱의 intent-filter로 라우팅함
-        const appUrl = `com.moneylogs.app://done?next=${encodeURIComponent(next)}`;
-        return new NextResponse(null, {
-          status: 302,
-          headers: { Location: appUrl },
+        // Android Chrome Custom Tab → 앱 복귀
+        // intent:// URL은 Chrome Custom Tab에서 확실하게 앱을 실행시킴
+        // 커스텀 스킴(com.moneylogs.app://)은 Chrome 302 리다이렉트에서 무시될 수 있으므로
+        // HTML 페이지에서 intent:// 링크로 앱을 열고, 자동으로도 시도함
+        const intentUrl = `intent://done?next=${encodeURIComponent(next)}#Intent;scheme=com.moneylogs.app;package=com.moneylogs.app;end`;
+        const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>body{display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#121317;color:#fff;font-family:sans-serif;text-align:center}
+a{display:inline-block;margin-top:16px;padding:14px 32px;background:#3b82f6;color:#fff;text-decoration:none;border-radius:12px;font-size:16px;font-weight:600}</style>
+</head><body><div><p>로그인 완료!</p><a href="${intentUrl}">앱으로 돌아가기</a>
+<script>window.location.href="${intentUrl}";</script></div></body></html>`;
+        return new NextResponse(html, {
+          status: 200,
+          headers: { "Content-Type": "text/html; charset=utf-8" },
         });
       }
       redirect(next);
