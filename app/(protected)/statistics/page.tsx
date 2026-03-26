@@ -16,6 +16,8 @@ const MonthlyTrendChart = dynamic(
   { ssr: false }
 );
 import { getStatisticsPageData } from "@/lib/actions/transactions";
+import { getGuestStatisticsData } from "@/lib/mock/guestData";
+import { useGuestMode } from "@/lib/context/GuestModeContext";
 import type { Transaction, Category, TransactionType } from "@/lib/mock/types";
 
 const MONTH_LABELS = [
@@ -38,6 +40,7 @@ function parseMonthParam(param: string | null): Date {
 }
 
 function StatisticsContent() {
+  const { isGuest } = useGuestMode();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TransactionType>("expense");
   const [currentMonth, setCurrentMonthState] = useState<Date>(() =>
@@ -99,6 +102,18 @@ function StatisticsContent() {
       setTransactions(cached.transactions);
       setCategories(cached.categories);
       setTrendData(cached.trend);
+      setTrendLoading(false);
+      fetchingKeyRef.current = null;
+      return;
+    }
+
+    // 게스트 모드: 샘플 통계 데이터 사용
+    if (isGuest) {
+      const data = getGuestStatisticsData(year, month, trendCount);
+      setTransactions(data.transactions);
+      setCategories(data.categories);
+      setTrendData(data.trend);
+      setTrendLoading(false);
       fetchingKeyRef.current = null;
       return;
     }
@@ -112,7 +127,7 @@ function StatisticsContent() {
       setTrendLoading(false);
       fetchingKeyRef.current = null;
     });
-  }, [currentMonth, trendCount]);
+  }, [currentMonth, trendCount, isGuest]);
 
   const { onTouchStart, onTouchEnd } = useSwipeMonth(setCurrentMonth, !isPickerOpen);
 

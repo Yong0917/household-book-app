@@ -1,6 +1,7 @@
 // 설정 페이지 (서버 컴포넌트)
 import Link from "next/link";
-import { ChevronRight, Tag, Wallet, LogOut, Palette, RefreshCw, Shield, FileText } from "lucide-react";
+import { ChevronRight, Tag, Wallet, LogOut, Palette, RefreshCw, Shield, FileText, LogIn, UserPlus } from "lucide-react";
+import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/logout-button";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
 import { ExportButton } from "@/components/settings/ExportButton";
@@ -8,7 +9,11 @@ import { ImportButton } from "@/components/settings/ImportButton";
 import { BackupButton } from "@/components/settings/BackupButton";
 import { DeleteAccountButton } from "@/components/settings/DeleteAccountButton";
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getClaims();
+  const isGuest = !data?.claims;
+
   return (
     <>
       {/* 설정 헤더 */}
@@ -64,14 +69,14 @@ export default function SettingsPage() {
             <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
           </Link>
 
-          {/* 엑셀 내보내기 */}
-          <ExportButton />
-
-          {/* 엑셀 가져오기 */}
-          <ImportButton />
-
-          {/* 전체 데이터 백업 */}
-          <BackupButton />
+          {/* 데이터 관련 버튼은 인증 사용자만 */}
+          {!isGuest && (
+            <>
+              <ExportButton />
+              <ImportButton />
+              <BackupButton />
+            </>
+          )}
         </div>
       </div>
 
@@ -91,15 +96,39 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* 로그아웃 */}
+      {/* 로그인/로그아웃 섹션 */}
       <div className="mt-5 px-4">
-        <div className="rounded-2xl border border-border/60 overflow-hidden bg-card">
-          <LogoutButton className="flex w-full items-center gap-3.5 px-4 py-4 text-foreground hover:bg-muted/40 active:bg-muted/60 transition-colors">
-            <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
-              <LogOut className="h-4 w-4 text-foreground/70" />
-            </div>
-            <span className="text-[14.5px] font-medium">로그아웃</span>
-          </LogoutButton>
+        <div className="rounded-2xl border border-border/60 overflow-hidden bg-card divide-y divide-border/50">
+          {isGuest ? (
+            <>
+              {/* 게스트: 로그인/회원가입 버튼 */}
+              <Link
+                href="/auth/login"
+                className="flex w-full items-center gap-3.5 px-4 py-4 text-foreground hover:bg-muted/40 active:bg-muted/60 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
+                  <LogIn className="h-4 w-4 text-foreground/70" />
+                </div>
+                <span className="text-[14.5px] font-medium">로그인</span>
+              </Link>
+              <Link
+                href="/auth/sign-up"
+                className="flex w-full items-center gap-3.5 px-4 py-4 text-foreground hover:bg-muted/40 active:bg-muted/60 transition-colors"
+              >
+                <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
+                  <UserPlus className="h-4 w-4 text-foreground/70" />
+                </div>
+                <span className="text-[14.5px] font-medium">회원가입</span>
+              </Link>
+            </>
+          ) : (
+            <LogoutButton className="flex w-full items-center gap-3.5 px-4 py-4 text-foreground hover:bg-muted/40 active:bg-muted/60 transition-colors">
+              <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
+                <LogOut className="h-4 w-4 text-foreground/70" />
+              </div>
+              <span className="text-[14.5px] font-medium">로그아웃</span>
+            </LogoutButton>
+          )}
         </div>
       </div>
 
@@ -134,13 +163,18 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* 회원탈퇴 */}
-      <div className="mt-5 px-4 pb-6">
-        <p className="mb-2 px-1 text-[10px] font-bold text-muted-foreground/55 uppercase tracking-[0.14em]">계정 관리</p>
-        <div className="rounded-2xl border border-destructive/30 overflow-hidden bg-card">
-          <DeleteAccountButton />
+      {/* 회원탈퇴 - 인증 사용자만 */}
+      {!isGuest && (
+        <div className="mt-5 px-4 pb-6">
+          <p className="mb-2 px-1 text-[10px] font-bold text-muted-foreground/55 uppercase tracking-[0.14em]">계정 관리</p>
+          <div className="rounded-2xl border border-destructive/30 overflow-hidden bg-card">
+            <DeleteAccountButton />
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* 게스트: 하단 여백 */}
+      {isGuest && <div className="pb-6" />}
     </>
   );
 }
