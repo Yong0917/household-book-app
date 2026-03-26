@@ -17,10 +17,17 @@ export async function GET(request: NextRequest) {
     if (!error) {
       if (isAndroid) {
         // Android Chrome Custom Tab → 앱 복귀
-        // intent:// URL은 Chrome Custom Tab에서 확실하게 앱을 실행시킴
-        // 커스텀 스킴(com.moneylogs.app://)은 Chrome 302 리다이렉트에서 무시될 수 있으므로
-        // HTML 페이지에서 intent:// 링크로 앱을 열고, 자동으로도 시도함
-        const intentUrl = `intent://done?next=${encodeURIComponent(next)}#Intent;scheme=com.moneylogs.app;package=com.moneylogs.app;end`;
+        // Chrome Custom Tab과 WebView는 쿠키 저장소가 별개이므로,
+        // 세션 토큰을 intent URL로 전달하여 WebView에서 setSession() 호출
+        const { data: { session } } = await supabase.auth.getSession();
+        const accessToken = session?.access_token ?? "";
+        const refreshToken = session?.refresh_token ?? "";
+        const params = new URLSearchParams({
+          next,
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        const intentUrl = `intent://done?${params.toString()}#Intent;scheme=com.moneylogs.app;package=com.moneylogs.app;end`;
         const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <style>body{display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#121317;color:#fff;font-family:sans-serif;text-align:center}
