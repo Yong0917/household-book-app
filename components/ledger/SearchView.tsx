@@ -168,8 +168,9 @@ export function SearchView({ onBack, initialFilterOpen = false, onSheetOpenChang
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-background overflow-y-auto">
+      <div className="h-[env(safe-area-inset-top)] flex-shrink-0" />
       {/* 검색 헤더 */}
-      <header className="flex-shrink-0 bg-background/95 backdrop-blur-sm border-b border-border/60 h-14 flex items-center px-2 gap-1 pt-[env(safe-area-inset-top)]" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
+      <header className="flex-shrink-0 bg-background/95 backdrop-blur-sm border-b border-border/60 h-14 flex items-center px-2 gap-1">
         <button
           onClick={onBack}
           className="p-2 rounded-full hover:bg-muted/80 transition-colors"
