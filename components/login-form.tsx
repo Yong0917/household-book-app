@@ -131,6 +131,15 @@ export function LoginForm({
           </Button>
         </form>
 
+        {/* 둘러보기 버튼 */}
+        <button
+          type="button"
+          onClick={() => router.push("/ledger/daily")}
+          className="w-full text-center text-[13px] text-muted-foreground py-1.5 hover:text-foreground transition-colors"
+        >
+          로그인 없이 둘러보기
+        </button>
+
         {/* 소셜 로그인 */}
         <SocialLoginButtons />
 
