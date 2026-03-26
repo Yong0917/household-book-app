@@ -13,14 +13,11 @@ import {
   isSameMonth,
 } from "date-fns";
 import { ko } from "date-fns/locale";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
+import dynamic from "next/dynamic";
+const CategoryTrendChart = dynamic(
+  () => import("@/components/statistics/CategoryTrendChart").then((m) => ({ default: m.CategoryTrendChart })),
+  { ssr: false }
+);
 import { cn } from "@/lib/utils";
 import { getCategories } from "@/lib/actions/categories";
 import { getAssets } from "@/lib/actions/assets";
@@ -129,12 +126,6 @@ export default function CategoryDetailPage() {
   const accentColor = isExpense ? "text-expense" : "text-income";
   const chartColor = isExpense ? "#c9581a" : "#388e5a";
 
-  const formatYAxis = (value: number) => {
-    if (value >= 1000000) return `${(value / 1000000).toFixed(1)}M`;
-    if (value >= 1000) return `${Math.round(value / 1000)}k`;
-    return String(value);
-  };
-
   return (
     <div className="min-h-dvh" style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom))" }}>
       {/* 헤더 */}
@@ -205,50 +196,7 @@ export default function CategoryDetailPage() {
 
       {/* 8개월 트렌드 라인 차트 */}
       {!isLoading && (
-        <div className="px-1 pb-2">
-          <ResponsiveContainer width="100%" height={180}>
-            <LineChart
-              data={trendData}
-              margin={{ top: 8, right: 16, bottom: 0, left: 4 }}
-            >
-              <XAxis
-                dataKey="month"
-                tick={{ fontSize: 11, fill: "#9ca3af" }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <YAxis
-                tickFormatter={formatYAxis}
-                tick={{ fontSize: 10, fill: "#9ca3af" }}
-                axisLine={false}
-                tickLine={false}
-                width={36}
-              />
-              <Tooltip
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                formatter={(value: any) => [
-                  value != null ? `${Number(value).toLocaleString("ko-KR")}원` : "",
-                  "",
-                ]}
-                labelStyle={{ color: "#9ca3af", fontSize: 11 }}
-                contentStyle={{
-                  backgroundColor: "hsl(var(--background))",
-                  border: "1px solid hsl(var(--border))",
-                  borderRadius: 8,
-                  fontSize: 12,
-                }}
-              />
-              <Line
-                type="linear"
-                dataKey="total"
-                stroke={chartColor}
-                strokeWidth={2}
-                dot={{ r: 4, fill: chartColor, strokeWidth: 0 }}
-                activeDot={{ r: 5 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <CategoryTrendChart data={trendData} chartColor={chartColor} />
       )}
 
       {/* 거래 목록 (날짜별 그룹화) */}
