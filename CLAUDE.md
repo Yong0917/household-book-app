@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Next.js + Supabase 기반의 가계부 앱. Next.js App Router와 Supabase 인증(쿠키 기반 세션)을 사용한다.
 
+이 웹앱은 `/Users/seung-yongsin/Documents/Yong/money-logs-andorid` Android 프로젝트에서 WebView로 감싸져 네이티브 앱으로 제공된다.
+
 ## 개발 명령어
 
 ```bash

@@ -40,7 +40,13 @@ export function SocialLoginButtons({ redirectTo = "/ledger/daily" }: SocialLogin
     const supabase = createClient();
     setLoadingProvider(provider);
 
-    const callbackUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
+    // Android WebView에서는 커스텀 스킴 사용 (Chrome Custom Tab → 앱으로 복귀)
+    // 일반 브라우저에서는 https 콜백 URL 사용
+    const androidBridge = (window as unknown as { AndroidBridge?: { getOAuthCallbackScheme: () => string } }).AndroidBridge;
+    const callbackBase = androidBridge
+      ? androidBridge.getOAuthCallbackScheme()
+      : `${window.location.origin}/auth/callback`;
+    const callbackUrl = `${callbackBase}?next=${encodeURIComponent(redirectTo)}`;
 
     await supabase.auth.signInWithOAuth({
       provider,
