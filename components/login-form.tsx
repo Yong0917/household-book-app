@@ -144,6 +144,13 @@ export function LoginForm({
             회원가입
           </Link>
         </p>
+
+        {/* 약관 링크 */}
+        <p className="text-center text-[11.5px] text-muted-foreground/60">
+          <Link href="/terms" className="underline underline-offset-2 hover:text-muted-foreground transition-colors">이용약관</Link>
+          {" · "}
+          <Link href="/privacy" className="underline underline-offset-2 hover:text-muted-foreground transition-colors">개인정보처리방침</Link>
+        </p>
       </div>
     </div>
   );

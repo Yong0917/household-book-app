@@ -130,10 +130,19 @@ export function SignUpForm({
             </p>
           )}
 
+          {/* 약관 동의 안내 */}
+          <p className="text-[11.5px] text-muted-foreground text-center leading-relaxed">
+            회원가입 시{" "}
+            <Link href="/terms" className="underline underline-offset-2 hover:text-foreground transition-colors">이용약관</Link>
+            {" "}및{" "}
+            <Link href="/privacy" className="underline underline-offset-2 hover:text-foreground transition-colors">개인정보처리방침</Link>
+            에 동의하는 것으로 간주됩니다.
+          </p>
+
           {/* 회원가입 버튼 */}
           <Button
             type="submit"
-            className="w-full h-12 text-[15px] font-semibold mt-2"
+            className="w-full h-12 text-[15px] font-semibold"
             disabled={isLoading}
           >
             {isLoading ? "계정 생성 중..." : "회원가입"}
