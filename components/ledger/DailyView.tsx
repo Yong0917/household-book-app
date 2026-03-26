@@ -17,6 +17,7 @@ import { TransactionSheet } from "@/components/ledger/TransactionSheet";
 import { RecurringBanner } from "@/components/ledger/RecurringBanner";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { skipRecurring } from "@/lib/actions/recurring";
+import { useGuestMode } from "@/lib/context/GuestModeContext";
 import type { Transaction, Category, Asset, RecurringTransaction } from "@/lib/mock/types";
 
 interface DailyViewProps {
@@ -30,6 +31,7 @@ interface DailyViewProps {
 }
 
 export function DailyView({ currentMonth, transactions, categories, assets, isLoading, onSuccess, recurringItems = [] }: DailyViewProps) {
+  const { isGuest, requireLogin } = useGuestMode();
   // 바텀 시트 열림 상태
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   // 건너뜀 확인 모달
@@ -69,27 +71,31 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
 
   // 거래 항목 클릭 → 수정 시트 열기
   const handleItemClick = useCallback((id: string) => {
+    if (isGuest) { requireLogin(); return; }
     const tx = transactions.find((t) => t.id === id) ?? null;
     setSelectedTransaction(tx);
     setIsSheetOpen(true);
-  }, [transactions]);
+  }, [transactions, isGuest, requireLogin]);
 
   // FAB 클릭 → 추가 시트 열기
   const handleAddClick = useCallback(() => {
+    if (isGuest) { requireLogin(); return; }
     setSelectedTransaction(null);
     setSelectedRecurring(null);
     setIsSheetOpen(true);
-  }, []);
+  }, [isGuest, requireLogin]);
 
   // 고정비 배너 클릭 → pre-fill 시트 열기
   const handleRecurringClick = useCallback((recurring: RecurringTransaction) => {
+    if (isGuest) { requireLogin(); return; }
     setSelectedTransaction(null);
     setSelectedRecurring(recurring);
     setIsSheetOpen(true);
-  }, []);
+  }, [isGuest, requireLogin]);
 
   // 고정비 건너뜀 확인 모달 열기
   const handleRecurringSkip = (recurring: RecurringTransaction) => {
+    if (isGuest) { requireLogin(); return; }
     setSkipTarget(recurring);
   };
 

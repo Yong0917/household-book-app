@@ -11,6 +11,8 @@ import { ChevronLeft, ChevronRight, ChevronDown, Search } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, parse, isValid } from "date-fns";
 import { ko } from "date-fns/locale";
 import { getLedgerMonthData } from "@/lib/actions/transactions";
+import { getGuestMonthData } from "@/lib/mock/guestData";
+import { useGuestMode } from "@/lib/context/GuestModeContext";
 import type { Transaction, Category, Asset, RecurringTransaction } from "@/lib/mock/types";
 import { useSwipeMonth } from "@/hooks/useSwipeMonth";
 
@@ -72,6 +74,7 @@ interface LedgerTabViewProps {
 }
 
 export function LedgerTabView({ initialData, initialMonthKey }: LedgerTabViewProps = {}) {
+  const { isGuest } = useGuestMode();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>("list");
   const [currentMonth, setCurrentMonthState] = useState<Date>(() =>
@@ -124,6 +127,20 @@ export function LedgerTabView({ initialData, initialMonthKey }: LedgerTabViewPro
   useEffect(() => {
     const key = format(currentMonth, "yyyy-MM");
 
+    // 게스트 모드: 샘플 데이터 즉시 표시
+    if (isGuest) {
+      const year = currentMonth.getFullYear();
+      const month = currentMonth.getMonth() + 1;
+      const data = getGuestMonthData(year, month);
+      setTransactions(data.transactions);
+      setCategories(data.categories);
+      setAssets(data.assets);
+      setRecurringItems(data.recurring);
+      setIsLoading(false);
+      hasInitialDataRef.current = true;
+      return;
+    }
+
     // 1순위: 서버에서 넘겨준 SSR 초기 데이터
     if (initialData && initialMonthKey === key) {
       cacheRef.current.set(key, initialData);
@@ -160,6 +177,17 @@ export function LedgerTabView({ initialData, initialMonthKey }: LedgerTabViewPro
     const key = format(currentMonth, "yyyy-MM");
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth() + 1;
+
+    // 게스트 모드: DB fetch 없이 샘플 데이터 사용
+    if (isGuest) {
+      const data = getGuestMonthData(year, month);
+      setTransactions(data.transactions);
+      setCategories(data.categories);
+      setAssets(data.assets);
+      setRecurringItems(data.recurring);
+      setIsLoading(false);
+      return;
+    }
 
     // 같은 달을 이미 로딩 중이면 스킵 (React StrictMode 중복 방지)
     if (fetchingKeyRef.current === key && !invalidateCache) return;
@@ -199,7 +227,7 @@ export function LedgerTabView({ initialData, initialMonthKey }: LedgerTabViewPro
       hasInitialDataRef.current = false;
       fetchingKeyRef.current = null;
     }
-  }, [currentMonth]);
+  }, [currentMonth, isGuest]);
 
   useEffect(() => {
     loadData();

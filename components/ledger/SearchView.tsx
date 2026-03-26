@@ -8,6 +8,8 @@ import { ko } from "date-fns/locale";
 import { searchTransactions } from "@/lib/actions/transactions";
 import { getCategories } from "@/lib/actions/categories";
 import { getAssets } from "@/lib/actions/assets";
+import { GUEST_TRANSACTIONS, GUEST_CATEGORIES, GUEST_ASSETS } from "@/lib/mock/guestData";
+import { useGuestMode } from "@/lib/context/GuestModeContext";
 import { TransactionSheet } from "@/components/ledger/TransactionSheet";
 import type { Transaction, Category, Asset } from "@/lib/mock/types";
 
@@ -49,19 +51,22 @@ interface SearchViewProps {
 }
 
 export function SearchView({ onBack, initialFilterOpen = false, onSheetOpenChange, categories: propCategories, assets: propAssets }: SearchViewProps) {
+  const { isGuest, requireLogin } = useGuestMode();
   const [keyword, setKeyword] = useState("");
   const [filter, setFilter] = useState<FilterState>(DEFAULT_FILTER);
   const [isFilterOpen, setIsFilterOpen] = useState(initialFilterOpen);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<Category[]>(propCategories ?? []);
-  const [assets, setAssets] = useState<Asset[]>(propAssets ?? []);
+  // 게스트 모드: 전달된 props 대신 샘플 데이터 사용
+  const [categories, setCategories] = useState<Category[]>(isGuest ? GUEST_CATEGORIES : (propCategories ?? []));
+  const [assets, setAssets] = useState<Asset[]>(isGuest ? GUEST_ASSETS : (propAssets ?? []));
   const [isLoading, setIsLoading] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
-  // 카테고리/자산 로드 (props로 전달되지 않은 경우에만)
+  // 카테고리/자산 로드 (게스트는 샘플 데이터 사용, props로 전달되지 않은 경우에만)
   useEffect(() => {
+    if (isGuest) return;
     if (propCategories && propAssets) return;
     Promise.all([
       propCategories ? Promise.resolve(propCategories) : getCategories(),
@@ -70,7 +75,7 @@ export function SearchView({ onBack, initialFilterOpen = false, onSheetOpenChang
       setCategories(cats);
       setAssets(assts);
     });
-  }, [propCategories, propAssets]);
+  }, [isGuest, propCategories, propAssets]);
 
   // 검색 실행
   const doSearch = useCallback(async (kw: string, f: FilterState) => {
@@ -83,6 +88,22 @@ export function SearchView({ onBack, initialFilterOpen = false, onSheetOpenChang
     setIsLoading(true);
     setHasSearched(true);
     try {
+      // 게스트 모드: 클라이언트 사이드 필터링
+      if (isGuest) {
+        let results = GUEST_TRANSACTIONS;
+        if (kw.trim()) {
+          const lc = kw.trim().toLowerCase();
+          results = results.filter((t) => t.description?.toLowerCase().includes(lc));
+        }
+        if (f.categoryIds.length > 0) results = results.filter((t) => f.categoryIds.includes(t.categoryId));
+        if (f.assetIds.length > 0) results = results.filter((t) => f.assetIds.includes(t.assetId));
+        if (f.startDate) results = results.filter((t) => t.transactionAt >= f.startDate);
+        if (f.endDate) results = results.filter((t) => t.transactionAt <= f.endDate + "T23:59:59");
+        if (f.minAmount !== "") results = results.filter((t) => t.amount >= Number(f.minAmount));
+        if (f.maxAmount !== "") results = results.filter((t) => t.amount <= Number(f.maxAmount));
+        setTransactions(results);
+        return;
+      }
       const results = await searchTransactions({
         keyword: kw.trim() || undefined,
         startDate: f.startDate || undefined,
@@ -96,7 +117,7 @@ export function SearchView({ onBack, initialFilterOpen = false, onSheetOpenChang
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isGuest]);
 
   // 키워드 또는 필터 변경 시 자동 검색 (디바운스)
   useEffect(() => {
@@ -133,6 +154,7 @@ export function SearchView({ onBack, initialFilterOpen = false, onSheetOpenChang
 
   // 거래 항목 클릭 → 수정 시트 열기
   const handleItemClick = (t: Transaction) => {
+    if (isGuest) { requireLogin(); return; }
     setSelectedTransaction(t);
     setIsSheetOpen(true);
     onSheetOpenChange?.(true);

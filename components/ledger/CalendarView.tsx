@@ -19,6 +19,7 @@ import { Drawer } from "vaul";
 import { cn } from "@/lib/utils";
 import { TransactionList } from "./TransactionList";
 import { TransactionSheet } from "./TransactionSheet";
+import { useGuestMode } from "@/lib/context/GuestModeContext";
 import type { Transaction, Category, Asset } from "@/lib/mock/types";
 
 const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
@@ -37,6 +38,7 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ currentMonth, transactions, categories, assets, isLoading, onSuccess }: CalendarViewProps) {
+  const { isGuest, requireLogin } = useGuestMode();
   // 카테고리/자산 Map (O(1) 룩업)
   const categoryMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const assetMap = useMemo(() => new Map(assets.map((a) => [a.id, a])), [assets]);
@@ -88,24 +90,27 @@ export function CalendarView({ currentMonth, transactions, categories, assets, i
 
   // 거래 클릭 → 날짜 시트 닫고 수정 시트 열기
   const handleTransactionClick = useCallback((id: string) => {
+    if (isGuest) { requireLogin(); return; }
     const tx = transactions.find((t) => t.id === id) ?? null;
     setSelectedTransaction(tx);
     setIsDaySheetOpen(false);
     setTimeout(() => setIsTransactionSheetOpen(true), 300);
-  }, [transactions]);
+  }, [transactions, isGuest, requireLogin]);
 
   // 날짜 시트에서 "이 날 거래 추가" 클릭
   const handleDaySheetAdd = useCallback(() => {
+    if (isGuest) { requireLogin(); return; }
     setSelectedTransaction(null);
     setIsDaySheetOpen(false);
     setTimeout(() => setIsTransactionSheetOpen(true), 300);
-  }, []);
+  }, [isGuest, requireLogin]);
 
   // FAB 클릭 → 거래 추가 시트 열기
   const handleFabClick = useCallback(() => {
+    if (isGuest) { requireLogin(); return; }
     setSelectedTransaction(null);
     setIsTransactionSheetOpen(true);
-  }, []);
+  }, [isGuest, requireLogin]);
 
   // 선택한 날짜의 거래 목록
   const selectedDayTransactions = selectedDate
