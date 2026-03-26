@@ -33,7 +33,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" suppressHydrationWarning>
+    // style 인라인: CSS 로드 전 배경 깜빡임 방지 (next-themes가 JS로 dark 클래스 추가하기 전)
+    <html lang="ko" suppressHydrationWarning style={{ backgroundColor: "#FAF8F5" }}>
       <body className={`${notoSansKR.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
