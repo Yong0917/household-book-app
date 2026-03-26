@@ -28,16 +28,16 @@ export default function TermsPage() {
         <section className="mb-8">
           <h2 className="text-base font-semibold mb-2">제1조 (목적)</h2>
           <p className="text-muted-foreground">
-            본 약관은 가계부 앱(이하 "서비스")의 이용 조건 및 절차, 이용자와 운영자 간의 권리·의무 및 책임 사항을 규정함을 목적으로 합니다.
+            본 약관은 가계부 앱(이하 &ldquo;서비스&rdquo;)의 이용 조건 및 절차, 이용자와 운영자 간의 권리·의무 및 책임 사항을 규정함을 목적으로 합니다.
           </p>
         </section>
 
         <section className="mb-8">
           <h2 className="text-base font-semibold mb-2">제2조 (용어의 정의)</h2>
           <ul className="list-disc ml-5 space-y-1 text-muted-foreground">
-            <li>"서비스"란 운영자가 제공하는 가계부 앱 및 관련 제반 서비스를 의미합니다.</li>
-            <li>"이용자"란 본 약관에 동의하고 서비스를 이용하는 자를 의미합니다.</li>
-            <li>"계정"이란 이용자가 서비스에 접근하기 위해 설정한 이메일 및 비밀번호 조합, 또는 소셜 로그인 계정을 의미합니다.</li>
+            <li>&ldquo;서비스&rdquo;란 운영자가 제공하는 가계부 앱 및 관련 제반 서비스를 의미합니다.</li>
+            <li>&ldquo;이용자&rdquo;란 본 약관에 동의하고 서비스를 이용하는 자를 의미합니다.</li>
+            <li>&ldquo;계정&rdquo;이란 이용자가 서비스에 접근하기 위해 설정한 이메일 및 비밀번호 조합, 또는 소셜 로그인 계정을 의미합니다.</li>
           </ul>
         </section>
 
