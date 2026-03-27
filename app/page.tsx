@@ -10,13 +10,16 @@ export default function Home() {
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        router.replace("/ledger/daily");
-      } else {
-        router.replace("/auth/login");
+    const minDelay = new Promise((resolve) => setTimeout(resolve, 1000));
+    Promise.all([supabase.auth.getSession(), minDelay]).then(
+      ([{ data: { session } }]) => {
+        if (session) {
+          router.replace("/ledger/daily");
+        } else {
+          router.replace("/auth/login");
+        }
       }
-    });
+    );
   }, [router]);
 
   return (
