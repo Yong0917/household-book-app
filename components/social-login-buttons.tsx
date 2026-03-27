@@ -63,6 +63,13 @@ export function SocialLoginButtons({ redirectTo = "/ledger/daily" }: SocialLogin
       : `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
 
     const useNativeGoogleAuth = isAndroid && provider === "google" && typeof appWindow.AndroidBridge?.openAuth === "function";
+    console.log("[OAuth] start", {
+      provider,
+      isAndroid,
+      useNativeGoogleAuth,
+      callbackUrl,
+    });
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
@@ -77,8 +84,15 @@ export function SocialLoginButtons({ redirectTo = "/ledger/daily" }: SocialLogin
       return;
     }
 
+    console.log("[OAuth] response", {
+      provider,
+      useNativeGoogleAuth,
+      url: data?.url ?? null,
+    });
+
     if (useNativeGoogleAuth) {
       if (data?.url) {
+        console.log("[OAuth] openAuth", { url: data.url });
         appWindow.AndroidBridge?.openAuth?.(data.url);
       } else {
         console.error("Google OAuth URL을 받지 못했습니다.");
