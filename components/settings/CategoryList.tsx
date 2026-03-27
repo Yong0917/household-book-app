@@ -362,7 +362,7 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
             </div>
 
             {/* 하단 버튼 영역 */}
-            <div className="px-4 pb-8 pt-3 border-t border-border/60 space-y-2 flex-shrink-0">
+            <div className="px-4 pb-6 pt-3 border-t border-border/60 space-y-2 flex-shrink-0">
               {editingCategory && (
                 <Button
                   variant="outline"
@@ -381,6 +381,8 @@ export function CategoryList({ initialCategories }: CategoryListProps) {
                 {isPending ? "저장 중..." : "저장"}
               </Button>
             </div>
+            {/* 하단 safe area 여백 (홈 인디케이터 영역) */}
+            <div className="flex-shrink-0" style={{ height: "env(safe-area-inset-bottom)" }} />
           </Drawer.Content>
         </Drawer.Portal>
       </Drawer.Root>
