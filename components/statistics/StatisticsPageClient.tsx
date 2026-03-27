@@ -1,7 +1,7 @@
 "use client";
 
 // 통계 페이지 클라이언트 - 수입/지출 탭 통합 (기본: 지출)
-import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, isSameMonth, parseISO, parse, isValid } from "date-fns";
@@ -113,10 +113,18 @@ function StatisticsContent({ initialData, initialMonthKey }: StatisticsPageClien
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailCategoryId, setDetailCategoryId] = useState<string | null>(null);
 
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [trendData, setTrendData] = useState<StatsCacheEntry["trend"]>([]);
+  // 3개 상태를 하나로 통합 → React 18에서도 명시적 단일 리렌더 보장
+  const [statsData, setStatsData] = useState<StatsCacheEntry>({
+    transactions: [],
+    categories: [],
+    trend: [],
+  });
   const [trendLoading, setTrendLoading] = useState(true);
+  const { transactions, categories, trendData } = {
+    transactions: statsData.transactions,
+    categories: statsData.categories,
+    trendData: statsData.trend,
+  };
 
   // 인메모리 캐시 (같은 달/기간으로 돌아올 때 재사용)
   const cacheRef = useRef<Map<string, StatsCacheEntry>>(new Map());
@@ -134,9 +142,7 @@ function StatisticsContent({ initialData, initialMonthKey }: StatisticsPageClien
       const year = currentMonth.getFullYear();
       const month = currentMonth.getMonth() + 1;
       const data = getGuestStatisticsData(year, month, 6);
-      setTransactions(data.transactions);
-      setCategories(data.categories);
-      setTrendData(data.trend);
+      setStatsData(data);
       setTrendLoading(false);
       hasInitialDataRef.current = true;
       return;
@@ -145,9 +151,7 @@ function StatisticsContent({ initialData, initialMonthKey }: StatisticsPageClien
     // 1순위: 서버에서 넘겨준 SSR 초기 데이터
     if (initialData && initialMonthKey && `${initialMonthKey}-6` === key) {
       cacheRef.current.set(key, initialData);
-      setTransactions(initialData.transactions);
-      setCategories(initialData.categories);
-      setTrendData(initialData.trend);
+      setStatsData(initialData);
       setTrendLoading(false);
       hasInitialDataRef.current = true;
       writeLocalCache(key, initialData);
@@ -157,9 +161,7 @@ function StatisticsContent({ initialData, initialMonthKey }: StatisticsPageClien
     // 2순위: localStorage 캐시 (앱 재시작 시 즉시 표시)
     const lsCache = readLocalCache(key);
     if (lsCache) {
-      setTransactions(lsCache.transactions);
-      setCategories(lsCache.categories);
-      setTrendData(lsCache.trend);
+      setStatsData(lsCache);
       setTrendLoading(false);
       hasInitialDataRef.current = true;
       // 인메모리 캐시에는 넣지 않음 → 이후 useEffect에서 fresh fetch 유도
@@ -179,9 +181,7 @@ function StatisticsContent({ initialData, initialMonthKey }: StatisticsPageClien
     // 인메모리 캐시 히트
     const cached = cacheRef.current.get(key);
     if (cached) {
-      setTransactions(cached.transactions);
-      setCategories(cached.categories);
-      setTrendData(cached.trend);
+      setStatsData(cached);
       setTrendLoading(false);
       fetchingKeyRef.current = null;
       return;
@@ -190,9 +190,7 @@ function StatisticsContent({ initialData, initialMonthKey }: StatisticsPageClien
     // 게스트 모드: 샘플 데이터
     if (isGuest) {
       const data = getGuestStatisticsData(year, month, trendCount);
-      setTransactions(data.transactions);
-      setCategories(data.categories);
-      setTrendData(data.trend);
+      setStatsData(data);
       setTrendLoading(false);
       fetchingKeyRef.current = null;
       return;
@@ -204,9 +202,7 @@ function StatisticsContent({ initialData, initialMonthKey }: StatisticsPageClien
     getStatisticsPageData(year, month, trendCount).then((data) => {
       cacheRef.current.set(key, data);
       writeLocalCache(key, data);
-      setTransactions(data.transactions);
-      setCategories(data.categories);
-      setTrendData(data.trend);
+      setStatsData(data);
       setTrendLoading(false);
       hasInitialDataRef.current = false;
       fetchingKeyRef.current = null;
@@ -225,28 +221,29 @@ function StatisticsContent({ initialData, initialMonthKey }: StatisticsPageClien
     setIsPickerOpen(false);
   };
 
-  // 선택된 탭에 맞는 거래 필터링
-  const filtered = transactions.filter(
-    (t) => t.type === activeTab && isSameMonth(parseISO(t.transactionAt), currentMonth)
-  );
+  // 탭·달·데이터가 바뀔 때만 재계산 (렌더마다 재연산 방지)
+  const { chartData, total } = useMemo(() => {
+    const filtered = transactions.filter(
+      (t) => t.type === activeTab && isSameMonth(parseISO(t.transactionAt), currentMonth)
+    );
 
-  // 카테고리 Map (O(1) 룩업)
-  const categoryLookup = new Map(categories.map((c) => [c.id, c]));
+    const categoryLookup = new Map(categories.map((c) => [c.id, c]));
 
-  // 카테고리별 집계
-  const categoryAmountMap = new Map<string, number>();
-  filtered.forEach((t) => {
-    categoryAmountMap.set(t.categoryId, (categoryAmountMap.get(t.categoryId) ?? 0) + t.amount);
-  });
+    const categoryAmountMap = new Map<string, number>();
+    filtered.forEach((t) => {
+      categoryAmountMap.set(t.categoryId, (categoryAmountMap.get(t.categoryId) ?? 0) + t.amount);
+    });
 
-  const chartData = Array.from(categoryAmountMap.entries())
-    .map(([catId, value]) => {
-      const cat = categoryLookup.get(catId);
-      return { id: catId, name: cat?.name ?? "기타", value, color: cat?.color ?? "#6b7280" };
-    })
-    .sort((a, b) => b.value - a.value);
+    const chartData = Array.from(categoryAmountMap.entries())
+      .map(([catId, value]) => {
+        const cat = categoryLookup.get(catId);
+        return { id: catId, name: cat?.name ?? "기타", value, color: cat?.color ?? "#6b7280" };
+      })
+      .sort((a, b) => b.value - a.value);
 
-  const total = chartData.reduce((sum, d) => sum + d.value, 0);
+    const total = chartData.reduce((sum, d) => sum + d.value, 0);
+    return { chartData, total };
+  }, [transactions, categories, activeTab, currentMonth]);
 
   const isExpense = activeTab === "expense";
 

@@ -1,7 +1,7 @@
 "use client";
 
 // 파이 차트 컴포넌트 (커스텀 SVG, 레이블 겹침 방지)
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { BarChart2 } from "lucide-react";
 
 export interface DonutChartData {
@@ -64,8 +64,11 @@ export function DonutChart({ data, total, onCategoryClick }: DonutChartProps) {
   // 0 → 1 애니메이션 (cubic ease-out)
   const [progress, setProgress] = useState(0);
 
-  // data 참조가 바뀌어도 실제 값이 같으면 애니메이션 재실행 방지
-  const dataKey = data.map((d) => `${d.id ?? d.name}:${d.value}`).join(",");
+  // data 실제 값 기반 키 (참조가 달라도 값이 같으면 애니메이션 재실행 방지)
+  const dataKey = useMemo(
+    () => data.map((d) => `${d.id ?? d.name}:${d.value}`).join(","),
+    [data]
+  );
 
   useEffect(() => {
     setProgress(0);
@@ -79,8 +82,51 @@ export function DonutChart({ data, total, onCategoryClick }: DonutChartProps) {
     };
     raf = requestAnimationFrame(animate);
     return () => cancelAnimationFrame(raf);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataKey]);
+
+  // 정적 슬라이스 기하 (data/total이 바뀔 때만 재계산)
+  // progress와 무관하므로 RAF 루프에서 재계산되지 않음
+  const baseSlices = useMemo(() => {
+    let cum = 0;
+    return data.map((d) => {
+      const pct = total > 0 ? d.value / total : 0;
+      const sweep = pct * 360;
+      const startDeg = cum;
+      const midDeg = cum + sweep / 2;
+      cum += sweep;
+      return { ...d, pct, startDeg, sweep, midDeg };
+    });
+  }, [data, total]);
+
+  // 레이블 위치 계산 — resolveOverlaps 포함, data/total 변경 시에만 실행
+  const labelLayout = useMemo(() => {
+    type LabelEntry = {
+      d: (typeof baseSlices)[0];
+      isRight: boolean;
+      naturalY: number;
+      adjustedY: number;
+      bendX: number;
+      midDegRad: number;
+    };
+    const labels: LabelEntry[] = baseSlices.map((s) => {
+      const rad = ((s.midDeg - 90) * Math.PI) / 180;
+      const bx = CX + L2 * Math.cos(rad);
+      const by = CY + L2 * Math.sin(rad);
+      return {
+        d: s,
+        isRight: Math.cos(rad) >= 0,
+        naturalY: by,
+        adjustedY: by,
+        bendX: bx,
+        midDegRad: rad,
+      };
+    });
+    const right = labels.filter((l) => l.isRight).sort((a, b) => a.naturalY - b.naturalY);
+    const left = labels.filter((l) => !l.isRight).sort((a, b) => a.naturalY - b.naturalY);
+    resolveOverlaps(right);
+    resolveOverlaps(left);
+    return { right, left };
+  }, [baseSlices]);
 
   if (data.length === 0) {
     return (
@@ -91,49 +137,19 @@ export function DonutChart({ data, total, onCategoryClick }: DonutChartProps) {
     );
   }
 
-  // 슬라이스 각도 계산 (애니메이션 적용)
+  // 애니메이션 진행도를 슬라이스에 적용 (매 프레임 실행되지만 계산이 단순)
   const totalFilled = 360 * progress;
-  let cum = 0;
-  const slices = data.map((d) => {
-    const pct = total > 0 ? d.value / total : 0;
-    const sweep = pct * 360;
-    const startDeg = cum;
-    const midDeg = cum + sweep / 2;
-    const endDeg = Math.min(cum + sweep, totalFilled);
-    cum += sweep;
-    return { ...d, pct, startDeg, endDeg, midDeg, visible: totalFilled > startDeg };
-  });
+  const slices = baseSlices.map((s) => ({
+    ...s,
+    endDeg: Math.min(s.startDeg + s.sweep, totalFilled),
+    visible: totalFilled > s.startDeg,
+  }));
 
-  // 레이블 위치 계산 (애니메이션 완료 전에는 숨김)
+  // 레이블 위치 (memoized)
+  const { right, left } = labelLayout;
+
+  // 레이블 페이드인 (애니메이션 완료 전에는 숨김)
   const labelOpacity = Math.max(0, (progress - 0.75) / 0.25);
-
-  type LabelEntry = {
-    d: typeof slices[0];
-    isRight: boolean;
-    naturalY: number;
-    adjustedY: number;
-    bendX: number;
-    midDegRad: number;
-  };
-
-  const labels: LabelEntry[] = slices.map((s) => {
-    const rad = ((s.midDeg - 90) * Math.PI) / 180;
-    const bx = CX + L2 * Math.cos(rad);
-    const by = CY + L2 * Math.sin(rad);
-    return {
-      d: s,
-      isRight: Math.cos(rad) >= 0,
-      naturalY: by,
-      adjustedY: by,
-      bendX: bx,
-      midDegRad: rad,
-    };
-  });
-
-  const right = labels.filter((l) => l.isRight).sort((a, b) => a.naturalY - b.naturalY);
-  const left = labels.filter((l) => !l.isRight).sort((a, b) => a.naturalY - b.naturalY);
-  resolveOverlaps(right);
-  resolveOverlaps(left);
 
   return (
     <div>
