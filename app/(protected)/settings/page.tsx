@@ -33,12 +33,12 @@ export default async function SettingsPage() {
             className="flex items-center justify-between px-4 py-4 hover:bg-muted/40 active:bg-muted/60 transition-colors"
           >
             <div className="flex items-center gap-3.5">
-              <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
-                <Tag className="h-4 w-4 text-foreground/70" />
+              <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-950 flex items-center justify-center">
+                <Tag className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               </div>
               <span className="text-[14.5px] font-medium">분류 관리</span>
             </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
           </Link>
 
           {/* 자산 관리 */}
@@ -47,12 +47,12 @@ export default async function SettingsPage() {
             className="flex items-center justify-between px-4 py-4 hover:bg-muted/40 active:bg-muted/60 transition-colors"
           >
             <div className="flex items-center gap-3.5">
-              <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
-                <Wallet className="h-4 w-4 text-foreground/70" />
+              <div className="w-8 h-8 rounded-xl bg-sky-100 dark:bg-sky-950 flex items-center justify-center">
+                <Wallet className="h-4 w-4 text-sky-600 dark:text-sky-400" />
               </div>
               <span className="text-[14.5px] font-medium">자산 관리</span>
             </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
           </Link>
 
           {/* 고정비 관리 */}
@@ -61,12 +61,12 @@ export default async function SettingsPage() {
             className="flex items-center justify-between px-4 py-4 hover:bg-muted/40 active:bg-muted/60 transition-colors"
           >
             <div className="flex items-center gap-3.5">
-              <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
-                <RefreshCw className="h-4 w-4 text-foreground/70" />
+              <div className="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-950 flex items-center justify-center">
+                <RefreshCw className="h-4 w-4 text-violet-600 dark:text-violet-400" />
               </div>
               <span className="text-[14.5px] font-medium">고정비 관리</span>
             </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
           </Link>
 
           {/* 데이터 관련 버튼은 인증 사용자만 */}
@@ -86,8 +86,8 @@ export default async function SettingsPage() {
         <div className="rounded-2xl border border-border/60 overflow-hidden bg-card">
           <div className="flex items-center justify-between px-4 py-4">
             <div className="flex items-center gap-3.5">
-              <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
-                <Palette className="h-4 w-4 text-foreground/70" />
+              <div className="w-8 h-8 rounded-xl bg-purple-100 dark:bg-purple-950 flex items-center justify-center">
+                <Palette className="h-4 w-4 text-purple-600 dark:text-purple-400" />
               </div>
               <span className="text-[14.5px] font-medium">화면 테마</span>
             </div>
@@ -106,8 +106,8 @@ export default async function SettingsPage() {
                 href="/auth/login"
                 className="flex w-full items-center gap-3.5 px-4 py-4 text-foreground hover:bg-muted/40 active:bg-muted/60 transition-colors"
               >
-                <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
-                  <LogIn className="h-4 w-4 text-foreground/70" />
+                <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950 flex items-center justify-center">
+                  <LogIn className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 </div>
                 <span className="text-[14.5px] font-medium">로그인</span>
               </Link>
@@ -115,16 +115,16 @@ export default async function SettingsPage() {
                 href="/auth/sign-up"
                 className="flex w-full items-center gap-3.5 px-4 py-4 text-foreground hover:bg-muted/40 active:bg-muted/60 transition-colors"
               >
-                <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
-                  <UserPlus className="h-4 w-4 text-foreground/70" />
+                <div className="w-8 h-8 rounded-xl bg-teal-100 dark:bg-teal-950 flex items-center justify-center">
+                  <UserPlus className="h-4 w-4 text-teal-600 dark:text-teal-400" />
                 </div>
                 <span className="text-[14.5px] font-medium">회원가입</span>
               </Link>
             </>
           ) : (
             <LogoutButton className="flex w-full items-center gap-3.5 px-4 py-4 text-foreground hover:bg-muted/40 active:bg-muted/60 transition-colors">
-              <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
-                <LogOut className="h-4 w-4 text-foreground/70" />
+              <div className="w-8 h-8 rounded-xl bg-rose-100 dark:bg-rose-950 flex items-center justify-center">
+                <LogOut className="h-4 w-4 text-rose-600 dark:text-rose-400" />
               </div>
               <span className="text-[14.5px] font-medium">로그아웃</span>
             </LogoutButton>
@@ -141,24 +141,24 @@ export default async function SettingsPage() {
             className="flex items-center justify-between px-4 py-4 hover:bg-muted/40 active:bg-muted/60 transition-colors"
           >
             <div className="flex items-center gap-3.5">
-              <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
-                <Shield className="h-4 w-4 text-foreground/70" />
+              <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                <Shield className="h-4 w-4 text-slate-600 dark:text-slate-400" />
               </div>
               <span className="text-[14.5px] font-medium">개인정보처리방침</span>
             </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
           </Link>
           <Link
             href="/terms"
             className="flex items-center justify-between px-4 py-4 hover:bg-muted/40 active:bg-muted/60 transition-colors"
           >
             <div className="flex items-center gap-3.5">
-              <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center">
-                <FileText className="h-4 w-4 text-foreground/70" />
+              <div className="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                <FileText className="h-4 w-4 text-slate-600 dark:text-slate-400" />
               </div>
               <span className="text-[14.5px] font-medium">이용약관</span>
             </div>
-            <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
           </Link>
         </div>
       </div>

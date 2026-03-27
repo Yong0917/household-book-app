@@ -9,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { BookOpen } from "lucide-react";
 import { translateAuthError } from "@/lib/auth-errors";
 import { SocialLoginButtons } from "@/components/social-login-buttons";
 
@@ -58,12 +57,17 @@ export function LoginForm({
     >
       {/* 브랜드 영역 */}
       <div className="flex flex-col items-center mb-12">
-        <div className="w-12 h-12 bg-foreground rounded-2xl flex items-center justify-center mb-5 shadow-sm">
-          <BookOpen className="h-[22px] w-[22px] text-background" strokeWidth={1.75} />
-        </div>
-        <h1 className="text-[22px] font-bold tracking-tight text-foreground">가계부</h1>
-        <p className="text-[13px] text-muted-foreground mt-1.5">
-          수입과 지출을 한 눈에
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/icon-512.png"
+          alt="가계부"
+          className="w-[88px] h-[88px] rounded-[24px] mb-5 select-none"
+          style={{ boxShadow: "0 8px 32px hsl(197 60% 42% / 0.22), 0 2px 8px hsl(197 60% 42% / 0.10)" }}
+          draggable={false}
+        />
+        <h1 className="text-[24px] font-bold tracking-tight text-foreground">가계부</h1>
+        <p className="text-[13.5px] text-muted-foreground mt-1.5">
+          수입과 지출을 한눈에
         </p>
       </div>
 
@@ -124,7 +128,7 @@ export function LoginForm({
           {/* 로그인 버튼 */}
           <Button
             type="submit"
-            className="w-full h-12 text-[15px] font-semibold mt-2"
+            className="w-full h-12 text-[15px] font-semibold mt-2 shadow-[0_4px_16px_hsl(197_60%_42%_/_0.30)] active:scale-[0.98] transition-all duration-150"
             disabled={isLoading}
           >
             {isLoading ? "로그인 중..." : "로그인"}

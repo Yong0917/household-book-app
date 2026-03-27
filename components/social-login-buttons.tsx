@@ -40,12 +40,20 @@ export function SocialLoginButtons({ redirectTo = "/ledger/daily" }: SocialLogin
     const supabase = createClient();
     setLoadingProvider(provider);
 
+    const appWindow = window as unknown as {
+      __MONEYLOGS_ANDROID_APP__?: boolean;
+      AndroidBridge?: { getPlatform?: () => string };
+    };
+
     // Android WebView 감지: OAuth 완료 후 곧바로 앱 딥링크로 복귀
     // 앱이 받은 code를 WebView의 /auth/callback?android=1 로 넘겨 세션 교환 처리
-    // 1차: AndroidBridge JS 인터페이스로 감지
-    // 2차: User-Agent에 MoneyLogsApp 포함 여부로 폴백 감지
-    const androidBridge = (window as unknown as { AndroidBridge?: { getPlatform?: () => string } }).AndroidBridge;
-    const isAndroid = androidBridge?.getPlatform?.() === "android"
+    // 1차: 네이티브가 주입한 전역 플래그/localStorage
+    // 2차: AndroidBridge JS 인터페이스
+    // 3차: User-Agent 문자열
+    const nativeFlag = appWindow.__MONEYLOGS_ANDROID_APP__ === true
+      || window.localStorage.getItem("moneylogs:platform") === "android";
+    const isAndroid = nativeFlag
+      || appWindow.AndroidBridge?.getPlatform?.() === "android"
       || navigator.userAgent.includes("MoneyLogsApp/Android");
     const callbackUrl = isAndroid
       ? `com.moneylogs.app://auth-callback?next=${encodeURIComponent(redirectTo)}`
