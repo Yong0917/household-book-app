@@ -128,20 +128,21 @@ export async function getUnprocessedRecurring(
   const start = new Date(Date.UTC(year, month - 1, 1) - KST_OFFSET).toISOString();
   const end = new Date(Date.UTC(year, month, 1) - KST_OFFSET).toISOString();
 
-  // 해당 달에 처리된 recurring_id 목록
-  const { data: processed } = await supabase
-    .from("transactions")
-    .select("recurring_id")
-    .gte("transaction_at", start)
-    .lt("transaction_at", end)
-    .not("recurring_id", "is", null);
-
-  // 해당 달에 건너뛴 recurring_id 목록
-  const { data: skipped } = await supabase
-    .from("recurring_skips")
-    .select("recurring_id")
-    .eq("year", year)
-    .eq("month", month);
+  // 처리된 목록, 건너뛴 목록, 전체 활성 고정비를 병렬 조회
+  const [{ data: processed }, { data: skipped }, all] = await Promise.all([
+    supabase
+      .from("transactions")
+      .select("recurring_id")
+      .gte("transaction_at", start)
+      .lt("transaction_at", end)
+      .not("recurring_id", "is", null),
+    supabase
+      .from("recurring_skips")
+      .select("recurring_id")
+      .eq("year", year)
+      .eq("month", month),
+    getRecurringTransactions(),
+  ]);
 
   const excludeIds = new Set([
     ...(processed ?? []).map((r) => r.recurring_id as string),
@@ -153,7 +154,6 @@ export async function getUnprocessedRecurring(
 
   // 활성 고정비 중 day_of_month 범위 내 + 미처리 + 미건너뜀 항목
   // day_of_month가 해당 달 마지막 날보다 크면 마지막 날로 clamp (예: 31일 설정 → 2월엔 28일로 처리)
-  const all = await getRecurringTransactions();
   return all.filter((r) => {
     const effectiveDay = Math.min(r.dayOfMonth, lastDayOfMonth);
     return effectiveDay <= maxDay && !excludeIds.has(r.id);

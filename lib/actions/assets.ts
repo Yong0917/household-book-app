@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { Asset, AssetType } from "@/lib/mock/types";
@@ -21,8 +22,8 @@ function toAsset(row: {
   };
 }
 
-// 자산 목록 조회
-export async function getAssets(): Promise<Asset[]> {
+// 자산 목록 조회 (동일 요청 내 중복 호출 dedup)
+export const getAssets = cache(async (): Promise<Asset[]> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("assets")
@@ -31,7 +32,7 @@ export async function getAssets(): Promise<Asset[]> {
 
   if (error) throw new Error(error.message);
   return (data ?? []).map(toAsset);
-}
+});
 
 // 자산 추가
 export async function addAsset(data: Omit<Asset, "id" | "sortOrder">): Promise<void> {

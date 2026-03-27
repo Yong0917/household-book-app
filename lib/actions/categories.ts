@@ -1,5 +1,6 @@
 "use server";
 
+import { cache } from "react";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { Category, TransactionType } from "@/lib/mock/types";
@@ -23,8 +24,8 @@ function toCategory(row: {
   };
 }
 
-// 카테고리 목록 조회
-export async function getCategories(): Promise<Category[]> {
+// 카테고리 목록 조회 (동일 요청 내 중복 호출 dedup)
+export const getCategories = cache(async (): Promise<Category[]> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("categories")
@@ -33,7 +34,7 @@ export async function getCategories(): Promise<Category[]> {
 
   if (error) throw new Error(error.message);
   return (data ?? []).map(toCategory);
-}
+});
 
 // 카테고리 추가
 export async function addCategory(data: Omit<Category, "id" | "sortOrder">): Promise<void> {
