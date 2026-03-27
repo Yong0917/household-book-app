@@ -55,9 +55,11 @@ export function SocialLoginButtons({ redirectTo = "/ledger/daily" }: SocialLogin
     const isAndroid = nativeFlag
       || appWindow.AndroidBridge?.getPlatform?.() === "android"
       || navigator.userAgent.includes("MoneyLogsApp/Android");
-    const callbackUrl = isAndroid
+    // Google은 Chrome Custom Tab(외부 브라우저)으로 열리므로 앱 딥링크로 복귀
+    // Kakao는 WebView 안에서 진행되므로 일반 웹 콜백 URL 사용
+    const callbackUrl = isAndroid && provider === "google"
       ? `com.moneylogs.app://auth-callback?next=${encodeURIComponent(redirectTo)}`
-      : `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
+      : `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}${isAndroid ? "&android=1" : ""}`;
 
     const { error } = await supabase.auth.signInWithOAuth({
       provider,
