@@ -42,7 +42,10 @@ export function SocialLoginButtons({ redirectTo = "/ledger/daily" }: SocialLogin
 
     const appWindow = window as unknown as {
       __MONEYLOGS_ANDROID_APP__?: boolean;
-      AndroidBridge?: { getPlatform?: () => string };
+      AndroidBridge?: {
+        getPlatform?: () => string;
+        openAuth?: (url: string) => void;
+      };
     };
 
     // Android WebView 감지: OAuth 완료 후 곧바로 앱 딥링크로 복귀
@@ -59,12 +62,30 @@ export function SocialLoginButtons({ redirectTo = "/ledger/daily" }: SocialLogin
       ? `com.moneylogs.app://auth-callback?next=${encodeURIComponent(redirectTo)}`
       : `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`;
 
-    await supabase.auth.signInWithOAuth({
+    const useNativeGoogleAuth = isAndroid && provider === "google" && typeof appWindow.AndroidBridge?.openAuth === "function";
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider,
       options: {
         redirectTo: callbackUrl,
+        skipBrowserRedirect: useNativeGoogleAuth,
       },
     });
+
+    if (error) {
+      console.error(`${provider} 로그인 시작 실패:`, error.message);
+      setLoadingProvider(null);
+      return;
+    }
+
+    if (useNativeGoogleAuth) {
+      if (data?.url) {
+        appWindow.AndroidBridge?.openAuth?.(data.url);
+      } else {
+        console.error("Google OAuth URL을 받지 못했습니다.");
+        setLoadingProvider(null);
+      }
+      return;
+    }
 
     // OAuth는 페이지 이동이 발생하므로 setLoadingProvider(null) 불필요
   };
