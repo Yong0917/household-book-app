@@ -186,7 +186,7 @@ export async function deleteTransaction(id: string): Promise<void> {
   revalidatePath("/statistics");
 }
 
-// 월별 추이 데이터 조회 (최근 N개월)
+// 월별 추이 데이터 조회 (최근 N개월) — DB GROUP BY RPC 사용
 export async function getMonthlyTrend(
   baseYear: number,
   baseMonth: number,
@@ -195,24 +195,20 @@ export async function getMonthlyTrend(
   const supabase = await createClient();
 
   const KST_OFFSET = 9 * 60 * 60 * 1000;
-
-  // 시작 달 계산 (baseMonth 포함 이전 count개월)
   const base = new Date(baseYear, baseMonth - 1, 1);
-  const startYear = new Date(base.getFullYear(), base.getMonth() - (count - 1), 1).getFullYear();
-  const startMonthNum = new Date(base.getFullYear(), base.getMonth() - (count - 1), 1).getMonth() + 1;
+  const startDate = new Date(base.getFullYear(), base.getMonth() - (count - 1), 1);
 
-  const start = new Date(Date.UTC(startYear, startMonthNum - 1, 1) - KST_OFFSET).toISOString();
+  const start = new Date(Date.UTC(startDate.getFullYear(), startDate.getMonth(), 1) - KST_OFFSET).toISOString();
   const end = new Date(Date.UTC(baseYear, baseMonth, 1) - KST_OFFSET).toISOString();
 
-  const { data, error } = await supabase
-    .from("transactions")
-    .select("type, amount, transaction_at")
-    .gte("transaction_at", start)
-    .lt("transaction_at", end);
+  const { data, error } = await supabase.rpc("get_monthly_trend", {
+    p_start: start,
+    p_end: end,
+  });
 
   if (error) throw new Error(error.message);
 
-  // 월별 집계 맵 초기화
+  // 빈 달(거래 없음)도 포함하도록 전체 달 목록으로 머지
   type Entry = { year: number; month: number; income: number; expense: number };
   const monthMap = new Map<string, Entry>();
 
@@ -223,16 +219,12 @@ export async function getMonthlyTrend(
     monthMap.set(`${y}-${String(m).padStart(2, "0")}`, { year: y, month: m, income: 0, expense: 0 });
   }
 
-  // KST 기준으로 월 집계
   for (const row of data ?? []) {
-    const kst = new Date(Date.parse(row.transaction_at) + KST_OFFSET);
-    const y = kst.getUTCFullYear();
-    const m = kst.getUTCMonth() + 1;
-    const key = `${y}-${String(m).padStart(2, "0")}`;
+    const key = `${row.year}-${String(row.month).padStart(2, "0")}`;
     const entry = monthMap.get(key);
     if (entry) {
-      if (row.type === "income") entry.income += row.amount;
-      else entry.expense += row.amount;
+      entry.income = Number(row.income);
+      entry.expense = Number(row.expense);
     }
   }
 
@@ -251,8 +243,8 @@ export async function getMemoSuggestions(keyword: string): Promise<string[]> {
     .select("description")
     .ilike("description", `%${keyword}%`)
     .not("description", "is", null)
-    .limit(50);
+    .limit(10);
   if (error) return [];
   const unique = [...new Set((data ?? []).map((r) => r.description as string))];
-  return unique.slice(0, 10);
+  return unique;
 }
