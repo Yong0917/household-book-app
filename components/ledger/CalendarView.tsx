@@ -48,39 +48,35 @@ export function CalendarView({ currentMonth, transactions, categories, assets, i
   const [isTransactionSheetOpen, setIsTransactionSheetOpen] = useState(false);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
 
-  // 현재 월 거래 필터링
-  const monthlyTransactions = transactions.filter((t) =>
-    isSameMonth(parseISO(t.transactionAt), currentMonth)
-  );
-
-  // 월간 수입/지출 집계
-  const monthIncome = monthlyTransactions
-    .filter((t) => t.type === "income")
-    .reduce((sum, t) => sum + t.amount, 0);
-  const monthExpense = monthlyTransactions
-    .filter((t) => t.type === "expense")
-    .reduce((sum, t) => sum + t.amount, 0);
-  const monthNet = monthIncome - monthExpense;
-
-  // 날짜별 수입/지출 집계 Map
-  const dayMap = new Map<string, { income: number; expense: number }>();
-  monthlyTransactions.forEach((t) => {
-    const key = format(parseISO(t.transactionAt), "yyyy-MM-dd");
-    const prev = dayMap.get(key) ?? { income: 0, expense: 0 };
-    if (t.type === "income") {
-      dayMap.set(key, { ...prev, income: prev.income + t.amount });
-    } else {
-      dayMap.set(key, { ...prev, expense: prev.expense + t.amount });
+  // 현재 월 거래 필터링 + 수입/지출 집계 + 날짜별 Map (한 번의 순회로 통합)
+  const { monthIncome, monthExpense, monthNet, dayMap } = useMemo(() => {
+    let inc = 0;
+    let exp = 0;
+    const map = new Map<string, { income: number; expense: number }>();
+    for (const t of transactions) {
+      if (!isSameMonth(parseISO(t.transactionAt), currentMonth)) continue;
+      const key = format(parseISO(t.transactionAt), "yyyy-MM-dd");
+      const prev = map.get(key) ?? { income: 0, expense: 0 };
+      if (t.type === "income") {
+        map.set(key, { ...prev, income: prev.income + t.amount });
+        inc += t.amount;
+      } else {
+        map.set(key, { ...prev, expense: prev.expense + t.amount });
+        exp += t.amount;
+      }
     }
-  });
+    return { monthIncome: inc, monthExpense: exp, monthNet: inc - exp, dayMap: map };
+  }, [transactions, currentMonth]);
 
   // 달력 날짜 배열 및 행 수 계산
-  const days = eachDayOfInterval({
-    start: startOfMonth(currentMonth),
-    end: endOfMonth(currentMonth),
-  });
-  const startOffset = getDay(days[0]);
-  const rows = Math.ceil((startOffset + days.length) / 7);
+  const { days, startOffset, rows } = useMemo(() => {
+    const d = eachDayOfInterval({
+      start: startOfMonth(currentMonth),
+      end: endOfMonth(currentMonth),
+    });
+    const offset = getDay(d[0]);
+    return { days: d, startOffset: offset, rows: Math.ceil((offset + d.length) / 7) };
+  }, [currentMonth]);
 
   // 날짜 클릭 → 날짜 바텀시트 열기
   const handleDayClick = useCallback((day: Date) => {

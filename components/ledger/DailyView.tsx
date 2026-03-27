@@ -2,6 +2,7 @@
 
 // 가계부 월간 목록 뷰 (날짜별 그룹화) - 데이터는 LedgerTabView에서 props로 전달
 import { useState, useMemo, useCallback } from "react";
+import Image from "next/image";
 import { Plus } from "lucide-react";
 import {
   format,
@@ -45,8 +46,8 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
   const categoryMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
   const assetMap = useMemo(() => new Map(assets.map((a) => [a.id, a])), [assets]);
 
-  // 현재 월 거래 필터링 + 수입/지출 집계 + 날짜별 그룹화 (한 번의 순회로 통합)
-  const { income, expense, net, grouped, sortedDates } = useMemo(() => {
+  // 현재 월 거래 필터링 + 수입/지출 집계 + 날짜별 그룹화 + 날짜별 소계/리스트 사전 계산
+  const { income, expense, net, dailyData } = useMemo(() => {
     let inc = 0;
     let exp = 0;
     const grp: Record<string, Transaction[]> = {};
@@ -60,14 +61,37 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
       grp[key].push(t);
     }
 
-    return {
-      income: inc,
-      expense: exp,
-      net: inc - exp,
-      grouped: grp,
-      sortedDates: Object.keys(grp).sort().reverse(),
-    };
-  }, [transactions, currentMonth]);
+    const daily = Object.keys(grp)
+      .sort()
+      .reverse()
+      .map((dateKey) => {
+        const dayTxs = grp[dateKey];
+        let dayInc = 0;
+        let dayExp = 0;
+        for (const t of dayTxs) {
+          if (t.type === "income") dayInc += t.amount;
+          else dayExp += t.amount;
+        }
+        const listItems = [...dayTxs]
+          .sort((a, b) => compareAsc(parseISO(b.transactionAt), parseISO(a.transactionAt)))
+          .map((t) => {
+            const cat = categoryMap.get(t.categoryId);
+            return {
+              id: t.id,
+              type: t.type,
+              categoryName: cat?.name ?? "기타",
+              categoryColor: cat?.color,
+              description: t.description,
+              assetName: assetMap.get(t.assetId)?.name ?? "기타",
+              amount: t.amount,
+              time: format(parseISO(t.transactionAt), "HH:mm"),
+            };
+          });
+        return { dateKey, dayIncome: dayInc, dayExpense: dayExp, listItems };
+      });
+
+    return { income: inc, expense: exp, net: inc - exp, dailyData: daily };
+  }, [transactions, currentMonth, categoryMap, assetMap]);
 
   // 거래 항목 클릭 → 수정 시트 열기
   const handleItemClick = useCallback((id: string) => {
@@ -201,42 +225,14 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
             </div>
           ))}
         </div>
-      ) : sortedDates.length === 0 ? (
+      ) : dailyData.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/icon-512.png" alt="" className="w-16 h-16 rounded-2xl opacity-30 select-none" draggable={false} />
+          <Image src="/icon-512.png" alt="" width={64} height={64} className="rounded-2xl opacity-30 select-none" draggable={false} />
           <p className="text-muted-foreground/55 text-[13.5px]">이번 달 거래 내역이 없습니다</p>
         </div>
       ) : (
-        sortedDates.map((dateKey) => {
-          const dayTransactions = grouped[dateKey];
+        dailyData.map(({ dateKey, dayIncome, dayExpense, listItems }) => {
           const dayDate = parseISO(dateKey);
-
-          // 해당 일자 수입/지출 소계
-          const dayIncome = dayTransactions
-            .filter((t) => t.type === "income")
-            .reduce((sum, t) => sum + t.amount, 0);
-          const dayExpense = dayTransactions
-            .filter((t) => t.type === "expense")
-            .reduce((sum, t) => sum + t.amount, 0);
-
-          // 시간순(오름차순) 정렬 후 TransactionList에 전달할 데이터 변환
-          const listItems = [...dayTransactions]
-            .sort((a, b) => compareAsc(parseISO(b.transactionAt), parseISO(a.transactionAt)))
-            .map((t) => {
-              const cat = categoryMap.get(t.categoryId);
-              const time = format(parseISO(t.transactionAt), "HH:mm");
-              return {
-                id: t.id,
-                type: t.type,
-                categoryName: cat?.name ?? "기타",
-                categoryColor: cat?.color,
-                description: t.description,
-                assetName: assetMap.get(t.assetId)?.name ?? "기타",
-                amount: t.amount,
-                time,
-              };
-            });
 
           return (
             <div key={dateKey} className="mt-2 first:mt-0">
