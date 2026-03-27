@@ -31,7 +31,7 @@ export function BottomTabBar() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 bg-background/97 backdrop-blur-xl border-t border-border/40 flex items-stretch"
+      className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-xl border-t border-border/50 flex items-stretch shadow-[0_-1px_12px_hsl(var(--border)/0.5)]"
       style={{
         height: "calc(4rem + env(safe-area-inset-bottom))",
         paddingBottom: "env(safe-area-inset-bottom)",
@@ -47,25 +47,33 @@ export function BottomTabBar() {
             onClick={() => handleTabClick(href, match)}
             className="flex flex-col items-center justify-center gap-1 flex-1 py-2"
           >
+            {/* 액티브 탭: 하늘파랑 pill 캡슐 배경 + 흰색 아이콘 */}
             <div
               className={cn(
-                "w-12 h-6 flex items-center justify-center rounded-full transition-all duration-200",
-                isActive ? "bg-primary/8" : ""
+                "w-12 h-7 flex items-center justify-center rounded-full transition-all duration-200",
+                isActive
+                  ? "bg-primary"
+                  : "bg-transparent"
               )}
             >
               <Icon
                 className={cn(
-                  "h-[18px] w-[18px] transition-all duration-200",
-                  isActive ? "text-primary" : "text-muted-foreground/45",
+                  "transition-all duration-200",
+                  isActive
+                    ? "h-[17px] w-[17px] text-primary-foreground"
+                    : "h-[17px] w-[17px] text-muted-foreground/50",
                   isPending && "animate-pulse"
                 )}
-                strokeWidth={isActive ? 2.3 : 1.6}
+                strokeWidth={isActive ? 2.4 : 1.7}
               />
             </div>
+            {/* 액티브 탭: 하늘파랑 라벨 / 비액티브: muted 라벨 */}
             <span
               className={cn(
-                "text-[10px] transition-all duration-200 tracking-tight",
-                isActive ? "text-primary font-bold" : "text-muted-foreground/45 font-medium"
+                "text-[10px] font-semibold transition-all duration-200 tracking-tight",
+                isActive
+                  ? "text-primary"
+                  : "text-muted-foreground/50"
               )}
             >
               {label}

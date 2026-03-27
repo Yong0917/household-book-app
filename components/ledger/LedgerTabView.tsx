@@ -282,7 +282,7 @@ export function LedgerTabView({ initialData, initialMonthKey }: LedgerTabViewPro
     <div className="flex flex-col min-h-[calc(100dvh-4rem)]" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
       {/* 헤더: 월 네비게이션(좌) + 검색 버튼(우) */}
       <div
-        className="sticky top-0 z-20 bg-background/97 backdrop-blur-xl border-b border-border/40"
+        className="sticky top-0 z-20 bg-background/95 backdrop-blur-xl border-b border-border/50"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <div className="flex items-center justify-between px-2 h-13">
@@ -328,7 +328,7 @@ export function LedgerTabView({ initialData, initialMonthKey }: LedgerTabViewPro
 
       {/* 탭 바 */}
       <div
-        className="flex h-10 border-b border-border/40 sticky z-20 bg-background/97 backdrop-blur-xl"
+        className="flex h-10 border-b border-border/50 sticky z-20 bg-background/95 backdrop-blur-xl"
         style={{ top: "calc(3.25rem + env(safe-area-inset-top))" }}
       >
         <button
@@ -340,7 +340,7 @@ export function LedgerTabView({ initialData, initialMonthKey }: LedgerTabViewPro
         >
           일일
           {tab === "list" && (
-            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[2px] bg-primary rounded-full" />
+            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[2.5px] bg-primary rounded-full" />
           )}
         </button>
         <button
@@ -352,7 +352,7 @@ export function LedgerTabView({ initialData, initialMonthKey }: LedgerTabViewPro
         >
           달력
           {tab === "calendar" && (
-            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[2px] bg-primary rounded-full" />
+            <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-[2.5px] bg-primary rounded-full" />
           )}
         </button>
       </div>
@@ -397,7 +397,7 @@ export function LedgerTabView({ initialData, initialMonthKey }: LedgerTabViewPro
             onClick={() => setIsPickerOpen(false)}
           />
           {/* 팝업 카드 */}
-          <div className="fixed left-4 z-40 bg-background border border-border/60 rounded-2xl shadow-xl shadow-foreground/8 p-5 w-[21rem]" style={{ top: "calc(3.25rem + env(safe-area-inset-top))" }}>
+          <div className="fixed left-4 z-40 bg-card border border-border/60 rounded-2xl shadow-xl shadow-primary/8 p-5 w-[21rem]" style={{ top: "calc(3.25rem + env(safe-area-inset-top))" }}>
             {/* 연도 선택 */}
             <div className="flex items-center justify-between mb-4">
               <button

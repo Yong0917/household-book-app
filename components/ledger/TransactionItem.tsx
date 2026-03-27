@@ -28,14 +28,14 @@ export function TransactionItem({
   const dotColor = categoryColor ?? (type === "income" ? "#388e5a" : "#e83535");
 
   return (
-    <div className="flex items-center gap-3.5 px-5 py-3.5 border-b border-border/30 active:bg-muted/25 transition-colors duration-100">
+    <div className="flex items-center gap-3.5 px-5 py-3.5 border-b border-border/25 active:bg-muted/20 transition-colors duration-100 bg-card">
       {/* 카테고리 색상 아이콘 */}
       <div
-        className="w-9 h-9 rounded-[10px] flex items-center justify-center flex-shrink-0"
-        style={{ backgroundColor: `${dotColor}18` }}
+        className="w-10 h-10 rounded-[12px] flex items-center justify-center flex-shrink-0"
+        style={{ backgroundColor: `${dotColor}1E` }}
       >
         <div
-          className="w-2.5 h-2.5 rounded-full"
+          className="w-3 h-3 rounded-full"
           style={{ backgroundColor: dotColor }}
         />
       </div>
@@ -43,12 +43,12 @@ export function TransactionItem({
       {/* 거래 정보 영역 */}
       <div className="flex-1 min-w-0">
         {/* 메모(없으면 카테고리명) */}
-        <p className="font-medium text-[13.5px] leading-snug truncate text-foreground/95 tracking-tight">
+        <p className="font-semibold text-[13.5px] leading-snug truncate text-foreground/90 tracking-tight">
           {description || categoryName}
         </p>
 
         {/* 시간 + 카테고리명 + 자산명 */}
-        <p className="text-[11px] text-muted-foreground/60 truncate mt-0.5 tracking-tight">
+        <p className="text-[11px] text-muted-foreground/55 truncate mt-0.5 tracking-tight">
           {time ? `${time} · ` : ""}{description ? `${categoryName} · ` : ""}{assetName}
         </p>
       </div>
@@ -57,7 +57,7 @@ export function TransactionItem({
       <div className="flex-shrink-0">
         <span
           className={cn(
-            "font-semibold text-[14px] tabular-nums tracking-tight",
+            "font-bold text-[14px] tabular-nums tracking-tight",
             type === "income" ? "text-income" : "text-expense"
           )}
         >

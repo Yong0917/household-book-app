@@ -151,7 +151,7 @@ export function CalendarView({ currentMonth, transactions, categories, assets, i
     <>
       <div className="flex flex-col">
         {/* 월간 요약 - compact 1줄 */}
-        <div className="flex items-center justify-around h-10 border-b border-border/60 text-[11px] px-3 bg-muted/15">
+        <div className="flex items-center justify-around h-10 border-b border-border/40 text-[11px] px-3 bg-card">
           {isLoading ? (
             <div className="flex items-center gap-6">
               <div className="h-2.5 w-20 bg-muted-foreground/10 rounded animate-pulse" />
@@ -191,7 +191,7 @@ export function CalendarView({ currentMonth, transactions, categories, assets, i
         </div>
 
         {/* 요일 헤더 */}
-        <div className="grid grid-cols-7 h-8 border-b border-border/50 bg-muted/10">
+        <div className="grid grid-cols-7 h-8 border-b border-border/40 bg-background">
           {WEEKDAY_LABELS.map((label, i) => (
             <div
               key={label}
@@ -281,8 +281,8 @@ export function CalendarView({ currentMonth, transactions, categories, assets, i
       {!isTransactionSheetOpen && (
         <button
           onClick={handleFabClick}
-          className="fixed right-5 z-10 h-14 w-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-[0_4px_20px_rgba(0,0,0,0.22)] active:scale-[0.91] transition-all duration-150"
-          style={{ bottom: "calc(5rem + env(safe-area-inset-bottom))" }}
+          className="fixed right-5 z-10 h-14 w-14 rounded-full bg-[hsl(345_65%_63%)] text-white flex items-center justify-center active:scale-[0.91] transition-all duration-150"
+          style={{ bottom: "calc(5rem + env(safe-area-inset-bottom))", boxShadow: "0 4px 24px hsl(345 65% 63% / 0.42), 0 2px 8px hsl(345 65% 63% / 0.20)" }}
           aria-label="거래 추가"
         >
           <Plus className="h-6 w-6 stroke-[2.2]" />

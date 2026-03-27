@@ -134,42 +134,45 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
 
       {/* 월간 수입/지출/순합계 요약 */}
       <div className="px-4 py-3 border-b border-border/40">
-        <div className="grid grid-cols-3 divide-x divide-border/40 bg-muted/20 rounded-xl px-1 py-3">
-          <div className="flex flex-col gap-1.5 pl-3 pr-2">
-            <p className="text-[9.5px] text-muted-foreground/55 font-bold uppercase tracking-[0.12em]">수입</p>
+        <div className="grid grid-cols-3 gap-2">
+          {/* 수입 카드 */}
+          <div className="bg-income/8 rounded-xl px-3 py-2.5 border border-income/15">
+            <p className="text-[9px] text-income/60 font-bold uppercase tracking-[0.13em]">수입</p>
             {isLoading ? (
-              <div className="h-4 w-16 bg-muted-foreground/10 rounded animate-pulse" />
+              <div className="h-[18px] w-full bg-income/10 rounded-md mt-1.5 animate-pulse" />
             ) : (
-              <p className="text-[13.5px] font-semibold text-income tabular-nums leading-none tracking-tight">
+              <p className="text-[13px] font-bold text-income tabular-nums leading-none mt-1.5 tracking-tight">
                 {income.toLocaleString("ko-KR")}
-                <span className="text-[11px] font-medium ml-0.5">원</span>
+                <span className="text-[10px] font-medium ml-0.5">원</span>
               </p>
             )}
           </div>
-          <div className="flex flex-col gap-1.5 px-3 items-center">
-            <p className="text-[9.5px] text-muted-foreground/55 font-bold uppercase tracking-[0.12em]">지출</p>
+          {/* 지출 카드 */}
+          <div className="bg-expense/8 rounded-xl px-3 py-2.5 border border-expense/15">
+            <p className="text-[9px] text-expense/60 font-bold uppercase tracking-[0.13em]">지출</p>
             {isLoading ? (
-              <div className="h-4 w-16 bg-muted-foreground/10 rounded animate-pulse" />
+              <div className="h-[18px] w-full bg-expense/10 rounded-md mt-1.5 animate-pulse" />
             ) : (
-              <p className="text-[13.5px] font-semibold text-expense tabular-nums leading-none tracking-tight">
+              <p className="text-[13px] font-bold text-expense tabular-nums leading-none mt-1.5 tracking-tight">
                 {expense.toLocaleString("ko-KR")}
-                <span className="text-[11px] font-medium ml-0.5">원</span>
+                <span className="text-[10px] font-medium ml-0.5">원</span>
               </p>
             )}
           </div>
-          <div className="flex flex-col gap-1.5 pl-3 pr-2 items-end">
-            <p className="text-[9.5px] text-muted-foreground/55 font-bold uppercase tracking-[0.12em]">잔액</p>
+          {/* 잔액 카드 */}
+          <div className="bg-muted/50 rounded-xl px-3 py-2.5 border border-border/50">
+            <p className="text-[9px] text-muted-foreground/55 font-bold uppercase tracking-[0.13em]">잔액</p>
             {isLoading ? (
-              <div className="h-4 w-16 bg-muted-foreground/10 rounded animate-pulse" />
+              <div className="h-[18px] w-full bg-muted-foreground/10 rounded-md mt-1.5 animate-pulse" />
             ) : (
               <p
-                className={`text-[13.5px] font-semibold tabular-nums leading-none tracking-tight ${
+                className={`text-[13px] font-bold tabular-nums leading-none mt-1.5 tracking-tight ${
                   net >= 0 ? "text-income" : "text-expense"
                 }`}
               >
                 {net >= 0 ? "+" : ""}
                 {net.toLocaleString("ko-KR")}
-                <span className="text-[11px] font-medium ml-0.5">원</span>
+                <span className="text-[10px] font-medium ml-0.5">원</span>
               </p>
             )}
           </div>
@@ -199,8 +202,10 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
           ))}
         </div>
       ) : sortedDates.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20">
-          <p className="text-muted-foreground/60 text-sm">거래 내역이 없습니다</p>
+        <div className="flex flex-col items-center justify-center py-20 gap-3">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/icon-512.png" alt="" className="w-16 h-16 rounded-2xl opacity-30 select-none" draggable={false} />
+          <p className="text-muted-foreground/55 text-[13.5px]">이번 달 거래 내역이 없습니다</p>
         </div>
       ) : (
         sortedDates.map((dateKey) => {
@@ -236,26 +241,26 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
           return (
             <div key={dateKey} className="mt-2 first:mt-0">
               {/* 날짜 구분 헤더 */}
-              <div className="flex items-center justify-between px-5 pt-3 pb-2.5 bg-muted/30 border-y border-border/60">
+              <div className={`flex items-center justify-between px-5 pt-2.5 pb-2.5 border-b border-border/50 ${isToday(dayDate) ? "bg-income/5" : "bg-muted/30"}`}>
                 <div className="flex items-baseline gap-2">
-                  <span className="text-[22px] font-bold tabular-nums leading-none text-foreground/85 tracking-tight">
+                  <span className={`text-[20px] font-bold tabular-nums leading-none tracking-tight ${isToday(dayDate) ? "text-income" : "text-foreground/80"}`}>
                     {format(dayDate, "d")}
                   </span>
-                  <span className="text-[11.5px] text-muted-foreground/70 font-medium tracking-tight">
+                  <span className="text-[11px] text-muted-foreground/65 font-medium tracking-tight">
                     {format(dayDate, "M월", { locale: ko })} · {format(dayDate, "EEEE", { locale: ko })}
                   </span>
                   {isToday(dayDate) && (
-                    <span className="text-[9px] bg-income/10 text-income font-bold px-1.5 py-0.5 rounded uppercase tracking-wider">TODAY</span>
+                    <span className="text-[8.5px] bg-income text-white font-bold px-1.5 py-0.5 rounded-md uppercase tracking-wider">TODAY</span>
                   )}
                 </div>
                 <div className="flex gap-2.5 text-[11px] tabular-nums tracking-tight">
                   {dayIncome > 0 && (
-                    <span className="text-income font-medium">
+                    <span className="text-income font-semibold">
                       +{dayIncome.toLocaleString("ko-KR")}
                     </span>
                   )}
                   {dayExpense > 0 && (
-                    <span className="text-expense font-medium">
+                    <span className="text-expense font-semibold">
                       −{dayExpense.toLocaleString("ko-KR")}
                     </span>
                   )}
@@ -276,8 +281,8 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
       {!isSheetOpen && (
         <button
           onClick={handleAddClick}
-          className="fixed right-5 z-10 h-14 w-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-[0_4px_20px_rgba(0,0,0,0.22)] active:scale-[0.91] transition-all duration-150"
-          style={{ bottom: "calc(5rem + env(safe-area-inset-bottom))" }}
+          className="fixed right-5 z-10 h-14 w-14 rounded-full bg-[hsl(345_65%_63%)] text-white flex items-center justify-center active:scale-[0.91] transition-all duration-150"
+          style={{ bottom: "calc(5rem + env(safe-area-inset-bottom))", boxShadow: "0 4px 24px hsl(345 65% 63% / 0.42), 0 2px 8px hsl(345 65% 63% / 0.20)" }}
           aria-label="거래 추가"
         >
           <Plus className="h-6 w-6 stroke-[2.2]" />
