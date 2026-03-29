@@ -367,6 +367,7 @@ export function LedgerTabView({ initialData, initialMonthKey }: LedgerTabViewPro
             isLoading={isLoading}
             onSuccess={handleSuccess}
             recurringItems={recurringItems}
+            openRecurringId={searchParams.get("openRecurring") ?? undefined}
           />
         : <CalendarView
             currentMonth={currentMonth}

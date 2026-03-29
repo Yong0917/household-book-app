@@ -1,7 +1,7 @@
 "use client";
 
 // 가계부 월간 목록 뷰 (날짜별 그룹화) - 데이터는 LedgerTabView에서 props로 전달
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Plus } from "lucide-react";
 import {
@@ -29,9 +29,10 @@ interface DailyViewProps {
   isLoading: boolean;
   onSuccess: () => void;
   recurringItems?: RecurringTransaction[];
+  openRecurringId?: string;
 }
 
-export function DailyView({ currentMonth, transactions, categories, assets, isLoading, onSuccess, recurringItems = [] }: DailyViewProps) {
+export function DailyView({ currentMonth, transactions, categories, assets, isLoading, onSuccess, recurringItems = [], openRecurringId }: DailyViewProps) {
   const { isGuest, requireLogin } = useGuestMode();
   // 바텀 시트 열림 상태
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -100,6 +101,18 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
     setSelectedTransaction(tx);
     setIsSheetOpen(true);
   }, [transactions, isGuest, requireLogin]);
+
+  // 알림 탭으로 진입 시 해당 고정비 시트 자동 오픈
+  const openRecurringHandledRef = useRef(false);
+  useEffect(() => {
+    if (!openRecurringId || openRecurringHandledRef.current || recurringItems.length === 0) return;
+    const target = recurringItems.find((r) => r.id === openRecurringId);
+    if (!target) return;
+    openRecurringHandledRef.current = true;
+    setSelectedTransaction(null);
+    setSelectedRecurring(target);
+    setIsSheetOpen(true);
+  }, [openRecurringId, recurringItems]);
 
   // FAB 클릭 → 추가 시트 열기
   const handleAddClick = useCallback(() => {
