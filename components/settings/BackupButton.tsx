@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { HardDrive } from "lucide-react";
+import { downloadBlob } from "@/lib/utils/download";
 
 export function BackupButton() {
   const [loading, setLoading] = useState(false);
@@ -13,14 +14,10 @@ export function BackupButton() {
       if (!res.ok) throw new Error("백업 실패");
 
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
       const disposition = res.headers.get("Content-Disposition");
       const match = disposition?.match(/filename\*=UTF-8''(.+)/);
-      a.download = match ? decodeURIComponent(match[1]) : "가계부_백업.json";
-      a.click();
-      URL.revokeObjectURL(url);
+      const filename = match ? decodeURIComponent(match[1]) : "가계부_백업.json";
+      await downloadBlob(blob, filename);
     } catch {
       alert("백업 중 오류가 발생했습니다.");
     } finally {

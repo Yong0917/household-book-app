@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Download, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { Drawer } from "vaul";
 import { cn } from "@/lib/utils";
+import { downloadBlob } from "@/lib/utils/download";
 
 type Preset = "this-month" | "last-month" | "this-year" | "all" | "custom";
 
@@ -199,14 +200,10 @@ export function ExportButton() {
       if (!res.ok) throw new Error("내보내기 실패");
 
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
       const disposition = res.headers.get("Content-Disposition");
       const match = disposition?.match(/filename\*=UTF-8''(.+)/);
-      a.download = match ? decodeURIComponent(match[1]) : "가계부.xlsx";
-      a.click();
-      URL.revokeObjectURL(url);
+      const filename = match ? decodeURIComponent(match[1]) : "가계부.xlsx";
+      await downloadBlob(blob, filename);
       setOpen(false);
     } catch {
       alert("내보내기 중 오류가 발생했습니다.");
