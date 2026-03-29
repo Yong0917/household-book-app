@@ -36,9 +36,9 @@ export function LoginForm({
       if (error) throw error;
       // 탈퇴 요청 계정이면 계정 복구 페이지로 이동
       if (data.user?.user_metadata?.deletion_requested_at) {
-        router.push("/auth/account-recovery");
+        router.replace("/auth/account-recovery");
       } else {
-        router.push("/ledger/daily");
+        router.replace("/ledger/daily");
       }
     } catch (error: unknown) {
       setError(translateAuthError(error));
