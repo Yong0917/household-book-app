@@ -63,7 +63,6 @@ export function PushNotificationToggle() {
         </div>
         <div>
           <span className="text-[14.5px] font-medium">고정비 알림</span>
-          <p className="text-[11px] text-muted-foreground/60 mt-0.5">결제일 당일 오전 9시 알림</p>
         </div>
       </div>
       <button
