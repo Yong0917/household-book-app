@@ -7,9 +7,10 @@ import { getMemoSuggestions } from "@/lib/actions/transactions";
 interface MemoInputProps {
   value: string;
   onChange: (value: string) => void;
+  onFocusChange?: (focused: boolean) => void;
 }
 
-export function MemoInput({ value, onChange }: MemoInputProps) {
+export function MemoInput({ value, onChange, onFocusChange }: MemoInputProps) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -30,19 +31,23 @@ export function MemoInput({ value, onChange }: MemoInputProps) {
     const val = e.target.value;
     onChange(val);
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => fetchSuggestions(val), 300);
+    debounceTimer.current = setTimeout(() => fetchSuggestions(val), 150);
   };
 
   const handleFocus = () => {
     if (value.trim()) fetchSuggestions(value);
+    onFocusChange?.(true);
     // 키보드가 올라온 후 메모 필드가 가려지지 않도록 스크롤
     setTimeout(() => {
-      inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
-    }, 350);
+      inputRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    }, 400);
   };
 
   const handleBlur = () => {
-    setTimeout(() => setShowDropdown(false), 150);
+    setTimeout(() => {
+      setShowDropdown(false);
+      onFocusChange?.(false);
+    }, 150);
   };
 
   const handleSelect = (item: string) => {
@@ -64,7 +69,7 @@ export function MemoInput({ value, onChange }: MemoInputProps) {
         autoComplete="off"
       />
       {showDropdown && suggestions.length > 0 && (
-        <ul className="absolute top-full left-0 right-0 mt-1 z-10 bg-background border border-input rounded-xl shadow-md overflow-hidden">
+        <ul className="absolute bottom-full left-0 right-0 mb-1 z-10 bg-background border border-input rounded-xl shadow-md overflow-hidden">
           {suggestions.map((item) => (
             <li
               key={item}
