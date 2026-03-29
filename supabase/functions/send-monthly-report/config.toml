@@ -1,0 +1,2 @@
+[functions.send-monthly-report]
+schedule = "0 1 1 * *"

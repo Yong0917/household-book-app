@@ -1,6 +1,6 @@
 // 설정 페이지 (서버 컴포넌트)
 import Link from "next/link";
-import { ChevronRight, Tag, Wallet, LogOut, Palette, RefreshCw, Shield, FileText, LogIn, UserPlus } from "lucide-react";
+import { ChevronRight, Tag, Wallet, LogOut, Palette, RefreshCw, Shield, FileText, LogIn, UserPlus, BarChart2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/logout-button";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
@@ -73,6 +73,19 @@ export default async function SettingsPage() {
           {/* 데이터 관련 버튼은 인증 사용자만 */}
           {!isGuest && (
             <>
+              {/* 월별 리포트 */}
+              <Link
+                href="/settings/reports"
+                className="flex items-center justify-between px-4 py-4 hover:bg-muted/40 active:bg-muted/60 transition-colors"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center">
+                    <BarChart2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <span className="text-[14.5px] font-medium">월별 리포트</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
+              </Link>
               <ExportButton />
               <ImportButton />
               <BackupButton />
