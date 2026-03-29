@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ChevronLeft, TrendingDown, TrendingUp } from "lucide-react";
+import { ChevronLeft, ChevronRight, TrendingDown, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { ReportData } from "@/lib/actions/reports";
 
@@ -35,9 +35,11 @@ interface Props {
   data: ReportData | null;
   year: number;
   month: number;
+  prevLink: string | null;
+  nextLink: string | null;
 }
 
-export function MonthlyReportClient({ data, year, month }: Props) {
+export function MonthlyReportClient({ data, year, month, prevLink, nextLink }: Props) {
   const isEmpty = !data || data.transactionCount === 0;
 
   const expenseChange = data
@@ -46,22 +48,86 @@ export function MonthlyReportClient({ data, year, month }: Props) {
 
   const netAmount = data ? data.totalIncome - data.totalExpense : 0;
 
+  // 저축률 계산 (수입이 있을 때만)
+  const savingsRate =
+    data && data.totalIncome > 0
+      ? Math.round(((data.totalIncome - data.totalExpense) / data.totalIncome) * 100)
+      : null;
+
+  const savingsRateBarWidth =
+    savingsRate !== null ? Math.min(Math.max(savingsRate, 0), 100) : 0;
+
+  const savingsRateColor =
+    savingsRate === null
+      ? ""
+      : savingsRate >= 30
+      ? "text-income"
+      : savingsRate >= 10
+      ? "text-amber-500 dark:text-amber-400"
+      : "text-expense";
+
+  const savingsRateBarColor =
+    savingsRate === null
+      ? ""
+      : savingsRate >= 30
+      ? "bg-income"
+      : savingsRate >= 10
+      ? "bg-amber-500 dark:bg-amber-400"
+      : "bg-expense";
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
-      {/* 헤더 */}
-      <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-border/40">
+
+      {/* ── 헤더 ─────────────────────────────────────── */}
+      <div
+        className="relative flex items-center px-4 pb-3 border-b border-border/40"
+        style={{ paddingTop: `calc(env(safe-area-inset-top) + 1rem)` }}
+      >
+        {/* 뒤로가기 */}
         <Link
           href="/settings/reports"
-          className="p-1.5 -ml-1.5 rounded-full hover:bg-muted/60 transition-colors"
+          className="p-1.5 -ml-1.5 rounded-full hover:bg-muted/60 active:bg-muted/80 transition-colors z-10"
         >
           <ChevronLeft className="w-5 h-5 text-muted-foreground" />
         </Link>
-        <h1 className="text-base font-semibold">
+
+        {/* 타이틀 (절대 중앙) */}
+        <h1 className="absolute inset-x-0 text-center text-base font-semibold pointer-events-none">
           {year}년 {month}월 결산
         </h1>
+
+        {/* 이전/다음 달 네비게이션 */}
+        <div className="ml-auto flex items-center gap-0.5 z-10">
+          {prevLink ? (
+            <Link
+              href={prevLink}
+              className="p-1.5 rounded-full hover:bg-muted/60 active:bg-muted/80 transition-colors"
+              aria-label="이전 달"
+            >
+              <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+            </Link>
+          ) : (
+            <span className="w-7 h-7 flex items-center justify-center opacity-20">
+              <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+            </span>
+          )}
+          {nextLink ? (
+            <Link
+              href={nextLink}
+              className="p-1.5 rounded-full hover:bg-muted/60 active:bg-muted/80 transition-colors"
+              aria-label="다음 달"
+            >
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </Link>
+          ) : (
+            <span className="w-7 h-7 flex items-center justify-center opacity-20">
+              <ChevronRight className="w-4 h-4 text-muted-foreground" />
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* 거래 없는 달 */}
+      {/* ── 거래 없는 달 ──────────────────────────────── */}
       {isEmpty && (
         <div className="flex-1 flex flex-col items-center justify-center gap-2 text-muted-foreground">
           <p className="text-sm">이 달의 거래 내역이 없어요</p>
@@ -74,15 +140,17 @@ export function MonthlyReportClient({ data, year, month }: Props) {
         </div>
       )}
 
-      {/* 리포트 내용 */}
+      {/* ── 리포트 내용 ───────────────────────────────── */}
       {data && !isEmpty && (
         <div className="flex flex-col gap-4 px-4 py-4 pb-24">
+
           {/* 요약 카드 */}
           <div className="rounded-2xl bg-card border border-border/40 p-4 flex flex-col gap-3">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60">
               이달 요약
             </p>
             <div className="flex flex-col gap-2">
+
               {/* 수입 */}
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">수입</span>
@@ -90,6 +158,7 @@ export function MonthlyReportClient({ data, year, month }: Props) {
                   +{data.totalIncome.toLocaleString("ko-KR")}원
                 </span>
               </div>
+
               {/* 지출 + 전월 대비 */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
@@ -117,7 +186,8 @@ export function MonthlyReportClient({ data, year, month }: Props) {
                   -{data.totalExpense.toLocaleString("ko-KR")}원
                 </span>
               </div>
-              {/* 구분선 */}
+
+              {/* 순합계 */}
               <div className="border-t border-border/40 pt-2 flex items-center justify-between">
                 <span className="text-sm font-semibold">순합계</span>
                 <span
@@ -134,6 +204,24 @@ export function MonthlyReportClient({ data, year, month }: Props) {
                   {netAmount.toLocaleString("ko-KR")}원
                 </span>
               </div>
+
+              {/* 저축률 */}
+              {savingsRate !== null && (
+                <div className="flex flex-col gap-1.5 border-t border-border/40 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">저축률</span>
+                    <span className={cn("text-sm font-bold tabular-nums", savingsRateColor)}>
+                      {savingsRate > 0 ? `${savingsRate}%` : savingsRate === 0 ? "0%" : `${savingsRate}%`}
+                    </span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-muted/40 overflow-hidden">
+                    <div
+                      className={cn("h-full rounded-full transition-all duration-500", savingsRateBarColor)}
+                      style={{ width: `${savingsRateBarWidth}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -157,14 +245,18 @@ export function MonthlyReportClient({ data, year, month }: Props) {
               <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60">
                 카테고리별 지출 TOP {data.topCategories.length}
               </p>
-              <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
                 {data.topCategories.map((cat) => {
                   const pct =
                     data.totalExpense > 0
                       ? Math.round((cat.amount / data.totalExpense) * 100)
                       : 0;
                   return (
-                    <div key={cat.id} className="flex flex-col gap-1">
+                    <Link
+                      key={cat.id}
+                      href={`/statistics/category/${cat.id}`}
+                      className="flex flex-col gap-1 -mx-2 px-2 py-2 rounded-xl hover:bg-muted/30 active:bg-muted/50 transition-colors"
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span
@@ -176,13 +268,14 @@ export function MonthlyReportClient({ data, year, month }: Props) {
                             {cat.count}건
                           </span>
                         </div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5">
                           <span className="text-xs text-muted-foreground/60">
                             {pct}%
                           </span>
                           <span className="text-sm font-semibold tabular-nums">
                             {cat.amount.toLocaleString("ko-KR")}원
                           </span>
+                          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/30 shrink-0" />
                         </div>
                       </div>
                       <div className="h-1.5 rounded-full bg-muted/40 overflow-hidden">
@@ -194,7 +287,7 @@ export function MonthlyReportClient({ data, year, month }: Props) {
                           }}
                         />
                       </div>
-                    </div>
+                    </Link>
                   );
                 })}
               </div>
@@ -206,7 +299,7 @@ export function MonthlyReportClient({ data, year, month }: Props) {
             <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60">
               이달의 소비 패턴
             </p>
-            <div className="flex flex-col gap-2.5">
+            <div className="flex flex-col gap-3">
               <InsightRow
                 icon="📅"
                 label="가장 많이 쓴 날"
@@ -232,9 +325,25 @@ export function MonthlyReportClient({ data, year, month }: Props) {
                 icon="💸"
                 label="하루 평균 지출"
                 value={formatAmount(
-                  Math.round(data.totalExpense / new Date(year, month, 0).getDate())
+                  Math.round(
+                    data.totalExpense / new Date(year, month, 0).getDate()
+                  )
                 )}
               />
+              {data.maxExpense && (
+                <InsightRow
+                  icon="💳"
+                  label="최대 단일 지출"
+                  value={formatAmount(data.maxExpense.amount)}
+                  sub={[
+                    data.maxExpense.categoryName,
+                    data.maxExpense.description,
+                    `${data.maxExpense.day}일`,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                />
+              )}
             </div>
           </div>
         </div>
@@ -247,18 +356,27 @@ function InsightRow({
   icon,
   label,
   value,
+  sub,
 }: {
   icon: string;
   label: string;
   value: string;
+  sub?: string;
 }) {
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center gap-2">
+    <div className="flex items-start justify-between gap-3">
+      <div className="flex items-center gap-2 shrink-0">
         <span className="text-base leading-none">{icon}</span>
         <span className="text-sm text-muted-foreground">{label}</span>
       </div>
-      <span className="text-sm font-semibold">{value}</span>
+      <div className="flex flex-col items-end gap-0.5">
+        <span className="text-sm font-semibold text-right">{value}</span>
+        {sub && (
+          <span className="text-xs text-muted-foreground/60 text-right leading-tight">
+            {sub}
+          </span>
+        )}
+      </div>
     </div>
   );
 }

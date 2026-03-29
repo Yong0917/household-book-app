@@ -19,6 +19,14 @@ export type DailyExpense = {
   amount: number;
 };
 
+export type MaxExpense = {
+  amount: number;
+  description: string | null;
+  categoryName: string;
+  categoryColor: string;
+  day: number;
+};
+
 export type ReportData = {
   year: number;
   month: number;
@@ -30,6 +38,7 @@ export type ReportData = {
   peakWeekday: number | null; // 0=일, 1=월 ... 6=토
   dailyExpenses: DailyExpense[];
   prevMonthExpense: number | null; // 전월 지출 (전월 대비 증감 계산용)
+  maxExpense: MaxExpense | null;   // 최대 단일 지출
 };
 
 export type ReportListItem = {
@@ -47,6 +56,13 @@ type RpcResult = {
   peak_day: number | null;
   peak_weekday: number | null;
   daily_expenses: DailyExpense[] | null;
+  max_expense: {
+    amount: number;
+    description: string | null;
+    category_name: string;
+    category_color: string;
+    day: number;
+  } | null;
 };
 
 // =============================================
@@ -82,6 +98,7 @@ export async function getMonthlyReportData(
   if (!current) return null;
 
   const c = current as RpcResult;
+  const me = c.max_expense;
 
   return {
     year,
@@ -103,6 +120,15 @@ export async function getMonthlyReportData(
       amount: Number(d.amount),
     })),
     prevMonthExpense: prev ? Number((prev as RpcResult).total_expense) : null,
+    maxExpense: me
+      ? {
+          amount: Number(me.amount),
+          description: me.description ?? null,
+          categoryName: me.category_name,
+          categoryColor: me.category_color,
+          day: me.day,
+        }
+      : null,
   };
 }
 
@@ -116,16 +142,6 @@ export async function getReportList(): Promise<ReportListItem[]> {
 
   const userId = authData.claims.sub as string;
 
-  // 거래가 있는 월 목록 집계 (KST 기준)
-  const { data, error } = await supabase.rpc("get_monthly_trend", {
-    p_start: new Date(Date.UTC(2020, 0, 1)).toISOString(),
-    p_end: new Date().toISOString(),
-  });
-
-  if (error || !data) return [];
-
-  // get_monthly_trend는 모든 사용자 데이터를 반환하므로
-  // 직접 쿼리로 해당 사용자의 월별 집계 조회
   const { data: rows, error: aggErr } = await supabase
     .from("transactions")
     .select("transaction_at, type, amount")
