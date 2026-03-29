@@ -4,6 +4,7 @@ import { ChevronRight, Tag, Wallet, LogOut, Palette, RefreshCw, Shield, FileText
 import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/logout-button";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
+import { PushNotificationToggle } from "@/components/settings/PushNotificationToggle";
 import { ExportButton } from "@/components/settings/ExportButton";
 import { ImportButton } from "@/components/settings/ImportButton";
 import { BackupButton } from "@/components/settings/BackupButton";
@@ -93,6 +94,8 @@ export default async function SettingsPage() {
             </div>
             <ThemeSelector />
           </div>
+          {/* 알림 토글 — Android 앱 + 로그인 사용자에게만 표시됨 (클라이언트 측 감지) */}
+          {!isGuest && <PushNotificationToggle />}
         </div>
       </div>
 

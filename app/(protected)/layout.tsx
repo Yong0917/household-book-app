@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { GuestModeProvider } from "@/lib/context/GuestModeContext";
+import PushNotificationInit from "@/components/PushNotificationInit";
 
 export default async function ProtectedLayout({
   children,
@@ -22,6 +23,7 @@ export default async function ProtectedLayout({
 
   return (
     <GuestModeProvider isGuest={isGuest}>
+      {!isGuest && <PushNotificationInit />}
       {children}
     </GuestModeProvider>
   );
