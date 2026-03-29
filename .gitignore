@@ -40,3 +40,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Firebase 서비스 계정 키 (절대 커밋 금지)
+supabase/functions/service-account.json
+supabase/functions/send-recurring-notifications/service-account.json
+
+# Playwright MCP 임시 파일
+.playwright-mcp/
+
+# Supabase 로컬 개발 임시 파일
+supabase/.branches/
+supabase/.temp/
