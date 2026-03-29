@@ -1,20 +1,18 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { getMemoSuggestions } from "@/lib/actions/transactions";
 
 interface MemoInputProps {
   value: string;
   onChange: (value: string) => void;
-  onFocusChange?: (focused: boolean) => void;
 }
 
-export function MemoInput({ value, onChange, onFocusChange }: MemoInputProps) {
+export function MemoInput({ value, onChange }: MemoInputProps) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const fetchSuggestions = async (keyword: string) => {
     if (!keyword.trim()) {
@@ -36,18 +34,10 @@ export function MemoInput({ value, onChange, onFocusChange }: MemoInputProps) {
 
   const handleFocus = () => {
     if (value.trim()) fetchSuggestions(value);
-    onFocusChange?.(true);
-    // 키보드가 올라온 후 메모 필드가 가려지지 않도록 스크롤
-    setTimeout(() => {
-      inputRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
-    }, 400);
   };
 
   const handleBlur = () => {
-    setTimeout(() => {
-      setShowDropdown(false);
-      onFocusChange?.(false);
-    }, 150);
+    setTimeout(() => setShowDropdown(false), 150);
   };
 
   const handleSelect = (item: string) => {
@@ -59,7 +49,6 @@ export function MemoInput({ value, onChange, onFocusChange }: MemoInputProps) {
   return (
     <div className="relative">
       <Input
-        ref={inputRef}
         placeholder="메모 (선택사항)"
         value={value}
         onChange={handleChange}

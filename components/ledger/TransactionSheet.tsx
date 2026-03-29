@@ -114,7 +114,6 @@ export function TransactionSheet({
   };
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isMemoFocused, setIsMemoFocused] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   // iOS에서 키보드 dismiss 후 visualViewport가 늦게 업데이트되는 문제 대응
@@ -287,7 +286,7 @@ export function TransactionSheet({
           </div>
 
           {/* 스크롤 가능한 콘텐츠 영역 */}
-          <div className="overflow-y-auto flex-1 px-5 pb-4" style={{ paddingBottom: isMemoFocused ? "45vh" : undefined }}>
+          <div className="overflow-y-auto flex-1 px-5 pb-4">
             <form onSubmit={handleSubmit(onSubmit)}>
               {/* 수입/지출 토글 탭 */}
               <div className="flex rounded-xl bg-muted/50 p-1 mb-6 gap-1">
@@ -436,7 +435,6 @@ export function TransactionSheet({
                     <MemoInput
                       value={field.value ?? ""}
                       onChange={field.onChange}
-                      onFocusChange={setIsMemoFocused}
                     />
                   )}
                 />
