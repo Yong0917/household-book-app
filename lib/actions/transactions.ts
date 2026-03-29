@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { Transaction, TransactionType, Category, Asset, RecurringTransaction } from "@/lib/mock/types";
+import { getMonthRangeUTC } from "@/lib/utils/timezone";
 import { getCategories } from "./categories";
 import { getAssets } from "./assets";
 import { getUnprocessedRecurring } from "./recurring";
@@ -36,9 +37,7 @@ export async function getTransactionsByMonth(
   const supabase = await createClient();
 
   // 월의 시작과 끝 (KST 자정 기준 → UTC 변환)
-  const KST_OFFSET = 9 * 60 * 60 * 1000;
-  const start = new Date(Date.UTC(year, month - 1, 1) - KST_OFFSET).toISOString();
-  const end = new Date(Date.UTC(year, month, 1) - KST_OFFSET).toISOString();
+  const { start, end } = getMonthRangeUTC(year, month);
 
   const { data, error } = await supabase
     .from("transactions")
@@ -194,12 +193,11 @@ export async function getMonthlyTrend(
 ): Promise<{ year: number; month: number; label: string; income: number; expense: number }[]> {
   const supabase = await createClient();
 
-  const KST_OFFSET = 9 * 60 * 60 * 1000;
   const base = new Date(baseYear, baseMonth - 1, 1);
   const startDate = new Date(base.getFullYear(), base.getMonth() - (count - 1), 1);
 
-  const start = new Date(Date.UTC(startDate.getFullYear(), startDate.getMonth(), 1) - KST_OFFSET).toISOString();
-  const end = new Date(Date.UTC(baseYear, baseMonth, 1) - KST_OFFSET).toISOString();
+  const start = getMonthRangeUTC(startDate.getFullYear(), startDate.getMonth() + 1).start;
+  const end = getMonthRangeUTC(baseYear, baseMonth).end;
 
   const { data, error } = await supabase.rpc("get_monthly_trend", {
     p_start: start,

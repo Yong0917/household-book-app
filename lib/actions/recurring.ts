@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { RecurringTransaction, TransactionType } from "@/lib/mock/types";
+import { getMonthRangeUTC, getNowKST } from "@/lib/utils/timezone";
 
 // DB 행 → 앱 타입 변환
 function toRecurring(row: {
@@ -109,8 +110,7 @@ export async function getUnprocessedRecurring(
   const supabase = await createClient();
 
   // KST 기준 현재 날짜
-  const KST_OFFSET = 9 * 60 * 60 * 1000;
-  const nowKST = new Date(Date.now() + KST_OFFSET);
+  const nowKST = getNowKST();
   const currentYear = nowKST.getUTCFullYear();
   const currentMonth = nowKST.getUTCMonth() + 1;
   const currentDay = nowKST.getUTCDate();
@@ -125,8 +125,7 @@ export async function getUnprocessedRecurring(
   const maxDay = isCurrent ? currentDay : 31;
 
   // KST 기준 월 범위 → UTC 변환
-  const start = new Date(Date.UTC(year, month - 1, 1) - KST_OFFSET).toISOString();
-  const end = new Date(Date.UTC(year, month, 1) - KST_OFFSET).toISOString();
+  const { start, end } = getMonthRangeUTC(year, month);
 
   // 처리된 목록, 건너뛴 목록, 전체 활성 고정비를 병렬 조회
   const [{ data: processed }, { data: skipped }, all] = await Promise.all([

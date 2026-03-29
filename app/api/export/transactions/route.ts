@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import * as XLSX from "xlsx";
-
-const KST_OFFSET = 9 * 60 * 60 * 1000;
+import { getMonthRangeUTC, utcIsoToKST } from "@/lib/utils/timezone";
 
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -21,14 +20,12 @@ export async function GET(request: NextRequest) {
   // 기간 필터 (KST 기준으로 변환)
   if (startMonth) {
     const [y, m] = startMonth.split("-").map(Number);
-    const start = new Date(Date.UTC(y, m - 1, 1) - KST_OFFSET).toISOString();
-    query = query.gte("transaction_at", start);
+    query = query.gte("transaction_at", getMonthRangeUTC(y, m).start);
   }
   if (endMonth) {
     const [y, m] = endMonth.split("-").map(Number);
     // endMonth의 다음 달 1일 = 해당 월의 마지막 순간
-    const end = new Date(Date.UTC(y, m, 1) - KST_OFFSET).toISOString();
-    query = query.lt("transaction_at", end);
+    query = query.lt("transaction_at", getMonthRangeUTC(y, m).end);
   }
 
   const { data: transactions, error } = await query;
@@ -45,7 +42,7 @@ export async function GET(request: NextRequest) {
 
   // 엑셀 행 데이터 변환
   const rows = (transactions ?? []).map((t) => {
-    const date = new Date(new Date(t.transaction_at).getTime() + KST_OFFSET);
+    const date = utcIsoToKST(t.transaction_at);
     const dateStr = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
     const timeStr = `${String(date.getUTCHours()).padStart(2, "0")}:${String(date.getUTCMinutes()).padStart(2, "0")}`;
     return {

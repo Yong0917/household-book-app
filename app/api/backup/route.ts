@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-
-const KST_OFFSET = 9 * 60 * 60 * 1000;
+import { getNowKST } from "@/lib/utils/timezone";
 
 export async function GET() {
   const supabase = await createClient();
@@ -37,7 +36,7 @@ export async function GET() {
   const json = JSON.stringify(payload, null, 2);
 
   // 파일명: 가계부_백업_YYYY-MM-DD.json (KST 기준)
-  const kstNow = new Date(Date.now() + KST_OFFSET);
+  const kstNow = getNowKST();
   const dateStr = kstNow.toISOString().slice(0, 10);
   const filename = `가계부_백업_${dateStr}.json`;
 

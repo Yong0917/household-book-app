@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-
-const KST_OFFSET = 9 * 60 * 60 * 1000;
+import { kstToUTC } from "@/lib/utils/timezone";
 
 interface ColMap {
   date: string;
@@ -142,9 +141,7 @@ export async function POST(request: NextRequest) {
     const timeStr = mapping.time ? parseTime(row[mapping.time]) : "00:00";
     const [hh, mm] = timeStr.split(":").map(Number);
     const [y, mo, d] = dateStr.split("-").map(Number);
-    const transactionAt = new Date(
-      Date.UTC(y, mo - 1, d, hh, mm) - KST_OFFSET
-    ).toISOString();
+    const transactionAt = kstToUTC(y, mo, d, hh, mm);
 
     // 분류 매핑
     let categoryId = defaultCatId;
