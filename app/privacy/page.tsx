@@ -23,7 +23,7 @@ export default function PrivacyPage() {
       </header>
 
       <div className="max-w-2xl mx-auto px-6 py-8 text-sm leading-relaxed">
-        <p className="text-muted-foreground mb-8">최종 수정일: 2026년 3월 26일</p>
+        <p className="text-muted-foreground mb-8">최종 수정일: 2026년 3월 30일</p>
 
         <section className="mb-8">
           <h2 className="text-base font-semibold mb-2">1. 수집하는 개인정보 항목</h2>
@@ -35,6 +35,8 @@ export default function PrivacyPage() {
             <li>카테고리 및 자산 설정 정보</li>
             <li>고정비(반복 거래) 설정 정보</li>
             <li>메모(노트) 내용</li>
+            <li>푸시 알림 수신 이력 (알림 유형, 제목, 내용, 발송 시각)</li>
+            <li>FCM 디바이스 토큰 (푸시 알림 발송용, 앱 설치 기기에서만 수집)</li>
           </ul>
         </section>
 
@@ -43,6 +45,8 @@ export default function PrivacyPage() {
           <ul className="list-disc ml-5 space-y-1 text-muted-foreground">
             <li>회원 식별 및 계정 관리</li>
             <li>가계부 데이터 저장 및 기기 간 동기화</li>
+            <li>고정비 결제일 알림 및 월별 결산 리포트 푸시 발송</li>
+            <li>수신된 알림 이력 조회 기능 제공</li>
             <li>서비스 운영 및 오류 대응</li>
           </ul>
         </section>
@@ -71,7 +75,7 @@ export default function PrivacyPage() {
               <span className="font-medium text-foreground">Supabase Inc.</span> — 데이터베이스 저장 및 인증 서비스 (미국 소재, GDPR 적합성 인정)
             </li>
             <li>
-              <span className="font-medium text-foreground">Google LLC</span> — 소셜 로그인(Google OAuth) 서비스 제공
+              <span className="font-medium text-foreground">Google LLC</span> — 소셜 로그인(Google OAuth) 및 푸시 알림(Firebase Cloud Messaging) 서비스 제공
             </li>
           </ul>
         </section>
