@@ -104,7 +104,8 @@ export default function TermsPage() {
           <h2 className="text-base font-semibold mb-2">제9조 (계정 해지)</h2>
           <p className="text-muted-foreground">
             이용자는 앱 내 설정 → 계정 삭제를 통해 언제든지 서비스 이용을 해지할 수 있습니다.
-            계정 삭제 시 모든 데이터는 즉시 삭제되며 복구할 수 없습니다.
+            탈퇴 요청 시 계정은 즉시 비활성화되며 30일간 복구 가능한 유예기간이 적용됩니다.
+            유예기간이 지나면 계정과 관련 데이터는 영구 삭제되며 이후에는 복구할 수 없습니다.
           </p>
         </section>
 

@@ -54,8 +54,9 @@ export default function PrivacyPage() {
         <section className="mb-8">
           <h2 className="text-base font-semibold mb-2">3. 개인정보 보유 및 이용 기간</h2>
           <p className="text-muted-foreground">
-            회원 탈퇴 시 모든 개인정보 및 거래 데이터는 즉시 삭제됩니다.
-            단, 관련 법령에 따라 보존이 필요한 경우 해당 기간 동안 보관됩니다.
+            회원이 탈퇴를 요청하면 계정 및 관련 데이터는 즉시 비활성화되며, 30일간의 유예기간 동안 보관됩니다.
+            이용자는 유예기간 내 재로그인하여 탈퇴를 취소할 수 있고, 30일이 경과하면 모든 개인정보 및 거래 데이터는 영구 삭제됩니다.
+            단, 관련 법령에 따라 보존이 필요한 경우 해당 기간 동안 별도로 보관될 수 있습니다.
           </p>
         </section>
 
