@@ -81,13 +81,7 @@ function isLastDayOfMonth(kstDate: Date): boolean {
 }
 
 Deno.serve(async (req) => {
-  // cron 외 외부 요청 차단
-  const authHeader = req.headers.get("Authorization");
-  if (authHeader !== `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`) {
-    return new Response("Unauthorized", { status: 401 });
-  }
-
-  // mode: "daily" → 오늘 결제일 개별 알림 (KST 09:00)
+  // mode: "daily" → 오늘 결제일 개별 알림 (KST 15:00)
   // mode: "monthly_summary" → 월말 미처리 요약 알림 (KST 20:00)
   const body = await req.json().catch(() => ({}));
   const mode: string = body.mode ?? "daily";
