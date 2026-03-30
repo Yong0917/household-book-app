@@ -2,6 +2,35 @@
 
 import { createClient } from "@/lib/supabase/server";
 
+export type NotificationHistoryItem = {
+  id: string;
+  type: "recurring" | "monthly_summary" | "monthly_report";
+  title: string;
+  body: string;
+  data: Record<string, string>;
+  sent_at: string;
+};
+
+// 최근 알림 히스토리 조회 (최대 50건)
+export async function getNotificationHistory(): Promise<NotificationHistoryItem[]> {
+  const supabase = await createClient();
+  const { data: authData } = await supabase.auth.getClaims();
+  if (!authData) return [];
+
+  const { data, error } = await supabase
+    .from("notification_history")
+    .select("id, type, title, body, data, sent_at")
+    .order("sent_at", { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.error("[getNotificationHistory]", error.message);
+    return [];
+  }
+
+  return data as NotificationHistoryItem[];
+}
+
 // FCM 디바이스 토큰을 DB에 저장 (upsert — 동일 토큰은 updated_at만 갱신)
 export async function saveDeviceToken(token: string): Promise<void> {
   const supabase = await createClient();

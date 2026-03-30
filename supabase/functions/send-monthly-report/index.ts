@@ -252,6 +252,52 @@ Deno.serve(async (req) => {
       .upsert(logInserts, { onConflict: "user_id,year,month" });
   }
 
+  // 알림 히스토리 저장 (사용자에게 표시)
+  // logInserts에는 발송 성공한 user_id만 담겨있음
+  const historyInserts = await Promise.all(
+    logInserts.map(async ({ user_id }) => {
+      const [{ data: current }, { data: prev }] = await Promise.all([
+        supabase.rpc("get_monthly_report_data", {
+          p_user_id: user_id,
+          p_year: prevYear,
+          p_month: prevMonth,
+        }),
+        supabase.rpc("get_monthly_report_data", {
+          p_user_id: user_id,
+          p_year: prevPrevYear,
+          p_month: prevPrevMonth,
+        }),
+      ]);
+
+      const c = current as RpcResult | null;
+      const p = prev as RpcResult | null;
+
+      const totalExpense = c ? Number(c.total_expense) : 0;
+      const prevExpense  = p ? Number(p.total_expense) : 0;
+
+      const lines: string[] = [];
+      const changeStr = formatChange(totalExpense, prevExpense);
+      lines.push(`지출 ${formatAmount(totalExpense)}${changeStr ? ` · ${changeStr}` : ""}`);
+      const top = ((c?.top_categories) ?? []).slice(0, 2);
+      if (top.length > 0) {
+        lines.push(top.map((cat) => `${cat.name} ${formatAmount(Number(cat.amount))}`).join(" · "));
+      }
+
+      return {
+        user_id,
+        type:    "monthly_report",
+        title:   `머니로그 - ${prevMonth}월 결산`,
+        body:    lines.join("\n"),
+        data:    { screen: `/statistics/report/${prevYear}/${prevMonth}`, year: String(prevYear), month: String(prevMonth) },
+        sent_at: new Date().toISOString(),
+      };
+    })
+  );
+
+  if (historyInserts.length > 0) {
+    await supabase.from("notification_history").insert(historyInserts);
+  }
+
   return new Response(
     JSON.stringify({ sent: sentCount, total: targetUserIds.length }),
     { headers: { "Content-Type": "application/json" } }

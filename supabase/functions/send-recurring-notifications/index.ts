@@ -205,6 +205,31 @@ Deno.serve(async (req) => {
         .from("notification_logs")
         .upsert(logInserts, { onConflict: "user_id,recurring_id,year,month" });
     }
+
+    // 알림 히스토리 저장 (사용자에게 표시)
+    const historyInserts = targets
+      .filter((r) => {
+        const tokens = tokenMap.get(r.user_id);
+        return tokens && tokens.length > 0;
+      })
+      .map((r) => {
+        const categoryName = (r.categories as { name: string } | null)?.name ?? "";
+        const label     = r.description || categoryName || "고정비";
+        const amountStr = Number(r.amount).toLocaleString("ko-KR");
+        const typeLabel = r.type === "income" ? "수입" : "지출";
+        return {
+          user_id: r.user_id,
+          type:    "recurring",
+          title:   "머니로그",
+          body:    `${label} ${amountStr}원 ${typeLabel} 결제일이에요`,
+          data:    { recurringId: r.id, screen: "/ledger/daily" },
+          sent_at: new Date().toISOString(),
+        };
+      });
+
+    if (historyInserts.length > 0) {
+      await supabase.from("notification_history").insert(historyInserts);
+    }
   }
 
   // ⑤ 월말 미처리 고정비 요약 알림 (monthly_summary 모드에서만 실행)
@@ -277,6 +302,23 @@ Deno.serve(async (req) => {
         await supabase
           .from("monthly_summary_logs")
           .upsert(summaryLogInserts, { onConflict: "user_id,year,month" });
+      }
+
+      // 월말 요약 알림 히스토리 저장
+      const summaryHistoryInserts = summaryLogInserts.map(({ user_id }) => {
+        const count = unprocessedMap.get(user_id) ?? 0;
+        return {
+          user_id,
+          type:    "monthly_summary",
+          title:   "머니로그",
+          body:    `이번 달 미처리 고정비가 ${count}개 있어요 · 확인해보세요`,
+          data:    { screen: "/ledger/daily" },
+          sent_at: new Date().toISOString(),
+        };
+      });
+
+      if (summaryHistoryInserts.length > 0) {
+        await supabase.from("notification_history").insert(summaryHistoryInserts);
       }
     }
   }
