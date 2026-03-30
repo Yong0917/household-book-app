@@ -253,7 +253,7 @@ export function ImportButton() {
 
           {/* ─── Step 1: 파일 업로드 ─── */}
           {step === "upload" && (
-            <div className="px-4 pb-8 space-y-4">
+            <div className="px-4 pb-4 space-y-4">
               <input
                 ref={fileRef}
                 type="file"
@@ -284,12 +284,13 @@ export function ImportButton() {
               <p className="text-xs text-muted-foreground/50 text-center px-2">
                 이 앱에서 내보낸 파일은 열이 자동으로 매핑됩니다
               </p>
+              <div className="flex-shrink-0" style={{ height: "env(safe-area-inset-bottom)" }} />
             </div>
           )}
 
           {/* ─── Step 2: 열 매핑 ─── */}
           {step === "mapping" && file && (
-            <div className="overflow-y-auto pb-8">
+            <div className="overflow-y-auto pb-4">
               <p className="px-5 mb-3 text-xs text-muted-foreground/60">
                 {file.rows.length.toLocaleString()}개 행 감지됨 · 각 열이 어떤 항목인지 지정하세요
               </p>
@@ -392,6 +393,7 @@ export function ImportButton() {
                   {file.rows.length.toLocaleString()}개 행 가져오기
                 </button>
               </div>
+              <div className="flex-shrink-0" style={{ height: "env(safe-area-inset-bottom)" }} />
             </div>
           )}
 
@@ -405,7 +407,7 @@ export function ImportButton() {
 
           {/* ─── Step 4: 결과 ─── */}
           {step === "result" && result && (
-            <div className="px-4 pb-8 space-y-3">
+            <div className="px-4 pb-4 space-y-3">
               <div className="rounded-2xl border border-border/60 bg-card p-5 space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-income/15 flex items-center justify-center flex-shrink-0">
@@ -445,6 +447,7 @@ export function ImportButton() {
               >
                 완료
               </button>
+              <div className="flex-shrink-0" style={{ height: "env(safe-area-inset-bottom)" }} />
             </div>
           )}
         </Drawer.Content>

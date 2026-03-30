@@ -249,7 +249,7 @@ export function ExportButton() {
             </button>
           </div>
 
-          <div className="px-4 pb-8 space-y-4 overflow-y-auto">
+          <div className="px-4 pt-1 pb-4 space-y-4 overflow-y-auto">
             {/* 프리셋 버튼 */}
             <div className="grid grid-cols-3 gap-2">
               {presets.map((p) => (
@@ -289,6 +289,7 @@ export function ExportButton() {
               <Download className="h-4 w-4" />
               {loading ? "내보내는 중..." : "엑셀 파일 다운로드"}
             </button>
+            <div className="flex-shrink-0" style={{ height: "env(safe-area-inset-bottom)" }} />
           </div>
         </Drawer.Content>
       </Drawer.Portal>
