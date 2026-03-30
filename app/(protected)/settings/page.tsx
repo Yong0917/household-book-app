@@ -1,6 +1,6 @@
 // 설정 페이지 (서버 컴포넌트)
 import Link from "next/link";
-import { ChevronRight, Tag, Wallet, LogOut, Palette, RefreshCw, Shield, FileText, LogIn, UserPlus, BarChart2, Bell } from "lucide-react";
+import { ChevronRight, Tag, Wallet, LogOut, Palette, RefreshCw, Shield, FileText, LogIn, UserPlus, BarChart2, Bell, UserCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/logout-button";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
@@ -19,8 +19,14 @@ export default async function SettingsPage() {
     <>
       {/* 설정 헤더 */}
       <header className="border-b border-border/40" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-        <div className="h-14 flex items-center px-5">
+        <div className="h-14 flex items-center justify-between px-5">
           <h1 className="text-[17px] font-bold tracking-tight">설정</h1>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-full bg-muted/60 border border-border/50">
+            <UserCircle className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span className="text-[12.5px] text-muted-foreground leading-none">
+              {isGuest ? "게스트" : (data?.claims?.email as string | undefined) ?? "로그인됨"}
+            </span>
+          </div>
         </div>
       </header>
 
