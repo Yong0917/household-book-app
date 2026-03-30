@@ -1,6 +1,6 @@
 // 설정 페이지 (서버 컴포넌트)
 import Link from "next/link";
-import { ChevronRight, Tag, Wallet, LogOut, Palette, RefreshCw, Shield, FileText, LogIn, UserPlus, BarChart2 } from "lucide-react";
+import { ChevronRight, Tag, Wallet, LogOut, Palette, RefreshCw, Shield, FileText, LogIn, UserPlus, BarChart2, Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/logout-button";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
@@ -83,6 +83,19 @@ export default async function SettingsPage() {
                     <BarChart2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                   </div>
                   <span className="text-[14.5px] font-medium">월별 리포트</span>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
+              </Link>
+              {/* 알림 히스토리 */}
+              <Link
+                href="/settings/notifications"
+                className="flex items-center justify-between px-4 py-4 hover:bg-muted/40 active:bg-muted/60 transition-colors"
+              >
+                <div className="flex items-center gap-3.5">
+                  <div className="w-8 h-8 rounded-xl bg-violet-100 dark:bg-violet-950 flex items-center justify-center">
+                    <Bell className="h-4 w-4 text-violet-600 dark:text-violet-400" />
+                  </div>
+                  <span className="text-[14.5px] font-medium">알림 히스토리</span>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground/40" />
               </Link>
