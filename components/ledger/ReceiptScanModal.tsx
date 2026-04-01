@@ -47,13 +47,14 @@ export function ReceiptScanModal({ open, onClose, onCamera, onGallery }: Receipt
         visible ? "opacity-100" : "opacity-0 pointer-events-none"
       )}
     >
-      {/* 배경 오버레이 */}
-      <div className="absolute inset-0 bg-black/45 backdrop-blur-[3px]" onClick={onClose} />
+      {/* 배경 오버레이 - 카드 아래에 위치 */}
+      <div className="absolute inset-0 z-0 bg-black/45 backdrop-blur-[3px]" onClick={onClose} />
 
-      {/* 모달 카드 */}
+      {/* 모달 카드 - 오버레이 위에 위치 */}
       <div
+        onClick={(e) => e.stopPropagation()}
         className={cn(
-          "relative w-full max-w-[312px] bg-background rounded-[22px] shadow-[0_20px_60px_-12px_rgba(0,0,0,0.35)] overflow-hidden",
+          "relative z-10 w-full max-w-[312px] bg-background rounded-[22px] shadow-[0_20px_60px_-12px_rgba(0,0,0,0.35)] overflow-hidden",
           "transition-all duration-220 ease-out",
           visible ? "scale-100 translate-y-0" : "scale-[0.94] translate-y-3"
         )}
