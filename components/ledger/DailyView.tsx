@@ -20,6 +20,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { skipRecurring } from "@/lib/actions/recurring";
 import { useGuestMode } from "@/lib/context/GuestModeContext";
 import type { Transaction, Category, Asset, RecurringTransaction } from "@/lib/mock/types";
+import type { AccessStatus } from "@/lib/actions/receiptAccess";
 
 interface DailyViewProps {
   currentMonth: Date;
@@ -30,9 +31,10 @@ interface DailyViewProps {
   onSuccess: () => void;
   recurringItems?: RecurringTransaction[];
   openRecurringId?: string;
+  receiptAccessStatus?: AccessStatus;
 }
 
-export function DailyView({ currentMonth, transactions, categories, assets, isLoading, onSuccess, recurringItems = [], openRecurringId }: DailyViewProps) {
+export function DailyView({ currentMonth, transactions, categories, assets, isLoading, onSuccess, recurringItems = [], openRecurringId, receiptAccessStatus = "none" }: DailyViewProps) {
   const { isGuest, requireLogin } = useGuestMode();
   // 바텀 시트 열림 상태
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -327,6 +329,7 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
         categories={categories}
         assets={assets}
         onSuccess={onSuccess}
+        receiptAccessStatus={receiptAccessStatus}
       />
     </>
   );

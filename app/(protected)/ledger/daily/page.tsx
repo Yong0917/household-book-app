@@ -2,6 +2,7 @@
 import { Suspense } from "react";
 import { format, startOfMonth } from "date-fns";
 import { getLedgerMonthData } from "@/lib/actions/transactions";
+import { getReceiptAccessStatus } from "@/lib/actions/receiptAccess";
 import { LedgerTabView } from "@/components/ledger/LedgerTabView";
 
 export default async function DailyPage() {
@@ -12,17 +13,18 @@ export default async function DailyPage() {
   const month = now.getMonth() + 1;
   const monthKey = format(now, "yyyy-MM");
 
-  let initialData;
-  try {
-    initialData = await getLedgerMonthData(year, month);
-  } catch {
-    // fetch 실패 시 클라이언트 fetch로 폴백
-    initialData = undefined;
-  }
+  const [initialData, receiptAccessStatus] = await Promise.all([
+    getLedgerMonthData(year, month).catch(() => undefined),
+    getReceiptAccessStatus().catch(() => "none" as const),
+  ]);
 
   return (
     <Suspense fallback={null}>
-      <LedgerTabView initialData={initialData} initialMonthKey={monthKey} />
+      <LedgerTabView
+        initialData={initialData}
+        initialMonthKey={monthKey}
+        receiptAccessStatus={receiptAccessStatus}
+      />
     </Suspense>
   );
 }

@@ -14,6 +14,7 @@ import { getLedgerMonthData } from "@/lib/actions/transactions";
 import { getGuestMonthData } from "@/lib/mock/guestData";
 import { useGuestMode } from "@/lib/context/GuestModeContext";
 import type { Transaction, Category, Asset, RecurringTransaction } from "@/lib/mock/types";
+import type { AccessStatus } from "@/lib/actions/receiptAccess";
 import { useSwipeMonth } from "@/hooks/useSwipeMonth";
 
 // localStorage 캐시 키
@@ -71,9 +72,10 @@ interface LedgerTabViewProps {
   initialData?: CacheEntry;
   // SSR 데이터에 해당하는 달 키 (예: "2026-03")
   initialMonthKey?: string;
+  receiptAccessStatus?: AccessStatus;
 }
 
-export function LedgerTabView({ initialData, initialMonthKey }: LedgerTabViewProps = {}) {
+export function LedgerTabView({ initialData, initialMonthKey, receiptAccessStatus = "none" }: LedgerTabViewProps = {}) {
   const { isGuest } = useGuestMode();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>("list");
@@ -368,6 +370,7 @@ export function LedgerTabView({ initialData, initialMonthKey }: LedgerTabViewPro
             onSuccess={handleSuccess}
             recurringItems={recurringItems}
             openRecurringId={searchParams.get("openRecurring") ?? undefined}
+            receiptAccessStatus={receiptAccessStatus}
           />
         : <CalendarView
             currentMonth={currentMonth}

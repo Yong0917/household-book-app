@@ -9,11 +9,18 @@ import { ExportButton } from "@/components/settings/ExportButton";
 import { ImportButton } from "@/components/settings/ImportButton";
 import { BackupButton } from "@/components/settings/BackupButton";
 import { DeleteAccountButton } from "@/components/settings/DeleteAccountButton";
+import { ReceiptAccessAdmin } from "@/components/settings/ReceiptAccessAdmin";
+import { getAccessRequests } from "@/lib/actions/receiptAccess";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
   const { data } = await supabase.auth.getClaims();
   const isGuest = !data?.claims;
+  const isAdmin = !isGuest && (data?.claims?.sub as string) === process.env.ADMIN_USER_ID;
+
+  const accessRequests = isAdmin
+    ? await getAccessRequests().catch(() => [])
+    : [];
 
   return (
     <>
@@ -207,6 +214,9 @@ export default async function SettingsPage() {
           </div>
         </div>
       )}
+
+      {/* 관리자 전용: 영수증 스캔 접근 관리 */}
+      {isAdmin && <ReceiptAccessAdmin initialRequests={accessRequests} />}
 
       {/* 게스트: 하단 여백 */}
       {isGuest && <div className="pb-6" />}

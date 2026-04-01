@@ -7,8 +7,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { Drawer } from "vaul";
 import { format, parseISO } from "date-fns";
-import { X, Plus } from "lucide-react";
+import { X, Plus, ScanLine, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { compressImage } from "@/lib/utils/imageUtils";
+import type { ReceiptAnalysisResult } from "@/app/api/analyze-receipt/route";
+import { requestReceiptAccess } from "@/lib/actions/receiptAccess";
+import type { AccessStatus } from "@/lib/actions/receiptAccess";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
@@ -43,6 +47,7 @@ interface TransactionSheetProps {
   categories: Category[];
   assets: Asset[];
   onSuccess?: () => void; // 저장/삭제 성공 후 콜백
+  receiptAccessStatus?: AccessStatus; // 영수증 스캔 접근 상태
 }
 
 // select 공통 스타일
@@ -67,6 +72,7 @@ export function TransactionSheet({
   categories,
   assets,
   onSuccess,
+  receiptAccessStatus = "none",
 }: TransactionSheetProps) {
   // 고정비 day_of_month 기준 날짜 계산 (말일 초과 시 클램프)
   const getRecurringDate = (dayOfMonth: number): string => {
@@ -114,7 +120,79 @@ export function TransactionSheet({
   };
 
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [accessStatus, setAccessStatus] = useState<AccessStatus>(receiptAccessStatus);
+  const [isRequesting, setIsRequesting] = useState(false);
+  const [showAccessTooltip, setShowAccessTooltip] = useState(false);
+  const receiptInputRef = useRef<HTMLInputElement>(null);
+
+  const handleRequestAccess = async () => {
+    setIsRequesting(true);
+    try {
+      await requestReceiptAccess();
+      setAccessStatus("pending");
+    } catch {
+      // 이미 요청한 경우 등 무시
+      setAccessStatus("pending");
+    } finally {
+      setIsRequesting(false);
+      setShowAccessTooltip(false);
+    }
+  };
   const contentRef = useRef<HTMLDivElement>(null);
+
+  const handleReceiptChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    // input 초기화 (같은 파일 재선택 허용)
+    e.target.value = "";
+
+    setIsAnalyzing(true);
+    setAnalyzeError(null);
+
+    try {
+      const compressed = await compressImage(file, 1200, 0.8);
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve((reader.result as string).split(",")[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(compressed);
+      });
+
+      const res = await fetch("/api/analyze-receipt", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageBase64: base64, mimeType: "image/jpeg" }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error ?? "분석 실패");
+      }
+
+      const result: ReceiptAnalysisResult = await res.json();
+
+      if (result.amount) {
+        setDisplayAmount(result.amount.toLocaleString("ko-KR"));
+        setValue("amount", result.amount, { shouldValidate: true });
+      }
+      if (result.description) {
+        setValue("description", result.description, { shouldValidate: true });
+      }
+      if (result.date) {
+        setValue("date", result.date, { shouldValidate: true });
+      }
+      if (result.type) {
+        setValue("type", result.type);
+        setValue("categoryId", "");
+      }
+    } catch (err) {
+      setAnalyzeError(err instanceof Error ? err.message : "영수증 인식에 실패했습니다.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
 
   // iOS에서 키보드 dismiss 후 visualViewport가 늦게 업데이트되는 문제 대응
   useEffect(() => {
@@ -275,6 +353,80 @@ export function TransactionSheet({
                 {mode === "create" ? "거래 추가" : "거래 수정"}
               </h2>
             </Drawer.Title>
+            {/* 영수증 스캔 버튼 (추가 모드에서만 표시) */}
+            {mode === "create" && (
+              <div className="absolute left-5">
+                {/* 관리자 or 승인된 유저: 바로 사용 */}
+                {(accessStatus === "admin" || accessStatus === "approved") && (
+                  <>
+                    <input
+                      ref={receiptInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleReceiptChange}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => receiptInputRef.current?.click()}
+                      disabled={isAnalyzing}
+                      className="w-8 h-8 flex items-center justify-center rounded-full bg-muted/70 text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
+                      aria-label="영수증 스캔"
+                    >
+                      {isAnalyzing ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <ScanLine className="h-4 w-4" />
+                      )}
+                    </button>
+                  </>
+                )}
+
+                {/* 미요청 상태: 버튼 클릭 시 승인 요청 툴팁 */}
+                {accessStatus === "none" && (
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setShowAccessTooltip((v) => !v)}
+                      className="w-8 h-8 flex items-center justify-center rounded-full bg-muted/70 text-muted-foreground/40 hover:bg-muted transition-colors"
+                      aria-label="영수증 스캔 (잠김)"
+                    >
+                      <ScanLine className="h-4 w-4" />
+                    </button>
+                    {showAccessTooltip && (
+                      <div className="absolute left-0 top-10 z-10 w-52 rounded-xl bg-popover border border-border shadow-lg p-3">
+                        <p className="text-[12px] text-muted-foreground mb-2.5">
+                          영수증 자동 인식은 관리자 승인 후 사용할 수 있어요.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleRequestAccess}
+                          disabled={isRequesting}
+                          className="w-full py-1.5 rounded-lg bg-foreground text-background text-[12px] font-medium hover:opacity-80 transition-opacity disabled:opacity-50"
+                        >
+                          {isRequesting ? "요청 중..." : "승인 요청하기"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* 대기 중: 흐릿하게 표시 */}
+                {accessStatus === "pending" && (
+                  <button
+                    type="button"
+                    disabled
+                    className="w-8 h-8 flex items-center justify-center rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-400 cursor-not-allowed"
+                    aria-label="승인 대기 중"
+                    title="승인 대기 중"
+                  >
+                    <ScanLine className="h-4 w-4" />
+                  </button>
+                )}
+
+                {/* 거부됨: 아무 버튼도 표시 안 함 */}
+              </div>
+            )}
             <button
               type="button"
               onClick={handleClose}
@@ -315,6 +467,21 @@ export function TransactionSheet({
                   수입
                 </button>
               </div>
+
+              {/* 영수증 인식 에러 */}
+              {analyzeError && (
+                <div className="mb-4 px-3.5 py-2.5 rounded-xl bg-destructive/8 border border-destructive/20">
+                  <p className="text-destructive text-[12px]">{analyzeError}</p>
+                </div>
+              )}
+
+              {/* 영수증 인식 중 안내 */}
+              {isAnalyzing && (
+                <div className="mb-4 px-3.5 py-2.5 rounded-xl bg-muted/60 border border-border/50 flex items-center gap-2">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground flex-shrink-0" />
+                  <p className="text-muted-foreground text-[12px]">영수증을 분석하고 있어요...</p>
+                </div>
+              )}
 
               {/* 금액 입력 */}
               <div className="mb-5">
