@@ -125,7 +125,9 @@ export function TransactionSheet({
   const [accessStatus, setAccessStatus] = useState<AccessStatus>(receiptAccessStatus);
   const [isRequesting, setIsRequesting] = useState(false);
   const [showAccessTooltip, setShowAccessTooltip] = useState(false);
+  const [showScanMenu, setShowScanMenu] = useState(false);
   const receiptInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
 
   const handleRequestAccess = async () => {
     setIsRequesting(true);
@@ -255,6 +257,7 @@ export function TransactionSheet({
       const defaults = getDefaultValues();
       reset(defaults);
       setAnalyzeError(null);
+      setShowScanMenu(false);
       if (mode === "edit" && transaction) {
         setDisplayAmount(transaction.amount.toLocaleString("ko-KR"));
       } else if (initialRecurring) {
@@ -357,9 +360,17 @@ export function TransactionSheet({
             {/* 영수증 스캔 버튼 (추가 모드에서만 표시) */}
             {mode === "create" && (
               <div className="absolute left-5">
-                {/* 관리자 or 승인된 유저: 바로 사용 */}
+                {/* 관리자 or 승인된 유저: 카메라 / 갤러리 선택 */}
                 {(accessStatus === "admin" || accessStatus === "approved") && (
-                  <>
+                  <div className="relative">
+                    <input
+                      ref={cameraInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={handleReceiptChange}
+                    />
                     <input
                       ref={receiptInputRef}
                       type="file"
@@ -369,7 +380,7 @@ export function TransactionSheet({
                     />
                     <button
                       type="button"
-                      onClick={() => receiptInputRef.current?.click()}
+                      onClick={() => setShowScanMenu((v) => !v)}
                       disabled={isAnalyzing}
                       className="w-8 h-8 flex items-center justify-center rounded-full bg-muted/70 text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
                       aria-label="영수증 스캔"
@@ -380,7 +391,26 @@ export function TransactionSheet({
                         <ScanLine className="h-4 w-4" />
                       )}
                     </button>
-                  </>
+                    {showScanMenu && (
+                      <div className="absolute left-0 top-10 z-10 w-40 rounded-xl bg-popover border border-border shadow-lg overflow-hidden">
+                        <button
+                          type="button"
+                          onClick={() => { setShowScanMenu(false); cameraInputRef.current?.click(); }}
+                          className="w-full px-4 py-3 text-left text-[13px] hover:bg-muted/60 transition-colors"
+                        >
+                          카메라로 찍기
+                        </button>
+                        <div className="h-px bg-border/50" />
+                        <button
+                          type="button"
+                          onClick={() => { setShowScanMenu(false); receiptInputRef.current?.click(); }}
+                          className="w-full px-4 py-3 text-left text-[13px] hover:bg-muted/60 transition-colors"
+                        >
+                          갤러리에서 선택
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )}
 
                 {/* 미요청 상태: 버튼 클릭 시 승인 요청 툴팁 */}
