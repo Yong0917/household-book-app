@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createPortal } from "react-dom";
 import { Camera, Images, ScanLine } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,34 +27,34 @@ export function ReceiptScanModal({ open, onClose, onCamera, onGallery }: Receipt
     }
   }, [open]);
 
-  // 백드롭 클릭 시 닫기
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) onClose();
-  };
-
   if (!mounted) return null;
 
-  return createPortal(
+  // createPortal 없이 absolute inset-0 으로 Drawer.Content 안에서 렌더링
+  // → vaul의 포인터 이벤트 가로채기 문제 회피
+  return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label="영수증 스캔 방법 선택"
-      onClick={handleBackdropClick}
       className={cn(
-        "fixed inset-0 z-[200] flex items-center justify-center px-8",
+        "absolute inset-0 z-50 flex items-center justify-center px-8",
         "transition-opacity duration-200 ease-out",
         visible ? "opacity-100" : "opacity-0 pointer-events-none"
       )}
     >
-      {/* 배경 오버레이 - 카드 아래에 위치 */}
-      <div className="absolute inset-0 z-0 bg-black/45 backdrop-blur-[3px]" onClick={onClose} />
+      {/* 배경 오버레이 */}
+      <div
+        className="absolute inset-0 bg-black/45 backdrop-blur-[3px]"
+        onClick={onClose}
+      />
 
-      {/* 모달 카드 - 오버레이 위에 위치 */}
+      {/* 모달 카드 - z-10으로 오버레이 위에 */}
       <div
         onClick={(e) => e.stopPropagation()}
         className={cn(
-          "relative z-10 w-full max-w-[312px] bg-background rounded-[22px] shadow-[0_20px_60px_-12px_rgba(0,0,0,0.35)] overflow-hidden",
-          "transition-all duration-220 ease-out",
+          "relative z-10 w-full max-w-[312px] bg-background rounded-[22px]",
+          "shadow-[0_20px_60px_-12px_rgba(0,0,0,0.35)] overflow-hidden",
+          "transition-all duration-200 ease-out",
           visible ? "scale-100 translate-y-0" : "scale-[0.94] translate-y-3"
         )}
       >
@@ -73,7 +72,7 @@ export function ReceiptScanModal({ open, onClose, onCamera, onGallery }: Receipt
         </div>
 
         {/* 구분선 */}
-        <div className="h-px bg-border/60 mx-0" />
+        <div className="h-px bg-border/60" />
 
         {/* 옵션 버튼들 */}
         <div className="p-2.5 flex flex-col gap-1.5">
@@ -154,7 +153,6 @@ export function ReceiptScanModal({ open, onClose, onCamera, onGallery }: Receipt
           </button>
         </div>
       </div>
-    </div>,
-    document.body
+    </div>
   );
 }

@@ -129,6 +129,10 @@ export function TransactionSheet({
   const [showScanMenu, setShowScanMenu] = useState(false);
   const receiptInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  // 뒤로가기 핸들러 내 스캔 메뉴 상태 동기화용 (stale closure 방지)
+  const showScanMenuRef = useRef(false);
+  const openScanMenu = () => { showScanMenuRef.current = true; setShowScanMenu(true); };
+  const closeScanMenu = () => { showScanMenuRef.current = false; setShowScanMenu(false); };
 
   const handleRequestAccess = async () => {
     setIsRequesting(true);
@@ -258,7 +262,7 @@ export function TransactionSheet({
       const defaults = getDefaultValues();
       reset(defaults);
       setAnalyzeError(null);
-      setShowScanMenu(false);
+      closeScanMenu();
       if (mode === "edit" && transaction) {
         setDisplayAmount(transaction.amount.toLocaleString("ko-KR"));
       } else if (initialRecurring) {
@@ -269,9 +273,15 @@ export function TransactionSheet({
       history.pushState({ transactionSheet: true }, "");
 
       const handlePopState = () => {
-        onOpenChange(false);
+        if (showScanMenuRef.current) {
+          // 스캔 메뉴만 닫고, 드로어용 히스토리 상태 복원
+          closeScanMenu();
+          history.pushState({ transactionSheet: true }, "");
+        } else {
+          onOpenChange(false);
+        }
       };
-      window.addEventListener("popstate", handlePopState, { once: true });
+      window.addEventListener("popstate", handlePopState);
       return () => {
         window.removeEventListener("popstate", handlePopState);
       };
@@ -281,6 +291,11 @@ export function TransactionSheet({
 
   // 시트를 직접 닫을 때 (X 버튼, 저장, 삭제) 히스토리 상태 정리
   const handleClose = () => {
+    if (showScanMenuRef.current) {
+      // 스캔 메뉴가 열려 있으면 모달만 닫기
+      closeScanMenu();
+      return;
+    }
     if (history.state?.transactionSheet) {
       history.back();
     } else {
@@ -381,7 +396,7 @@ export function TransactionSheet({
                     />
                     <button
                       type="button"
-                      onClick={() => setShowScanMenu(true)}
+                      onClick={() => openScanMenu()}
                       disabled={isAnalyzing}
                       className="w-8 h-8 flex items-center justify-center rounded-full bg-muted/70 text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
                       aria-label="영수증 스캔"
@@ -392,12 +407,6 @@ export function TransactionSheet({
                         <ScanLine className="h-4 w-4" />
                       )}
                     </button>
-                    <ReceiptScanModal
-                      open={showScanMenu}
-                      onClose={() => setShowScanMenu(false)}
-                      onCamera={() => cameraInputRef.current?.click()}
-                      onGallery={() => receiptInputRef.current?.click()}
-                    />
                   </div>
                 )}
 
@@ -658,6 +667,14 @@ export function TransactionSheet({
           </div>
           {/* 하단 safe area 여백 (홈 인디케이터 영역) */}
           <div className="flex-shrink-0" style={{ height: "env(safe-area-inset-bottom)" }} />
+
+          {/* 영수증 스캔 모달 - Drawer.Content 안에서 absolute inset-0으로 렌더링 */}
+          <ReceiptScanModal
+            open={showScanMenu}
+            onClose={closeScanMenu}
+            onCamera={() => cameraInputRef.current?.click()}
+            onGallery={() => receiptInputRef.current?.click()}
+          />
         </Drawer.Content>
       </Drawer.Portal>
     </Drawer.Root>
