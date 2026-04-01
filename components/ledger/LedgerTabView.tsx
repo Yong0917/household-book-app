@@ -379,6 +379,7 @@ export function LedgerTabView({ initialData, initialMonthKey, receiptAccessStatu
             assets={assets}
             isLoading={isLoading}
             onSuccess={handleSuccess}
+            receiptAccessStatus={receiptAccessStatus}
           />
       }
 

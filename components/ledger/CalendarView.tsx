@@ -21,6 +21,7 @@ import { TransactionList } from "./TransactionList";
 import { TransactionSheet } from "./TransactionSheet";
 import { useGuestMode } from "@/lib/context/GuestModeContext";
 import type { Transaction, Category, Asset } from "@/lib/mock/types";
+import type { AccessStatus } from "@/lib/actions/receiptAccess";
 
 const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -35,9 +36,10 @@ interface CalendarViewProps {
   assets: Asset[];
   isLoading: boolean;
   onSuccess: () => void;
+  receiptAccessStatus?: AccessStatus;
 }
 
-export function CalendarView({ currentMonth, transactions, categories, assets, isLoading, onSuccess }: CalendarViewProps) {
+export function CalendarView({ currentMonth, transactions, categories, assets, isLoading, onSuccess, receiptAccessStatus = "none" }: CalendarViewProps) {
   const { isGuest, requireLogin } = useGuestMode();
   // 카테고리/자산 Map (O(1) 룩업)
   const categoryMap = useMemo(() => new Map(categories.map((c) => [c.id, c])), [categories]);
@@ -352,6 +354,7 @@ export function CalendarView({ currentMonth, transactions, categories, assets, i
         categories={categories}
         assets={assets}
         onSuccess={onSuccess}
+        receiptAccessStatus={receiptAccessStatus}
       />
     </>
   );

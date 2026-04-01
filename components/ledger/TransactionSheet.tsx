@@ -254,6 +254,7 @@ export function TransactionSheet({
     if (open) {
       const defaults = getDefaultValues();
       reset(defaults);
+      setAnalyzeError(null);
       if (mode === "edit" && transaction) {
         setDisplayAmount(transaction.amount.toLocaleString("ko-KR"));
       } else if (initialRecurring) {
