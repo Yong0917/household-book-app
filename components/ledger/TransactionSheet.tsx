@@ -8,6 +8,7 @@ import { z } from "zod";
 import { Drawer } from "vaul";
 import { format, parseISO } from "date-fns";
 import { X, Plus, ScanLine, Loader2 } from "lucide-react";
+import { ReceiptScanModal } from "@/components/ledger/ReceiptScanModal";
 import Link from "next/link";
 import { compressImage } from "@/lib/utils/imageUtils";
 import type { ReceiptAnalysisResult } from "@/app/api/analyze-receipt/route";
@@ -380,7 +381,7 @@ export function TransactionSheet({
                     />
                     <button
                       type="button"
-                      onClick={() => setShowScanMenu((v) => !v)}
+                      onClick={() => setShowScanMenu(true)}
                       disabled={isAnalyzing}
                       className="w-8 h-8 flex items-center justify-center rounded-full bg-muted/70 text-muted-foreground hover:bg-muted transition-colors disabled:opacity-50"
                       aria-label="영수증 스캔"
@@ -391,25 +392,12 @@ export function TransactionSheet({
                         <ScanLine className="h-4 w-4" />
                       )}
                     </button>
-                    {showScanMenu && (
-                      <div className="absolute left-0 top-10 z-10 w-40 rounded-xl bg-popover border border-border shadow-lg overflow-hidden">
-                        <button
-                          type="button"
-                          onClick={() => { setShowScanMenu(false); cameraInputRef.current?.click(); }}
-                          className="w-full px-4 py-3 text-left text-[13px] hover:bg-muted/60 transition-colors"
-                        >
-                          카메라로 찍기
-                        </button>
-                        <div className="h-px bg-border/50" />
-                        <button
-                          type="button"
-                          onClick={() => { setShowScanMenu(false); receiptInputRef.current?.click(); }}
-                          className="w-full px-4 py-3 text-left text-[13px] hover:bg-muted/60 transition-colors"
-                        >
-                          갤러리에서 선택
-                        </button>
-                      </div>
-                    )}
+                    <ReceiptScanModal
+                      open={showScanMenu}
+                      onClose={() => setShowScanMenu(false)}
+                      onCamera={() => cameraInputRef.current?.click()}
+                      onGallery={() => receiptInputRef.current?.click()}
+                    />
                   </div>
                 )}
 
