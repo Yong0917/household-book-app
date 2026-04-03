@@ -147,7 +147,7 @@ export function DatePicker({ value, onChange, className }: DatePickerProps) {
               >
                 취소
               </button>
-              <span className="text-[14px] font-semibold">날짜 선택</span>
+              <span />
               <button
                 type="button"
                 onClick={handleToday}
