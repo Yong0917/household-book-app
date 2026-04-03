@@ -18,6 +18,7 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { MemoInput } from "@/components/ledger/MemoInput";
+import { TimePicker } from "@/components/ui/time-picker";
 import {
   addTransaction,
   updateTransaction,
@@ -609,11 +610,15 @@ export function TransactionSheet({
                     className="border border-input rounded-xl px-3.5 py-3 w-full bg-background text-[13px] focus:outline-none focus:ring-1 focus:ring-ring"
                     onTouchStart={dismissKeyboard}
                   />
-                  <input
-                    type="time"
-                    {...register("time")}
-                    className="border border-input rounded-xl px-3.5 py-3 w-full bg-background text-[13px] focus:outline-none focus:ring-1 focus:ring-ring"
-                    onTouchStart={dismissKeyboard}
+                  <Controller
+                    name="time"
+                    control={control}
+                    render={({ field }) => (
+                      <TimePicker
+                        value={field.value ?? ""}
+                        onChange={field.onChange}
+                      />
+                    )}
                   />
                 </div>
               </div>
