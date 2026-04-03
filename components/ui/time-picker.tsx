@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ITEM_H = 48;
@@ -207,9 +208,12 @@ export function TimePicker({ value, onChange, className }: TimePickerProps) {
     setOpen(false);
   };
 
+  // 표시: 오전/오후 형식
   const label = (() => {
     const { hour, minute } = parse(value);
-    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+    const period = hour >= 12 ? "오후" : "오전";
+    const h12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return `${period} ${h12}:${String(minute).padStart(2, "0")}`;
   })();
 
   return (
@@ -219,12 +223,13 @@ export function TimePicker({ value, onChange, className }: TimePickerProps) {
         type="button"
         onClick={handleOpen}
         className={cn(
-          "border border-input rounded-xl px-3.5 py-3 w-full bg-background text-[13px] text-left",
+          "flex items-center gap-2 border border-input rounded-xl px-3.5 py-3 w-full bg-background text-[13px] text-left",
           "focus:outline-none focus:ring-1 focus:ring-ring active:opacity-70 transition-opacity",
           className
         )}
       >
-        {label}
+        <Clock className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+        <span>{label}</span>
       </button>
 
       {/* 바텀 시트 오버레이 */}
