@@ -29,7 +29,7 @@ export function MemoInput({ value, onChange }: MemoInputProps) {
     const val = e.target.value;
     onChange(val);
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    debounceTimer.current = setTimeout(() => fetchSuggestions(val), 150);
+    debounceTimer.current = setTimeout(() => fetchSuggestions(val), 250);
   };
 
   const handleFocus = () => {
