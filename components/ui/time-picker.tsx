@@ -175,51 +175,41 @@ interface TimePickerProps {
   className?: string;
 }
 
-const HOURS = Array.from({ length: 12 }, (_, i) => i + 1); // 1~12
-const MINUTES = Array.from({ length: 60 }, (_, i) => i);   // 0~59
+const HOURS = Array.from({ length: 24 }, (_, i) => i);   // 0~23
+const MINUTES = Array.from({ length: 60 }, (_, i) => i); // 0~59
 
 function parse(val: string) {
   const [h, m] = val.split(":").map(Number);
-  const hour24 = isNaN(h) ? 0 : h;
-  const minute = isNaN(m) ? 0 : m;
-  const period: "AM" | "PM" = hour24 >= 12 ? "PM" : "AM";
-  const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
-  return { period, hour12, minute };
-}
-
-function to24(period: "AM" | "PM", hour12: number, minute: number): string {
-  let h = hour12;
-  if (period === "AM" && h === 12) h = 0;
-  else if (period === "PM" && h !== 12) h += 12;
-  return `${String(h).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  return {
+    hour: isNaN(h) ? 0 : h,
+    minute: isNaN(m) ? 0 : m,
+  };
 }
 
 export function TimePicker({ value, onChange, className }: TimePickerProps) {
-  const { period, hour12, minute } = parse(value);
+  const { hour, minute } = parse(value);
 
   const [open, setOpen] = useState(false);
-  const [selPeriod, setSelPeriod] = useState<"AM" | "PM">(period);
-  const [selHour, setSelHour] = useState(hour12);
+  const [selHour, setSelHour] = useState(hour);
   const [selMin, setSelMin] = useState(minute);
 
-  // open 시 현재 value로 초기화
   const handleOpen = () => {
     const p = parse(value);
-    setSelPeriod(p.period);
-    setSelHour(p.hour12);
+    setSelHour(p.hour);
     setSelMin(p.minute);
     setOpen(true);
   };
 
   const handleConfirm = () => {
-    onChange(to24(selPeriod, selHour, selMin));
+    const hh = String(selHour).padStart(2, "0");
+    const mm = String(selMin).padStart(2, "0");
+    onChange(`${hh}:${mm}`);
     setOpen(false);
   };
 
-  // 표시용 레이블
   const label = (() => {
-    const { period, hour12, minute } = parse(value);
-    return `${period === "AM" ? "오전" : "오후"} ${hour12}:${String(minute).padStart(2, "0")}`;
+    const { hour, minute } = parse(value);
+    return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
   })();
 
   return (
@@ -275,33 +265,13 @@ export function TimePicker({ value, onChange, className }: TimePickerProps) {
               </button>
             </div>
 
-            {/* AM/PM 토글 */}
-            <div className="px-5 pb-4">
-              <div className="grid grid-cols-2 gap-1.5 p-1.5 rounded-2xl bg-muted/40">
-                {(["AM", "PM"] as const).map((p) => (
-                  <button
-                    key={p}
-                    type="button"
-                    onClick={() => setSelPeriod(p)}
-                    className={cn(
-                      "py-3 rounded-xl text-[15px] font-semibold transition-all duration-200",
-                      selPeriod === p
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground/60 hover:text-muted-foreground"
-                    )}
-                  >
-                    {p === "AM" ? "오전" : "오후"}
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* 드럼 피커 */}
             <div className="flex items-center gap-1 px-4 pb-5">
               <DrumPicker
                 items={HOURS}
                 selected={selHour}
                 onSelect={setSelHour}
+                fmt={(v) => String(v).padStart(2, "0")}
               />
               <div className="flex flex-col gap-4 pb-1">
                 <div className="w-1.5 h-1.5 rounded-full bg-foreground/40" />
