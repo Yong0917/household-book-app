@@ -4,9 +4,13 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
+import dynamic from "next/dynamic";
 import { DailyView } from "./DailyView";
-import { CalendarView } from "./CalendarView";
 import { SearchView } from "./SearchView";
+
+const CalendarView = dynamic(() => import("./CalendarView").then((m) => m.CalendarView), {
+  ssr: false,
+});
 import { ChevronLeft, ChevronRight, ChevronDown, Search } from "lucide-react";
 import { format, addMonths, subMonths, startOfMonth, parse, isValid } from "date-fns";
 import { ko } from "date-fns/locale";

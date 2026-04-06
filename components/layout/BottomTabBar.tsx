@@ -17,6 +17,11 @@ export function BottomTabBar() {
   const router = useRouter();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
 
+  // 마운트 시 모든 탭 라우트 프리패치 → 탭 전환 즉각적으로
+  useEffect(() => {
+    tabs.forEach(({ href }) => router.prefetch(href));
+  }, [router]);
+
   // 페이지 이동 완료되면 로딩 상태 해제
   useEffect(() => {
     setPendingHref(null);
