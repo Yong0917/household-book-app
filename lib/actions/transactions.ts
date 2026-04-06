@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import type { Transaction, TransactionType, Category, Asset, RecurringTransaction } from "@/lib/mock/types";
 import { getMonthRangeUTC } from "@/lib/utils/timezone";
@@ -100,8 +99,6 @@ export async function addTransaction(
   });
 
   if (error) throw new Error(error.message);
-  revalidatePath("/ledger");
-  revalidatePath("/statistics");
 }
 
 // 거래 수정
@@ -125,8 +122,6 @@ export async function updateTransaction(
     .eq("id", id);
 
   if (error) throw new Error(error.message);
-  revalidatePath("/ledger");
-  revalidatePath("/statistics");
 }
 
 // 거래 검색 (키워드 + 필터)
@@ -181,8 +176,6 @@ export async function deleteTransaction(id: string): Promise<void> {
   const supabase = await createClient();
   const { error } = await supabase.from("transactions").delete().eq("id", id);
   if (error) throw new Error(error.message);
-  revalidatePath("/ledger");
-  revalidatePath("/statistics");
 }
 
 // 월별 추이 데이터 조회 (최근 N개월) — DB GROUP BY RPC 사용

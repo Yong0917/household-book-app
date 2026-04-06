@@ -62,6 +62,7 @@ function NoteCard({
           <img
             src={thumbnail}
             alt=""
+            loading="lazy"
             className="w-10 h-10 rounded-lg object-cover border border-border/40"
           />
         )}
