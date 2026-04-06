@@ -11,7 +11,15 @@ export default function Home() {
   useEffect(() => {
     const supabase = createClient();
     const minDelay = new Promise((resolve) => setTimeout(resolve, 1000));
-    Promise.all([supabase.auth.getSession(), minDelay]).then(
+    const sessionPromise = supabase.auth.getSession();
+
+    // getSession()은 로컬 쿠키를 읽으므로 거의 즉시 완료됨.
+    // 목적지를 알자마자 프리패치 시작 → 1초 대기 동안 페이지 로드.
+    sessionPromise.then(({ data: { session } }) => {
+      router.prefetch(session ? "/ledger/daily" : "/auth/login");
+    });
+
+    Promise.all([sessionPromise, minDelay]).then(
       ([{ data: { session } }]) => {
         if (session) {
           router.replace("/ledger/daily");
