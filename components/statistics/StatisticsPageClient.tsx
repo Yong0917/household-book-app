@@ -9,8 +9,11 @@ import { useSwipeMonth } from "@/hooks/useSwipeMonth";
 import { ko } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 import { DonutChart } from "@/components/statistics/DonutChart";
-import { CategoryDetailSheet } from "@/components/statistics/CategoryDetailSheet";
 import dynamic from "next/dynamic";
+const CategoryDetailSheet = dynamic(
+  () => import("@/components/statistics/CategoryDetailSheet").then((m) => ({ default: m.CategoryDetailSheet })),
+  { ssr: false }
+);
 const MonthlyTrendChart = dynamic(
   () => import("@/components/statistics/MonthlyTrendChart").then((m) => ({ default: m.MonthlyTrendChart })),
   { ssr: false }

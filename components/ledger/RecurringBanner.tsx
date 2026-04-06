@@ -1,6 +1,7 @@
 "use client";
 
 // 이번 달 미처리 고정비 배너 컴포넌트
+import { useMemo } from "react";
 import { RefreshCw, X } from "lucide-react";
 import type { RecurringTransaction, Category } from "@/lib/mock/types";
 
@@ -12,6 +13,11 @@ interface RecurringBannerProps {
 }
 
 export function RecurringBanner({ items, categories, onItemClick, onItemSkip }: RecurringBannerProps) {
+  const categoryMap = useMemo(
+    () => new Map(categories.map((c) => [c.id, c])),
+    [categories]
+  );
+
   if (items.length === 0) return null;
 
   return (
@@ -27,7 +33,7 @@ export function RecurringBanner({ items, categories, onItemClick, onItemSkip }: 
       {/* 세로 리스트 */}
       <div className="flex flex-col gap-1.5 mt-2">
         {items.map((item) => {
-          const cat = categories.find((c) => c.id === item.categoryId);
+          const cat = categoryMap.get(item.categoryId);
           return (
             <div
               key={item.id}

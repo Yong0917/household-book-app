@@ -81,16 +81,20 @@ export async function deleteNote(id: string): Promise<void> {
   if (!authData) throw new Error("인증이 필요합니다.");
   const userId = authData.claims.sub as string;
 
-  // 메모에 첨부된 이미지를 Storage에서 먼저 삭제
-  const { data: note } = await supabase
+  // DELETE...RETURNING으로 조회+삭제를 한 번의 DB 왕복으로 처리
+  const { data: deleted, error } = await supabase
     .from("notes")
-    .select("images")
+    .delete()
     .eq("id", id)
     .eq("user_id", userId)
+    .select("images")
     .single();
 
-  if (note?.images?.length) {
-    const paths = (note.images as string[]).map((url: string) => {
+  if (error) throw new Error(error.message);
+
+  // 첨부된 이미지를 Storage에서 삭제
+  if (deleted?.images?.length) {
+    const paths = (deleted.images as string[]).map((url: string) => {
       const marker = "/note-images/";
       const idx = url.indexOf(marker);
       return idx !== -1 ? url.slice(idx + marker.length) : "";
@@ -99,14 +103,6 @@ export async function deleteNote(id: string): Promise<void> {
       await supabase.storage.from("note-images").remove(paths);
     }
   }
-
-  const { error } = await supabase
-    .from("notes")
-    .delete()
-    .eq("id", id)
-    .eq("user_id", userId);
-
-  if (error) throw new Error(error.message);
   revalidatePath("/notes");
 }
 
