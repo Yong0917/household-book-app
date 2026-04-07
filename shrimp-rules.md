@@ -1,79 +1,180 @@
-# Development Guidelines
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## 프로젝트 개요
 
-- **목적**: Next.js + Supabase 기반 가계부 앱
-- **스택**: Next.js 15 (App Router), Supabase, TypeScript, Tailwind CSS v3, shadcn/ui
-- **패키지 매니저**: npm
+Next.js + Supabase 기반의 가계부 앱. Next.js App Router와 Supabase 인증(쿠키 기반 세션)을 사용한다.
 
-## 프로젝트 아키텍처
+이 웹앱은 `/Users/seung-yongsin/Documents/Yong/money-logs-andorid` Android 프로젝트에서 WebView로 감싸져 네이티브 앱으로 제공된다.
+
+## 개발 명령어
+
+```bash
+npm run dev      # 개발 서버 실행 (localhost:3000)
+npm run build    # 프로덕션 빌드
+npm run lint     # ESLint 실행
+```
+
+## 코드 수정 후 검증 규칙
+
+파일을 수정한 후에는 반드시 아래 순서로 검증한다:
+
+1. `npm run lint` — lint 오류 확인 및 수정
+2. `npm run build` — 빌드 성공 여부 확인
+
+오류가 있으면 수정 후 다시 검증한다.
+
+## 환경 변수
+
+`.env.local` 파일에 다음 변수가 필요하다:
 
 ```
-app/                    # Next.js App Router 페이지
-  page.tsx              # 랜딩 페이지 (공개)
-  layout.tsx            # 루트 레이아웃
-  protected/            # 인증 필요 영역
-    layout.tsx          # nav/footer 포함
-    page.tsx
-  auth/                 # 인증 관련 페이지
-    login/, sign-up/, forgot-password/, update-password/, confirm/
-components/             # React 컴포넌트
-  ui/                   # shadcn/ui 컴포넌트 (자동 생성, 직접 수정 금지)
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=...
+```
+
+## 아키텍처
+
+### Supabase 클라이언트 패턴
+
+- **서버 컴포넌트/Server Actions**: `@/lib/supabase/server.ts`의 `createClient()` 사용 (async)
+- **클라이언트 컴포넌트**: `@/lib/supabase/client.ts`의 `createClient()` 사용 (sync)
+- **세션 갱신**: `proxy.ts`에서 `lib/supabase/proxy.ts`의 `updateSession()`을 호출하여 모든 요청에서 세션 쿠키를 갱신한다
+
+> 중요: Fluid compute 환경에서 Supabase 클라이언트를 전역 변수에 저장하지 말 것. 요청/함수마다 새로 생성해야 한다.
+
+### 인증 흐름
+
+- `proxy.ts`는 Next.js middleware 역할 (파일명이 middleware.ts가 아닌 proxy.ts임에 주의)
+- `lib/supabase/proxy.ts`의 `updateSession()`이 인증 게이트 역할
+- 인증 확인은 `supabase.auth.getUser()`로 수행 (액세스 토큰 만료 시 리프레시 토큰 자동 갱신)
+- Server Action에서 사용자 확인은 `supabase.auth.getClaims()`로 수행 (`getUser()`보다 빠름, 네트워크 왕복 없음)
+- 로그인 성공 후 `/ledger/daily`로 리다이렉트
+- 인증된 사용자가 `/auth/*` 경로(계정복구 제외)에 접근하면 `/ledger/daily`로 리다이렉트
+- 탈퇴 요청 계정 로그인 시 `/auth/account-recovery`로 리다이렉트
+- OAuth 콜백 (`/auth/callback`): Android WebView는 `/auth/set-session`으로 세션 토큰 전달
+
+### 라우트 구조
+
+**공개 라우트:**
+- `app/page.tsx` — 랜딩 페이지
+- `app/privacy/` — 개인정보처리방침
+- `app/terms/` — 이용약관
+- `app/delete-account/` — 계정 삭제
+
+**인증 관련 라우트 (`app/auth/`):**
+- `login/` — 로그인
+- `sign-up/` — 회원가입
+- `forgot-password/` — 비밀번호 찾기
+- `update-password/` — 비밀번호 변경
+- `confirm/` — 이메일 OTP 확인 (route.ts)
+- `callback/` — OAuth 콜백 (route.ts)
+- `set-session/` — Android WebView용 세션 설정 (클라이언트 컴포넌트)
+- `error/` — 인증 오류
+- `sign-up-success/` — 회원가입 성공
+- `account-recovery/` — 탈퇴 요청 계정 복구
+
+**보호된 라우트 (인증 필요, `(protected)` 그룹):**
+- `/ledger/daily` — 일별 거래 보기
+- `/ledger/calendar` — 캘린더 뷰
+- `/notes`, `/notes/[id]` — 메모
+- `/settings` — 설정 메인
+- `/settings/categories` — 카테고리 관리
+- `/settings/assets` — 자산 관리
+- `/settings/recurring` — 고정비 관리
+- `/statistics` — 통계
+- `/statistics/category/[categoryId]` — 카테고리별 통계
+
+**API 라우트 (`app/api/`):**
+- `/api/backup` — 전체 데이터 JSON 백업 (GET, 인증 필수)
+- `/api/export/transactions` — 거래 데이터 CSV 내보내기 (GET)
+- `/api/import/transactions` — 거래 데이터 가져오기 (POST)
+
+### lib/ 디렉토리 구조
+
+```
 lib/
-  supabase/
-    client.ts           # 클라이언트 컴포넌트용 Supabase 클라이언트
-    server.ts           # 서버 컴포넌트/Server Actions용 Supabase 클라이언트
-    proxy.ts            # 세션 갱신 로직 (middleware에서 호출)
-  utils.ts              # cn(), hasEnvVars
-proxy.ts                # Next.js middleware 역할 (파일명 주의: middleware.ts 아님)
+├── actions/
+│   ├── transactions.ts   # 거래 CRUD, 월별 조회, 통계
+│   ├── categories.ts     # 카테고리 CRUD, 순서 변경
+│   ├── assets.ts         # 자산 CRUD, 순서 변경
+│   ├── recurring.ts      # 고정비 CRUD
+│   ├── notes.ts          # 메모 CRUD
+│   └── account.ts        # 계정 삭제/복구
+├── supabase/
+│   ├── client.ts         # 클라이언트 환경용 (sync)
+│   ├── server.ts         # 서버 환경용 (async)
+│   └── proxy.ts          # 미들웨어: 세션 갱신 + 인증 게이트
+├── context/
+│   └── GuestModeContext.tsx  # 게스트 모드 Context
+├── mock/
+│   ├── types.ts          # 앱 타입 정의 (Category, Asset, Transaction 등)
+│   ├── data.ts           # 초기 데이터
+│   └── guestData.ts      # 게스트용 Mock 데이터
+├── utils/
+│   └── imageUtils.ts     # 이미지 처리 유틸
+├── utils.ts              # cn(), hasEnvVars
+└── auth-errors.ts        # Supabase 에러 한국어 번역
 ```
 
-## Supabase 클라이언트 사용 규칙
+### Server Action 패턴
 
-- **서버 컴포넌트 / Server Actions**: `@/lib/supabase/server.ts`의 `createClient()` (async)
-- **클라이언트 컴포넌트**: `@/lib/supabase/client.ts`의 `createClient()` (sync)
-- **절대 금지**: Supabase 클라이언트를 모듈 레벨 전역 변수에 저장 → Fluid compute에서 세션 오류 발생
-- **올바른 예**: 함수/컴포넌트 내부에서 매번 `createClient()` 호출
-- **잘못된 예**: `const supabase = createClient()` 를 파일 최상단에 선언
+```typescript
+"use server";
 
-## 인증 패턴 규칙
+import { cache } from "react";
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
 
-- 인증 확인은 항상 `supabase.auth.getClaims()` 사용 (`getUser()` 금지 — 느림)
-- Server Component에서 인증 실패 시: `redirect("/auth/login")` 호출
-- `proxy.ts`의 `updateSession()`은 수정 시 쿠키 처리 순서 유지 필수
-- `createServerClient` 호출과 `getClaims()` 호출 사이에 코드 삽입 금지
+// 동일 요청 내 중복 호출 제거 시 cache() 사용
+export const getCategories = cache(async (): Promise<Category[]> => {
+  const supabase = await createClient();
+  const { data: authData } = await supabase.auth.getClaims();
+  if (!authData) throw new Error("인증이 필요합니다");
+  const userId = authData.claims.sub as string;
+  // ...
+});
 
-### 접근 제어 구조
+// 병렬 데이터 로딩
+const [transactions, categories, assets] = await Promise.all([
+  getTransactionsByMonth(year, month),
+  getCategories(),
+  getAssets(),
+]);
+```
 
-| 경로 | 인증 필요 |
-|------|-----------|
-| `/` | 불필요 |
-| `/auth/**` | 불필요 |
-| `/protected/**` | 필요 |
-| 기타 모든 경로 | 필요 |
+### UI 컴포넌트
 
-## UI 컴포넌트 규칙
+- shadcn/ui 컴포넌트는 `components/ui/`에 위치
+- Drawer/Sheet: `vaul` 라이브러리 사용
+- 차트: `recharts` 사용
+- 드래그앤드롭: `@dnd-kit` 사용
+- 공통 유틸리티: `lib/utils.ts`의 `cn()` (clsx + tailwind-merge)
+- `lib/utils.ts`의 `hasEnvVars`로 환경 변수 설정 여부 확인 가능
+- `next.config.ts`에 `cacheComponents: true` 설정됨 (Fluid compute용)
 
-- shadcn/ui 컴포넌트 추가: `npx shadcn@latest add <component>` 실행, `components/ui/`에 자동 생성
-- `components/ui/` 파일은 shadcn CLI로 관리 — 직접 커스터마이징 시 재생성 시 덮어쓰임 주의
-- 스타일 유틸리티: `cn()` from `@/lib/utils` (clsx + tailwind-merge)
-- 아이콘: `lucide-react` 사용
+### Zod v4 + React Hook Form 패턴
 
-## 환경 변수 규칙
+```typescript
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
 
-- `.env.local`에 `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` 필수
-- `hasEnvVars` (`lib/utils.ts`)로 환경 변수 존재 여부 확인 후 조건부 렌더링
+const schema = z.object({
+  // z.number()에서 invalid_type_error 대신 message 사용 (Zod v4)
+  amount: z.number({ message: "금액을 입력하세요" }).min(1, "금액을 입력하세요"),
+  description: z.string().optional(),
+});
 
-## 파일 수정 시 동시 수정 규칙
+type FormData = z.infer<typeof schema>;
 
-- `proxy.ts` 수정 시 → `lib/supabase/proxy.ts`의 `updateSession()` 함께 검토
-- 새 보호 경로 추가 시 → `lib/supabase/proxy.ts`의 리다이렉트 조건 검토
-- shadcn 컴포넌트 추가 시 → `components.json` 자동 업데이트됨 (수동 수정 금지)
+const { register, handleSubmit } = useForm<FormData>({
+  resolver: zodResolver(schema),
+});
 
-## 금지 사항
+// number 입력 필드는 valueAsNumber 옵션 사용
+<input type="number" {...register("amount", { valueAsNumber: true })} />
+```
 
-- `middleware.ts` 파일 생성 금지 — 이 프로젝트는 `proxy.ts`가 middleware 역할
-- `getUser()` 사용 금지 — `getClaims()` 사용
-- Supabase 클라이언트 전역 변수 저장 금지
-- `components/ui/` 직접 수정 후 shadcn CLI 재실행 금지 (덮어쓰임)
-- `proxy.ts`에서 `supabaseResponse` 객체를 새 `NextResponse`로 교체 금지 (쿠키 유실)
+> Zod v4 주의: `z.number({ invalid_type_error: "..." })` 대신 `z.number({ message: "..." })` 사용.
