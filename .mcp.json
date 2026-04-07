@@ -27,10 +27,10 @@
     "shrimp-task-manager": {
       "command": "node",
       "args": [
-        "/Users/seung-yongsin/Documents/Yong/mcp-shrimp-task-manager/dist/index.js"
+        "/Users/yong/Documents/Yong-project/mcp-shrimp-task-manager/dist/index.js"
       ],
       "env": {
-        "DATA_DIR": "/Users/seung-yongsin/Documents/Yong/household-book-app/shrimp_data",
+        "DATA_DIR": "/Users/yong/Documents/Yong-project/household-book-app/shrimp_data",
         "TEMPLATES_USE": "en",
         "ENABLE_GUI": "true"
       }
