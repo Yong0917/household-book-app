@@ -24,6 +24,19 @@ export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: "가계부",
   description: "개인 수입·지출 관리 앱",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/icon.png", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  appleWebApp: {
+    title: "가계부",
+    capable: true,
+    statusBarStyle: "default",
+  },
 };
 
 
