@@ -147,17 +147,6 @@ export function LoginForm({
         {/* 소셜 로그인 */}
         <SocialLoginButtons />
 
-        {/* 회원가입 링크 */}
-        <p className="text-center text-[13.5px] text-muted-foreground">
-          계정이 없으신가요?{" "}
-          <Link
-            href="/auth/sign-up"
-            className="text-foreground font-semibold hover:opacity-70 transition-opacity"
-          >
-            회원가입
-          </Link>
-        </p>
-
         {/* 약관 링크 */}
         <p className="text-center text-[11.5px] text-muted-foreground/60">
           <Link href="/terms" className="underline underline-offset-2 hover:text-muted-foreground transition-colors">이용약관</Link>
