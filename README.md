@@ -11,6 +11,8 @@
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)
 ![PWA](https://img.shields.io/badge/PWA-Supported-5A0FC8?style=flat-square&logo=pwa)
 
+[![Google Play](https://img.shields.io/badge/Google%20Play-출시됨-34A853?style=flat-square&logo=google-play&logoColor=white)](https://play.google.com/store/apps/details?id=com.moneylogs.app)
+
 </div>
 
 ---
@@ -36,6 +38,9 @@ MoneyLog는 **Next.js 15 App Router + Supabase** 기반으로 제작한 개인 �
 모바일 퍼스트 디자인으로 스마트폰에서도 네이티브 앱처럼 편리하게 사용할 수 있으며, PWA를 통해 홈 화면에 추가하면 앱처럼 실행됩니다. 거래 기록부터 통계 시각화, 고정비 자동화, 고급 검색·필터, 엑셀 내보내기·가져오기, FCM 푸시 알림, 소셜 로그인까지 일상적인 가계 관리에 필요한 모든 기능을 담았습니다.
 
 Android WebView로 래핑한 네이티브 앱(`money-logs-android`)과 함께 동작하며, FCM 푸시 알림·소셜 로그인(Google/Kakao)·딥링크 등 네이티브 브릿지 연동을 지원합니다.
+
+> **구글 플레이스토어에 출시되었습니다.**
+> [<img src="https://play.google.com/intl/en_us/badges/static/images/badges/ko_badge_web_generic.png" alt="Google Play에서 다운로드" height="60">](https://play.google.com/store/apps/details?id=com.moneylogs.app)
 
 ---
 
