@@ -16,7 +16,25 @@ const CategoryDetailSheet = dynamic(
 );
 const MonthlyTrendChart = dynamic(
   () => import("@/components/statistics/MonthlyTrendChart").then((m) => ({ default: m.MonthlyTrendChart })),
-  { ssr: false }
+  {
+    ssr: false,
+    loading: () => (
+      <div className="px-4 pt-4 pb-3">
+        <div className="flex items-center justify-between mb-3">
+          <div className="h-4 w-24 rounded-full bg-muted animate-pulse" />
+          <div className="flex gap-1.5">
+            <div className="h-6 w-10 rounded-full bg-muted animate-pulse" />
+            <div className="h-6 w-10 rounded-full bg-muted animate-pulse" />
+          </div>
+        </div>
+        <div className="h-[160px] flex items-end gap-2 px-2 pb-1">
+          {[45, 35, 55, 40, 70, 50].map((h, i) => (
+            <div key={i} className="flex-1 rounded-t-sm bg-muted animate-pulse" style={{ height: `${h}%` }} />
+          ))}
+        </div>
+      </div>
+    ),
+  }
 );
 import { getStatisticsPageData } from "@/lib/actions/transactions";
 import { getGuestStatisticsData } from "@/lib/mock/guestData";
