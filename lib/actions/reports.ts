@@ -142,37 +142,16 @@ export async function getReportList(): Promise<ReportListItem[]> {
 
   const userId = authData.claims.sub as string;
 
-  const { data: rows, error: aggErr } = await supabase
-    .from("transactions")
-    .select("transaction_at, type, amount")
-    .eq("user_id", userId)
-    .order("transaction_at", { ascending: false });
+  const { data: rows, error } = await supabase.rpc("get_report_list", {
+    p_user_id: userId,
+  });
 
-  if (aggErr || !rows) return [];
+  if (error || !rows) return [];
 
-  // 월별 집계
-  const monthMap = new Map<
-    string,
-    { year: number; month: number; totalIncome: number; totalExpense: number }
-  >();
-
-  for (const row of rows) {
-    const kstDate = new Date(
-      new Date(row.transaction_at).getTime() + 9 * 60 * 60 * 1000
-    );
-    const y = kstDate.getUTCFullYear();
-    const m = kstDate.getUTCMonth() + 1;
-    const key = `${y}-${m}`;
-
-    if (!monthMap.has(key)) {
-      monthMap.set(key, { year: y, month: m, totalIncome: 0, totalExpense: 0 });
-    }
-    const entry = monthMap.get(key)!;
-    if (row.type === "income") entry.totalIncome += Number(row.amount);
-    else entry.totalExpense += Number(row.amount);
-  }
-
-  return Array.from(monthMap.values())
-    .sort((a, b) => b.year !== a.year ? b.year - a.year : b.month - a.month)
-    .slice(0, 12);
+  return (rows as { year: number; month: number; total_income: number; total_expense: number }[]).map((r) => ({
+    year: r.year,
+    month: r.month,
+    totalIncome: Number(r.total_income),
+    totalExpense: Number(r.total_expense),
+  }));
 }

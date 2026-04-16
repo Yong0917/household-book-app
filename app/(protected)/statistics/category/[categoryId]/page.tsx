@@ -1,7 +1,7 @@
 "use client";
 
 // 카테고리 상세 통계 페이지 - 월별 트렌드 + 거래 목록
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useParams, useSearchParams, useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import {
@@ -88,14 +88,16 @@ export default function CategoryDetailPage() {
     const typed = txs.filter((t) => t.type === type);
     setAllTransactions(typed);
 
-    // 8개월 트렌드 데이터 생성
+    // O(n) 단일 패스로 월별 집계
+    const trendMap = new Map<string, number>();
+    for (const t of typed) {
+      const key = format(parseISO(t.transactionAt), "yyyy-MM");
+      trendMap.set(key, (trendMap.get(key) ?? 0) + t.amount);
+    }
     const trend = [];
     for (let i = 7; i >= 0; i--) {
       const m = subMonths(currentMonth, i);
-      const monthTotal = typed
-        .filter((t) => isSameMonth(parseISO(t.transactionAt), m))
-        .reduce((sum, t) => sum + t.amount, 0);
-      trend.push({ month: format(m, "M월"), total: monthTotal });
+      trend.push({ month: format(m, "M월"), total: trendMap.get(format(m, "yyyy-MM")) ?? 0 });
     }
     setTrendData(trend);
     setIsLoading(false);
@@ -107,20 +109,20 @@ export default function CategoryDetailPage() {
 
   const category = categories.find((c) => c.id === categoryId);
 
-  // 현재 월 거래 필터링
-  const monthlyTxs = allTransactions.filter((t) =>
-    isSameMonth(parseISO(t.transactionAt), currentMonth)
-  );
-  const monthlyTotal = monthlyTxs.reduce((sum, t) => sum + t.amount, 0);
-
-  // 날짜별 그룹화 (내림차순)
-  const grouped = monthlyTxs.reduce<Record<string, Transaction[]>>((acc, t) => {
-    const key = format(parseISO(t.transactionAt), "yyyy-MM-dd");
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(t);
-    return acc;
-  }, {});
-  const sortedDates = Object.keys(grouped).sort().reverse();
+  const { monthlyTotal, grouped, sortedDates } = useMemo(() => {
+    const monthlyTxs = allTransactions.filter((t) =>
+      isSameMonth(parseISO(t.transactionAt), currentMonth)
+    );
+    const monthlyTotal = monthlyTxs.reduce((sum, t) => sum + t.amount, 0);
+    const grouped = monthlyTxs.reduce<Record<string, Transaction[]>>((acc, t) => {
+      const key = format(parseISO(t.transactionAt), "yyyy-MM-dd");
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(t);
+      return acc;
+    }, {});
+    const sortedDates = Object.keys(grouped).sort().reverse();
+    return { monthlyTotal, grouped, sortedDates };
+  }, [allTransactions, currentMonth]);
 
   const isExpense = type === "expense";
   const accentColor = isExpense ? "text-expense" : "text-income";
