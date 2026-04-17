@@ -38,6 +38,14 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
+  // 홈(`/`)은 서버 컴포넌트에서 getSession()으로 목적지를 결정하고,
+  // 보호 경로 진입 시 미들웨어/서버 컴포넌트가 다시 getUser()로 검증·갱신한다.
+  // 홈에서는 getUser() 라운드트립을 스킵해 Android WebView 첫 진입 TTFB를 단축.
+  const pathname = request.nextUrl.pathname;
+  if (pathname === "/") {
+    return supabaseResponse;
+  }
+
   // Do not run code between createServerClient and
   // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
@@ -49,8 +57,8 @@ export async function updateSession(request: NextRequest) {
 
   if (
     user &&
-    request.nextUrl.pathname.startsWith("/auth") &&
-    request.nextUrl.pathname !== "/auth/account-recovery"
+    pathname.startsWith("/auth") &&
+    pathname !== "/auth/account-recovery"
   ) {
     const url = request.nextUrl.clone();
     url.pathname = "/ledger/daily";
