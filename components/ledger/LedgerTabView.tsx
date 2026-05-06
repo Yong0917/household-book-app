@@ -267,7 +267,7 @@ export function LedgerTabView({ initialData, initialMonthKey, receiptAccessStatu
     }
   };
 
-  const { onTouchStart, onTouchEnd } = useSwipeMonth(
+  const { onTouchStart, onTouchEnd, onTouchCancel } = useSwipeMonth(
     setCurrentMonth,
     !isPickerOpen && !isSearchOpen
   );
@@ -285,7 +285,7 @@ export function LedgerTabView({ initialData, initialMonthKey, receiptAccessStatu
   }, [isSearchOpen]);
 
   return (
-    <div className="flex flex-col min-h-[calc(100dvh-4rem)]" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+    <div className="flex flex-col min-h-[calc(100dvh-4rem)]" style={{ touchAction: "pan-y" }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onTouchCancel={onTouchCancel}>
       {/* 헤더: 월 네비게이션(좌) + 검색 버튼(우) */}
       <div
         className="sticky top-0 z-20 bg-background/95 backdrop-blur-xl border-b border-border/50"

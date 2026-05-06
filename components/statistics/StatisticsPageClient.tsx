@@ -230,7 +230,7 @@ function StatisticsContent({ initialData, initialMonthKey }: StatisticsPageClien
     });
   }, [currentMonth, trendCount, isGuest]);
 
-  const { onTouchStart, onTouchEnd } = useSwipeMonth(setCurrentMonth, !isPickerOpen);
+  const { onTouchStart, onTouchEnd, onTouchCancel } = useSwipeMonth(setCurrentMonth, !isPickerOpen);
 
   const openPicker = () => {
     setPickerYear(currentMonth.getFullYear());
@@ -269,7 +269,7 @@ function StatisticsContent({ initialData, initialMonthKey }: StatisticsPageClien
   const isExpense = activeTab === "expense";
 
   return (
-    <div className="min-h-[calc(100dvh-4rem)]" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd}>
+    <div className="min-h-[calc(100dvh-4rem)]" style={{ touchAction: "pan-y" }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onTouchCancel={onTouchCancel}>
       {/* 월 이동 헤더 */}
       <header
         className="sticky top-0 bg-background/96 backdrop-blur-md border-b border-border/50 z-10"

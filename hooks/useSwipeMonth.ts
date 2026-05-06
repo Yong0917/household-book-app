@@ -30,5 +30,10 @@ export function useSwipeMonth(
     }
   };
 
-  return { onTouchStart, onTouchEnd };
+  const onTouchCancel = () => {
+    touchStartX.current = 0;
+    touchStartY.current = 0;
+  };
+
+  return { onTouchStart, onTouchEnd, onTouchCancel };
 }
