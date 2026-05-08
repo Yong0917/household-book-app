@@ -1,7 +1,7 @@
 "use client";
 
 // 파이 차트 컴포넌트 (커스텀 SVG, 레이블 겹침 방지)
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, memo } from "react";
 import { BarChart2 } from "lucide-react";
 
 export interface DonutChartData {
@@ -60,7 +60,7 @@ function resolveOverlaps(items: { adjustedY: number }[]) {
   }
 }
 
-export function DonutChart({ data, total, onCategoryClick }: DonutChartProps) {
+function DonutChartImpl({ data, total, onCategoryClick }: DonutChartProps) {
   // 0 → 1 애니메이션 (cubic ease-out)
   const [progress, setProgress] = useState(0);
 
@@ -221,3 +221,5 @@ export function DonutChart({ data, total, onCategoryClick }: DonutChartProps) {
     </div>
   );
 }
+
+export const DonutChart = memo(DonutChartImpl);

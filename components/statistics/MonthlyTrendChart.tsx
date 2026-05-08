@@ -1,6 +1,7 @@
 "use client";
 
 // 월별 수입/지출 추이 막대 차트 (recharts)
+import { memo } from "react";
 import {
   BarChart,
   Bar,
@@ -45,7 +46,7 @@ function formatYAxis(value: number): string {
   return String(value);
 }
 
-export function MonthlyTrendChart({
+function MonthlyTrendChartImpl({
   data,
   activeTab,
   currentYear,
@@ -165,3 +166,5 @@ export function MonthlyTrendChart({
     </div>
   );
 }
+
+export const MonthlyTrendChart = memo(MonthlyTrendChartImpl);

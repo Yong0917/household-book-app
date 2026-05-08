@@ -268,6 +268,18 @@ function StatisticsContent({ initialData, initialMonthKey }: StatisticsPageClien
 
   const isExpense = activeTab === "expense";
 
+  // recharts/도넛에 안정 참조로 콜백 전달 → React.memo 효과 유지
+  const handleCategoryClick = useCallback((item: { id?: string }) => {
+    if (item.id) {
+      setDetailCategoryId(item.id);
+      setDetailOpen(true);
+    }
+  }, []);
+
+  const handleBarClick = useCallback((year: number, month: number) => {
+    setCurrentMonth(new Date(year, month - 1, 1));
+  }, [setCurrentMonth]);
+
   return (
     <div className="min-h-[calc(100dvh-4rem)]" style={{ touchAction: "pan-y" }} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onTouchCancel={onTouchCancel}>
       {/* 월 이동 헤더 */}
@@ -350,12 +362,7 @@ function StatisticsContent({ initialData, initialMonthKey }: StatisticsPageClien
       <DonutChart
         data={chartData}
         total={total}
-        onCategoryClick={(item) => {
-          if (item.id) {
-            setDetailCategoryId(item.id);
-            setDetailOpen(true);
-          }
-        }}
+        onCategoryClick={handleCategoryClick}
       />
 
       {/* 월별 추이 차트 */}
@@ -390,7 +397,7 @@ function StatisticsContent({ initialData, initialMonthKey }: StatisticsPageClien
             currentMonth={currentMonth.getMonth() + 1}
             count={trendCount}
             onCountChange={setTrendCount}
-            onBarClick={(year, month) => setCurrentMonth(new Date(year, month - 1, 1))}
+            onBarClick={handleBarClick}
           />
         )}
       </div>
