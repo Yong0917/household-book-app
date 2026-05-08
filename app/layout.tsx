@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Noto_Sans_KR, Gowun_Batang } from "next/font/google";
+import { Noto_Sans_KR } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
@@ -8,15 +8,6 @@ const notoSansKR = Noto_Sans_KR({
   weight: ["400", "500", "700"],
   variable: "--font-sans",
   display: "swap",
-});
-
-// 홈 스플래시 전용 — SplashScreen 한 곳에서만 사용하므로 다른 페이지에서 preload 불필요
-const gowunBatang = Gowun_Batang({
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  variable: "--font-splash",
-  display: "swap",
-  preload: false,
 });
 
 const defaultUrl = process.env.VERCEL_URL
@@ -65,7 +56,7 @@ export default function RootLayout({
           <link rel="dns-prefetch" href={supabaseUrl} />
         </head>
       )}
-      <body className={`${notoSansKR.variable} ${gowunBatang.variable} font-sans antialiased`}>
+      <body className={`${notoSansKR.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
