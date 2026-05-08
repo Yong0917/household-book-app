@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import Image from "next/image";
 import { ImagePlus, Loader2, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { compressImage, extractStoragePath } from "@/lib/utils/imageUtils";
@@ -35,21 +36,22 @@ export function ImageUploader({ images, onChange, disabled }: ImageUploaderProps
       } = await supabase.auth.getUser();
       if (!user) throw new Error("인증이 필요합니다.");
 
-      const urls: string[] = [];
-      for (const file of toUpload) {
-        const compressed = await compressImage(file);
-        const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-        const path = `${user.id}/${filename}`;
+      // 압축 + 업로드를 병렬 처리 (5장 첨부 시 약 5배 빠름)
+      const urls = await Promise.all(
+        toUpload.map(async (file) => {
+          const { blob, mime, ext } = await compressImage(file);
+          const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+          const path = `${user.id}/${filename}`;
 
-        const { error } = await supabase.storage
-          .from(BUCKET)
-          .upload(path, compressed, { contentType: "image/jpeg" });
+          const { error } = await supabase.storage
+            .from(BUCKET)
+            .upload(path, blob, { contentType: mime });
+          if (error) throw error;
 
-        if (error) throw error;
-
-        const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
-        urls.push(data.publicUrl);
-      }
+          const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
+          return data.publicUrl;
+        }),
+      );
 
       onChange([...images, ...urls]);
     } catch (err) {
@@ -77,10 +79,12 @@ export function ImageUploader({ images, onChange, disabled }: ImageUploaderProps
     <div className="flex flex-wrap gap-2 mt-3">
       {images.map((url) => (
         <div key={url} className="relative shrink-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src={url}
             alt="첨부 이미지"
+            width={80}
+            height={80}
+            sizes="80px"
             onClick={() => setViewerUrl(url)}
             className="w-20 h-20 object-cover rounded-xl border border-border/40 cursor-pointer active:scale-95 transition-transform"
           />

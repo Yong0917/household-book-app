@@ -161,18 +161,18 @@ export function TransactionSheet({
     setAnalyzeError(null);
 
     try {
-      const compressed = await compressImage(file, 1200, 0.8);
+      const { blob, mime } = await compressImage(file, 1200, 0.8);
       const base64 = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve((reader.result as string).split(",")[1]);
         reader.onerror = reject;
-        reader.readAsDataURL(compressed);
+        reader.readAsDataURL(blob);
       });
 
       const res = await fetch("/api/analyze-receipt", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageBase64: base64, mimeType: "image/jpeg" }),
+        body: JSON.stringify({ imageBase64: base64, mimeType: mime }),
       });
 
       if (!res.ok) {

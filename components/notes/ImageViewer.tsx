@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Image from "next/image";
 import { X } from "lucide-react";
 
 interface ImageViewerProps {
@@ -29,11 +30,13 @@ export function ImageViewer({ url, onClose }: ImageViewerProps) {
       >
         <X className="w-5 h-5" />
       </button>
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src={url}
         alt="이미지 전체보기"
-        className="max-w-full max-h-full object-contain"
+        width={1600}
+        height={1600}
+        sizes="100vw"
+        className="max-w-full max-h-full object-contain w-auto h-auto"
         onClick={(e) => e.stopPropagation()}
       />
     </div>

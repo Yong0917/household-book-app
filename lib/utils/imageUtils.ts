@@ -1,16 +1,17 @@
 /**
- * 이미지를 canvas API를 이용해 리사이즈 + JPEG 압축
+ * 이미지를 canvas API 로 리사이즈 + 압축. WebP 우선, 미지원/실패 시 JPEG 폴백.
+ *
  * @param file    원본 이미지 파일
  * @param maxDim  최대 너비/높이 (px), 기본 1200
- * @param quality JPEG 품질 (0~1), 기본 0.75
+ * @param quality 압축 품질 (0~1), 기본 0.8
  */
 export function compressImage(
   file: File,
   maxDim = 1200,
-  quality = 0.75,
-): Promise<Blob> {
+  quality = 0.8,
+): Promise<{ blob: Blob; mime: "image/webp" | "image/jpeg"; ext: "webp" | "jpg" }> {
   return new Promise((resolve, reject) => {
-    const img = new Image();
+    const img = new window.Image();
     const objectUrl = URL.createObjectURL(file);
 
     img.onload = () => {
@@ -38,15 +39,27 @@ export function compressImage(
       }
 
       ctx.drawImage(img, 0, 0, width, height);
+
+      // WebP 시도 → 실패 시 JPEG 폴백
       canvas.toBlob(
-        (blob) => {
-          if (!blob) {
-            reject(new Error("이미지 변환에 실패했습니다."));
+        (webpBlob) => {
+          if (webpBlob) {
+            resolve({ blob: webpBlob, mime: "image/webp", ext: "webp" });
             return;
           }
-          resolve(blob);
+          canvas.toBlob(
+            (jpegBlob) => {
+              if (!jpegBlob) {
+                reject(new Error("이미지 변환에 실패했습니다."));
+                return;
+              }
+              resolve({ blob: jpegBlob, mime: "image/jpeg", ext: "jpg" });
+            },
+            "image/jpeg",
+            quality,
+          );
         },
-        "image/jpeg",
+        "image/webp",
         quality,
       );
     };

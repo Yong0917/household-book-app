@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Pin, Plus, Search, StickyNote } from "lucide-react";
 import { format, isToday, isYesterday, parseISO } from "date-fns";
@@ -58,11 +59,12 @@ function NoteCard({
       </div>
       <div className="flex items-center gap-2 shrink-0">
         {thumbnail && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
+          <Image
             src={thumbnail}
             alt=""
-            loading="lazy"
+            width={40}
+            height={40}
+            sizes="40px"
             className="w-10 h-10 rounded-lg object-cover border border-border/40"
           />
         )}

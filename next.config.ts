@@ -1,10 +1,24 @@
 import type { NextConfig } from 'next';
 
+// Supabase Storage 호스트만 next/image 최적화 허용 (메모 첨부 이미지용)
+const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
+  ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
+  : undefined;
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   compress: true,
   images: {
     formats: ["image/avif", "image/webp"],
+    remotePatterns: supabaseHost
+      ? [
+          {
+            protocol: "https",
+            hostname: supabaseHost,
+            pathname: "/storage/v1/object/public/note-images/**",
+          },
+        ]
+      : [],
   },
   experimental: {
     // 무거운 패키지를 필요한 모듈만 트리쉐이킹하도록 최적화
