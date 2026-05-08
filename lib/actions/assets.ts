@@ -34,30 +34,18 @@ export const getAssets = cache(async (): Promise<Asset[]> => {
   return (data ?? []).map(toAsset);
 });
 
-// 자산 추가
+// 자산 추가 — sort_order 는 BEFORE INSERT 트리거가 자동 할당
 export async function addAsset(data: Omit<Asset, "id" | "sortOrder">): Promise<void> {
   const supabase = await createClient();
   const { data: authData } = await supabase.auth.getClaims();
   if (!authData) throw new Error("인증이 필요합니다");
   const userId = authData.claims.sub as string;
 
-  // 현재 최대 sort_order 조회
-  const { data: maxRow } = await supabase
-    .from("assets")
-    .select("sort_order")
-    .eq("user_id", userId)
-    .order("sort_order", { ascending: false })
-    .limit(1)
-    .single();
-
-  const nextOrder = (maxRow?.sort_order ?? -1) + 1;
-
   const { error } = await supabase.from("assets").insert({
     user_id: userId,
     name: data.name,
     type: data.type,
     is_default: data.isDefault,
-    sort_order: nextOrder,
   });
 
   if (error) throw new Error(error.message);
@@ -84,15 +72,12 @@ export async function updateAsset(
   revalidatePath("/settings/assets");
 }
 
-// 자산 순서 일괄 저장
+// 자산 순서 일괄 저장 — RPC 1회 호출로 N개 UPDATE 처리
 export async function reorderAssets(orderedIds: string[]): Promise<void> {
   const supabase = await createClient();
 
-  await Promise.all(
-    orderedIds.map((id, index) =>
-      supabase.from("assets").update({ sort_order: index }).eq("id", id)
-    )
-  );
+  const { error } = await supabase.rpc("reorder_assets", { p_ids: orderedIds });
+  if (error) throw new Error(error.message);
 
   revalidatePath("/settings/assets");
 }

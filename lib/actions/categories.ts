@@ -36,24 +36,12 @@ export const getCategories = cache(async (): Promise<Category[]> => {
   return (data ?? []).map(toCategory);
 });
 
-// 카테고리 추가
+// 카테고리 추가 — sort_order 는 BEFORE INSERT 트리거가 자동 할당
 export async function addCategory(data: Omit<Category, "id" | "sortOrder">): Promise<void> {
   const supabase = await createClient();
   const { data: authData } = await supabase.auth.getClaims();
   if (!authData) throw new Error("인증이 필요합니다");
   const userId = authData.claims.sub as string;
-
-  // 현재 최대 sort_order 조회
-  const { data: maxRow } = await supabase
-    .from("categories")
-    .select("sort_order")
-    .eq("user_id", userId)
-    .eq("type", data.type)
-    .order("sort_order", { ascending: false })
-    .limit(1)
-    .single();
-
-  const nextOrder = (maxRow?.sort_order ?? -1) + 1;
 
   const { error } = await supabase.from("categories").insert({
     user_id: userId,
@@ -61,7 +49,6 @@ export async function addCategory(data: Omit<Category, "id" | "sortOrder">): Pro
     type: data.type,
     color: data.color,
     is_default: data.isDefault,
-    sort_order: nextOrder,
   });
 
   if (error) throw new Error(error.message);
@@ -89,15 +76,12 @@ export async function updateCategory(
   revalidatePath("/settings/categories");
 }
 
-// 카테고리 순서 일괄 저장
+// 카테고리 순서 일괄 저장 — RPC 1회 호출로 N개 UPDATE 처리
 export async function reorderCategories(orderedIds: string[]): Promise<void> {
   const supabase = await createClient();
 
-  await Promise.all(
-    orderedIds.map((id, index) =>
-      supabase.from("categories").update({ sort_order: index }).eq("id", id)
-    )
-  );
+  const { error } = await supabase.rpc("reorder_categories", { p_ids: orderedIds });
+  if (error) throw new Error(error.message);
 
   revalidatePath("/settings/categories");
 }
