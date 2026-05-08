@@ -10,12 +10,13 @@ const notoSansKR = Noto_Sans_KR({
   display: "swap",
 });
 
-// 홈 스플래시 전용 — 외부 CDN(@import) 대신 Next가 자사 도메인에서 preload
+// 홈 스플래시 전용 — SplashScreen 한 곳에서만 사용하므로 다른 페이지에서 preload 불필요
 const gowunBatang = Gowun_Batang({
   subsets: ["latin"],
   weight: ["400", "700"],
   variable: "--font-splash",
   display: "swap",
+  preload: false,
 });
 
 const defaultUrl = process.env.VERCEL_URL
