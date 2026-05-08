@@ -65,7 +65,7 @@ export function LoginForm({
           style={{ boxShadow: "0 8px 32px hsl(197 60% 42% / 0.22), 0 2px 8px hsl(197 60% 42% / 0.10)" }}
           draggable={false}
         />
-        <h1 className="text-[24px] font-bold tracking-tight text-foreground">가계부</h1>
+        <h1 className="text-[24px] font-bold tracking-tight text-foreground">머니로그</h1>
         <p className="text-[13.5px] text-muted-foreground mt-1.5">
           수입과 지출을 한눈에
         </p>
