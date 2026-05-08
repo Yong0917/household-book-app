@@ -101,18 +101,16 @@ export function CategoryDetailSheet({
     );
 
     const [txs, assetList] = await Promise.all([
-      searchTransactions({ categoryIds: [categoryId], startDate, endDate }),
+      searchTransactions({ categoryIds: [categoryId], startDate, endDate, type }),
       getAssets(),
     ]);
 
     setAssets(assetList);
-
-    const typed = txs.filter((t) => t.type === type);
-    setAllTransactions(typed);
+    setAllTransactions(txs);
 
     // O(n) 단일 패스로 월별 집계
     const trendMap = new Map<string, number>();
-    for (const t of typed) {
+    for (const t of txs) {
       const key = format(parseISO(t.transactionAt), "yyyy-MM");
       trendMap.set(key, (trendMap.get(key) ?? 0) + t.amount);
     }

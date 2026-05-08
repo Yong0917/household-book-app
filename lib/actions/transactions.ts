@@ -133,6 +133,7 @@ export async function searchTransactions(params: {
   categoryIds?: string[];
   minAmount?: number;
   maxAmount?: number;
+  type?: TransactionType;
 }): Promise<Transaction[]> {
   const supabase = await createClient();
 
@@ -164,6 +165,9 @@ export async function searchTransactions(params: {
   }
   if (params.maxAmount !== undefined) {
     query = query.lte("amount", params.maxAmount);
+  }
+  if (params.type) {
+    query = query.eq("type", params.type);
   }
 
   const { data, error } = await query;
