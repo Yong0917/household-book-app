@@ -21,8 +21,9 @@ const userId = authData.claims.sub as string;
 - `delete_current_user` — 회원 탈퇴 (모든 데이터 정리)
 - `get_monthly_report_data(p_user_id, p_year, p_month)` — 월별 결산
 - `get_monthly_trend(p_start, p_end)` — 월별 추이
+- `get_report_list(p_user_id)` — 거래 있는 월 최대 12개 (`reports.ts` 목록 화면용)
 
-**Storage:** `note-images` 버킷 하나. 메모 삭제 시 `.delete().select("images")` 로 1번 왕복으로 처리.
+**Storage:** `note-images` 버킷 하나. 메모 삭제 시 row delete와 함께 `storage.from("note-images").remove(paths)`로 이미지도 제거.
 
 **고정비 날짜 처리** (`getUnprocessedRecurring`):
 - 미래 달 → 빈 배열
