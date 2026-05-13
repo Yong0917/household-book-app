@@ -51,3 +51,6 @@ supabase/functions/send-recurring-notifications/service-account.json
 # Supabase 로컬 개발 임시 파일
 supabase/.branches/
 supabase/.temp/
+
+# 임시 HTML 파일
+*.html
