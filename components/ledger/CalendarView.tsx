@@ -148,42 +148,46 @@ export function CalendarView({ currentMonth, transactions, categories, assets, i
   return (
     <>
       <div className="flex flex-col">
-        {/* 월간 요약 - compact 1줄 */}
-        <div className="flex items-center justify-around h-10 border-b border-border/40 text-[11px] px-3 bg-card">
+        {/* 월간 요약 - compact 1줄, 라벨/값 상하 위계 */}
+        <div className="flex items-center justify-around h-10 border-b border-border/40 px-3 bg-card">
           {isLoading ? (
-            <div className="flex items-center gap-6">
-              <div className="h-2.5 w-20 bg-muted-foreground/10 rounded animate-pulse" />
-              <div className="h-2.5 w-20 bg-muted-foreground/10 rounded animate-pulse" />
-              <div className="h-2.5 w-20 bg-muted-foreground/10 rounded animate-pulse" />
+            <div className="flex items-center gap-8">
+              <div className="h-5 w-16 bg-muted-foreground/10 rounded animate-pulse" />
+              <div className="h-5 w-16 bg-muted-foreground/10 rounded animate-pulse" />
+              <div className="h-5 w-16 bg-muted-foreground/10 rounded animate-pulse" />
             </div>
           ) : (
             <>
-              <span className="text-muted-foreground">
-                수입{" "}
-                <span className="text-income font-semibold tabular-nums">
+              <div className="flex flex-col items-center gap-1.5">
+                <span className="text-[9px] text-muted-foreground/70 leading-none">수입</span>
+                <span className="text-[12px] text-income font-semibold tabular-nums leading-none">
                   {monthIncome.toLocaleString("ko-KR")}원
                 </span>
-              </span>
-              <span className="text-border/80">·</span>
-              <span className="text-muted-foreground">
-                지출{" "}
-                <span className="text-expense font-semibold tabular-nums">
+              </div>
+              <div className="w-px h-5 bg-border/50" />
+              <div className="flex flex-col items-center gap-1.5">
+                <span className="text-[9px] text-muted-foreground/70 leading-none">지출</span>
+                <span className="text-[12px] text-expense font-semibold tabular-nums leading-none">
                   {monthExpense.toLocaleString("ko-KR")}원
                 </span>
-              </span>
-              <span className="text-border/80">·</span>
-              <span className="text-muted-foreground">
-                합계{" "}
+              </div>
+              <div className="w-px h-5 bg-border/50" />
+              <div className="flex flex-col items-center gap-1.5">
+                <span className="text-[9px] text-muted-foreground/70 leading-none">합계</span>
                 <span
                   className={cn(
-                    "font-semibold tabular-nums",
-                    monthNet >= 0 ? "text-income" : "text-expense"
+                    "text-[12px] font-semibold tabular-nums leading-none",
+                    monthNet > 0
+                      ? "text-income"
+                      : monthNet < 0
+                      ? "text-expense"
+                      : "text-muted-foreground"
                   )}
                 >
-                  {monthNet >= 0 ? "+" : ""}
+                  {monthNet > 0 ? "+" : ""}
                   {monthNet.toLocaleString("ko-KR")}원
                 </span>
-              </span>
+              </div>
             </>
           )}
         </div>
@@ -219,7 +223,7 @@ export function CalendarView({ currentMonth, transactions, categories, assets, i
           {Array.from({ length: startOffset }).map((_, i) => (
             <div
               key={`empty-${i}`}
-              className="border-b border-r border-border/30 last:border-r-0"
+              className="border-b border-r border-border/40 last:border-r-0"
             />
           ))}
 
@@ -241,10 +245,10 @@ export function CalendarView({ currentMonth, transactions, categories, assets, i
                 onClick={() => handleDayClick(day)}
                 className={cn(
                   "flex flex-col items-center justify-start pt-1.5 gap-0.5 cursor-pointer select-none",
-                  "border-r border-border/25",
-                  !isLastRow && "border-b border-border/25",
+                  "border-r border-border/40",
+                  !isLastRow && "border-b border-border/40",
                   colIdx === 6 && "border-r-0",
-                  isSelected && "bg-primary/[0.06]"
+                  isSelected && "bg-primary/[0.08]"
                 )}
               >
                 {/* 날짜 숫자 */}
@@ -252,7 +256,12 @@ export function CalendarView({ currentMonth, transactions, categories, assets, i
                   className={cn(
                     "text-[11px] w-6 h-6 flex items-center justify-center rounded-full font-medium",
                     isSelected && "bg-primary text-primary-foreground",
-                    isTodayDate && !isSelected && "bg-primary/12 text-primary font-bold",
+                    isSelected &&
+                      isTodayDate &&
+                      "ring-2 ring-[hsl(345_65%_63%)] ring-offset-1 ring-offset-background",
+                    isTodayDate &&
+                      !isSelected &&
+                      "bg-[hsl(345_65%_63%)] text-white font-bold shadow-sm",
                     !isSelected && !isTodayDate && dayOfWeek === 0 && "text-expense/80",
                     !isSelected && !isTodayDate && dayOfWeek === 6 && "text-income/80"
                   )}
