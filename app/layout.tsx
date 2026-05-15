@@ -48,8 +48,8 @@ export default function RootLayout({
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
   return (
-    // style 인라인: CSS 로드 전 배경 깜빡임 방지 (next-themes가 JS로 dark 클래스 추가하기 전)
-    <html lang="ko" suppressHydrationWarning style={{ backgroundColor: "#EEF6FA" }}>
+    // style 인라인: CSS 로드 전 배경 깜빡임 방지. Android splash(`#FAF8F3`)와 정확히 매칭하여 splash → 웹 전환 시 색상 점프 제거.
+    <html lang="ko" suppressHydrationWarning style={{ backgroundColor: "#FAF8F3" }}>
       {supabaseUrl && (
         <head>
           <link rel="preconnect" href={supabaseUrl} crossOrigin="anonymous" />

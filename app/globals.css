@@ -15,7 +15,7 @@
 @layer base {
   :root {
     /* 하늘 돼지 팔레트: 하늘색 + 핑크 + 골드 */
-    --background: 204 45% 97%;        /* 매우 연한 하늘색-흰색 */
+    --background: 40 33% 97%;         /* #FAF8F3 — Android splash 배경과 정확히 매칭 (크림 베이지) */
     --foreground: 215 38% 17%;        /* 진한 네이비 */
     --card: 0 0% 100%;                /* 순백 카드 */
     --card-foreground: 215 38% 17%;
@@ -89,6 +89,16 @@
     font-family: var(--font-sans);
     word-break: keep-all;
     -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* AppSplash shimmer bar — Android splash와 동일한 좌→우 이동 패턴 */
+@keyframes splash-shimmer {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(34px);
   }
 }
 
