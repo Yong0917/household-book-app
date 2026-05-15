@@ -2,17 +2,20 @@
 
 import { useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
-import { getMemoSuggestions } from "@/lib/actions/transactions";
+import { getMemoSuggestions, type MemoSuggestionContext } from "@/lib/actions/transactions";
 
 interface MemoInputProps {
   value: string;
   onChange: (value: string) => void;
+  context?: MemoSuggestionContext;
 }
 
-export function MemoInput({ value, onChange }: MemoInputProps) {
+export function MemoInput({ value, onChange, context }: MemoInputProps) {
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const contextRef = useRef(context);
+  contextRef.current = context;
 
   const fetchSuggestions = async (keyword: string) => {
     if (!keyword.trim()) {
@@ -20,7 +23,7 @@ export function MemoInput({ value, onChange }: MemoInputProps) {
       setShowDropdown(false);
       return;
     }
-    const results = await getMemoSuggestions(keyword);
+    const results = await getMemoSuggestions(keyword, contextRef.current);
     setSuggestions(results);
     setShowDropdown(results.length > 0);
   };

@@ -229,17 +229,26 @@ export async function getMonthlyTrend(
   }));
 }
 
-// 메모 자동완성 추천 목록 조회
-export async function getMemoSuggestions(keyword: string): Promise<string[]> {
+export type MemoSuggestionContext = {
+  type?: TransactionType;
+  categoryId?: string | null;
+  assetId?: string | null;
+};
+
+// 메모 자동완성 추천 목록 조회 (컨텍스트 가중치 + 빈도/최근성 점수)
+export async function getMemoSuggestions(
+  keyword: string,
+  context?: MemoSuggestionContext,
+): Promise<string[]> {
   if (!keyword.trim()) return [];
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("transactions")
-    .select("description")
-    .ilike("description", `%${keyword}%`)
-    .not("description", "is", null)
-    .limit(10);
+  const { data, error } = await supabase.rpc("suggest_memos", {
+    p_keyword: keyword.trim(),
+    p_type: context?.type ?? null,
+    p_category_id: context?.categoryId ?? null,
+    p_asset_id: context?.assetId ?? null,
+    p_limit: 8,
+  });
   if (error) return [];
-  const unique = [...new Set((data ?? []).map((r) => r.description as string))];
-  return unique;
+  return (data ?? []).map((r: { description: string }) => r.description);
 }

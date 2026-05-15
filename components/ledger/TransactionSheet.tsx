@@ -307,6 +307,8 @@ export function TransactionSheet({
 
   // 현재 선택된 거래 유형 감시 (카테고리 필터링용)
   const selectedType = watch("type");
+  const selectedCategoryId = watch("categoryId");
+  const selectedAssetId = watch("assetId");
   const filteredCategories = categories.filter((c) => c.type === selectedType);
 
   // 폼 제출
@@ -640,6 +642,11 @@ export function TransactionSheet({
                     <MemoInput
                       value={field.value ?? ""}
                       onChange={field.onChange}
+                      context={{
+                        type: selectedType,
+                        categoryId: selectedCategoryId || null,
+                        assetId: selectedAssetId || null,
+                      }}
                     />
                   )}
                 />
