@@ -2,7 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import type { Transaction, TransactionType, Category, Asset, RecurringTransaction } from "@/lib/mock/types";
-import { getMonthRangeUTC } from "@/lib/utils/timezone";
+import { getMonthRangeUTC, kstToUTC } from "@/lib/utils/timezone";
 import { getCategories } from "./categories";
 import { getAssets } from "./assets";
 import { getUnprocessedRecurring } from "./recurring";
@@ -147,12 +147,14 @@ export async function searchTransactions(params: {
     query = query.ilike("description", `%${params.keyword}%`);
   }
   if (params.startDate) {
-    query = query.gte("transaction_at", new Date(params.startDate).toISOString());
+    // "YYYY-MM-DD"(KST 날짜) → KST 자정 기준 UTC
+    const [y, mo, d] = params.startDate.split("-").map(Number);
+    query = query.gte("transaction_at", kstToUTC(y, mo, d, 0, 0));
   }
   if (params.endDate) {
-    const end = new Date(params.endDate);
-    end.setDate(end.getDate() + 1);
-    query = query.lt("transaction_at", end.toISOString());
+    // 종료일 다음 날 KST 자정 미만 (Date.UTC가 일 오버플로 정규화)
+    const [y, mo, d] = params.endDate.split("-").map(Number);
+    query = query.lt("transaction_at", kstToUTC(y, mo, d + 1, 0, 0));
   }
   if (params.assetIds?.length) {
     query = query.in("asset_id", params.assetIds);
