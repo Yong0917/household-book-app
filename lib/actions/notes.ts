@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { orIlikePattern } from "@/lib/utils/postgrest";
 
 export interface Note {
   id: string;
@@ -130,10 +131,12 @@ export async function searchNotes(query: string): Promise<Note[]> {
 
   if (!query.trim()) return [];
 
+  // 쉼표·괄호 등 PostgREST 예약문자가 .or() 필터를 깨뜨리지 않도록 값을 안전하게 감싼다
+  const pattern = orIlikePattern(query);
   const { data, error } = await supabase
     .from("notes")
     .select("id, title, content, images, is_pinned, created_at, updated_at")
-    .or(`title.ilike.%${query}%,content.ilike.%${query}%`)
+    .or(`title.ilike.${pattern},content.ilike.${pattern}`)
     .order("updated_at", { ascending: false });
 
   if (error) throw new Error(error.message);
