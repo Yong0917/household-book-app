@@ -46,17 +46,32 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Do not run code between createServerClient and
-  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
+  // Do not run code between createServerClient and the auth check below.
+  // A simple mistake could make it very hard to debug issues with users
+  // being randomly logged out.
 
-  // IMPORTANT: getClaims()는 JWT를 로컬에서만 검사하므로 만료된 토큰을 갱신하지 않음.
-  // getUser()를 사용하면 액세스 토큰 만료 시 리프레시 토큰으로 자동 갱신하여
-  // 앱 재시작 후 로그아웃되는 문제를 방지함.
-  const { data: { user } } = await supabase.auth.getUser();
+  // 1) getClaims()는 ES256 비대칭 서명키 환경에서 캐시된 JWKS로 JWT를 로컬 검증한다
+  //    (네트워크 왕복 없음). 매 보호 경로 요청·Server Action마다 발생하던 Auth 서버
+  //    왕복을 제거해 TTFB를 단축한다.
+  // 2) 단, getClaims()는 만료된 토큰을 갱신하지 않는다. 클레임이 없거나(만료/무효)
+  //    만료가 임박한 경우에만 getUser()를 호출해 리프레시 토큰으로 세션을 갱신한다
+  //    (앱 재시작 후 로그아웃 버그 방지). 토큰이 충분히 유효하면 왕복을 스킵한다.
+  const { data: claimsData } = await supabase.auth.getClaims();
+  const claims = claimsData?.claims;
+
+  const REFRESH_THRESHOLD_SEC = 600; // 만료 10분 전부터 미리 갱신
+  const nowSec = Math.floor(Date.now() / 1000);
+  const exp = typeof claims?.exp === "number" ? claims.exp : 0;
+  const needsRefresh = !claims || exp - nowSec < REFRESH_THRESHOLD_SEC;
+
+  let isAuthenticated = !!claims;
+  if (needsRefresh) {
+    const { data: { user } } = await supabase.auth.getUser();
+    isAuthenticated = !!user;
+  }
 
   if (
-    user &&
+    isAuthenticated &&
     pathname.startsWith("/auth") &&
     pathname !== "/auth/account-recovery"
   ) {
