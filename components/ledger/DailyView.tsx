@@ -13,9 +13,16 @@ import {
   startOfMonth,
 } from "date-fns";
 import { ko } from "date-fns/locale";
+import dynamic from "next/dynamic";
 import { TransactionList } from "@/components/ledger/TransactionList";
-import { TransactionSheet } from "@/components/ledger/TransactionSheet";
 import { RecurringBanner } from "@/components/ledger/RecurringBanner";
+
+// 항상 마운트되어 있으므로 하이드레이션 직후 청크가 자동 로드됨
+// → 초기 번들에서 분리하면서도 시트 열기 지연 없음
+const TransactionSheet = dynamic(
+  () => import("@/components/ledger/TransactionSheet").then((m) => m.TransactionSheet),
+  { ssr: false }
+);
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { skipRecurring } from "@/lib/actions/recurring";
 import { useGuestMode } from "@/lib/context/GuestModeContext";

@@ -6,9 +6,11 @@ import { useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 import { DailyView } from "./DailyView";
-import { SearchView } from "./SearchView";
 
 const CalendarView = dynamic(() => import("./CalendarView").then((m) => m.CalendarView), {
+  ssr: false,
+});
+const SearchView = dynamic(() => import("./SearchView").then((m) => m.SearchView), {
   ssr: false,
 });
 import { ChevronLeft, ChevronRight, ChevronDown, Search } from "lucide-react";
