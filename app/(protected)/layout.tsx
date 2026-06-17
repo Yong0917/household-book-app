@@ -2,6 +2,9 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { GuestModeProvider } from "@/lib/context/GuestModeContext";
 import PushNotificationInit from "@/components/PushNotificationInit";
+import BiometricReloginGate from "@/components/BiometricReloginGate";
+import BiometricEnrollPrompt from "@/components/BiometricEnrollPrompt";
+import BiometricTokenSync from "@/components/BiometricTokenSync";
 
 export default async function ProtectedLayout({
   children,
@@ -24,6 +27,9 @@ export default async function ProtectedLayout({
   return (
     <GuestModeProvider isGuest={isGuest}>
       {!isGuest && <PushNotificationInit />}
+      {!isGuest && <BiometricTokenSync />}
+      {!isGuest && <BiometricEnrollPrompt />}
+      {isGuest && <BiometricReloginGate />}
       {children}
     </GuestModeProvider>
   );

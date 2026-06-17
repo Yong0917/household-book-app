@@ -8,9 +8,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Fingerprint } from "lucide-react";
 import { translateAuthError } from "@/lib/auth-errors";
 import { SocialLoginButtons } from "@/components/social-login-buttons";
+import {
+  isAndroidApp,
+  isBiometricLoginEnabled,
+  biometricLogin,
+  clearBiometricLogin,
+} from "@/lib/utils/biometric";
 
 export function LoginForm({
   className,
@@ -20,7 +27,42 @@ export function LoginForm({
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [bioAvailable, setBioAvailable] = useState(false);
   const router = useRouter();
+
+  // Android 앱이고 생체로그인이 등록돼 있으면 버튼 노출
+  useEffect(() => {
+    if (isAndroidApp() && isBiometricLoginEnabled()) setBioAvailable(true);
+  }, []);
+
+  const handleBiometricLogin = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const tokens = await biometricLogin();
+      if (!tokens) {
+        // 사용자 취소 — 조용히 폼 유지
+        setIsLoading(false);
+        return;
+      }
+      const supabase = createClient();
+      const { error } = await supabase.auth.setSession({
+        access_token: tokens.accessToken,
+        refresh_token: tokens.refreshToken,
+      });
+      if (error) {
+        // 저장 토큰 만료/무효 → 등록 해제 후 일반 로그인 유도
+        clearBiometricLogin();
+        setBioAvailable(false);
+        setError("생체인증 정보가 만료되었습니다. 다시 로그인해 주세요.");
+        setIsLoading(false);
+        return;
+      }
+      router.replace("/ledger/daily");
+    } catch {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,6 +176,19 @@ export function LoginForm({
             {isLoading ? "로그인 중..." : "로그인"}
           </Button>
         </form>
+
+        {/* 생체인증 로그인 (Android 앱 + 등록된 경우만) */}
+        {bioAvailable && (
+          <button
+            type="button"
+            onClick={handleBiometricLogin}
+            disabled={isLoading}
+            className="w-full h-12 flex items-center justify-center gap-2 rounded-xl border border-border bg-background text-[14.5px] font-medium text-foreground transition-colors hover:bg-muted/50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Fingerprint className="h-[18px] w-[18px]" />
+            생체인증으로 로그인
+          </button>
+        )}
 
         {/* 둘러보기 버튼 */}
         <button

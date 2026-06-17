@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { LogoutButton } from "@/components/logout-button";
 import { ThemeSelector } from "@/components/settings/ThemeSelector";
 import { PushNotificationToggle } from "@/components/settings/PushNotificationToggle";
+import { BiometricLoginToggle } from "@/components/settings/BiometricLoginToggle";
 import { ExportButton } from "@/components/settings/ExportButton";
 import { ImportButton } from "@/components/settings/ImportButton";
 import { BackupButton } from "@/components/settings/BackupButton";
@@ -135,6 +136,8 @@ export default async function SettingsPage() {
           </div>
           {/* 알림 토글 — Android 앱 + 로그인 사용자에게만 표시됨 (클라이언트 측 감지) */}
           {!isGuest && <PushNotificationToggle />}
+          {/* 생체인증 로그인 토글 — Android 앱 + 생체 사용 가능 + 로그인 사용자만 */}
+          {!isGuest && <BiometricLoginToggle />}
         </div>
       </div>
 
