@@ -22,16 +22,10 @@ import { useGuestMode } from "@/lib/context/GuestModeContext";
 import type { Transaction, Category, Asset, RecurringTransaction } from "@/lib/mock/types";
 import type { AccessStatus } from "@/lib/actions/receiptAccess";
 import { useSwipeMonth } from "@/hooks/useSwipeMonth";
+import { applyChangeToEntry, type CacheEntry, type TransactionChange } from "@/lib/utils/ledgerCache";
 
 // localStorage 캐시 키
 const LS_KEY = "ledger_cache_v1";
-
-type CacheEntry = {
-  transactions: Transaction[];
-  categories: Category[];
-  assets: Asset[];
-  recurring: RecurringTransaction[];
-};
 
 // localStorage에서 특정 월 캐시 읽기
 function readLocalCache(key: string): CacheEntry | null {
@@ -42,6 +36,20 @@ function readLocalCache(key: string): CacheEntry | null {
     return store[key] ?? null;
   } catch {
     return null;
+  }
+}
+
+// localStorage에서 특정 키 외 월 캐시 제거
+// (거래 변경이 다른 달에 영향을 줄 수 있어, 재시작 시 stale 표시 방지)
+function pruneLocalCacheExcept(key: string): void {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const store = JSON.parse(raw) as Record<string, CacheEntry>;
+    const kept = store[key];
+    localStorage.setItem(LS_KEY, JSON.stringify(kept ? { [key]: kept } : {}));
+  } catch {
+    // localStorage 사용 불가 환경 무시
   }
 }
 
@@ -181,7 +189,7 @@ export function LedgerTabView({ initialData, initialMonthKey, receiptAccessStatu
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // 마운트 시 1회만 실행
 
-  const loadData = useCallback(async (invalidateCache = false) => {
+  const loadData = useCallback(async (invalidateCache = false, opts?: { silent?: boolean }) => {
     const key = format(currentMonth, "yyyy-MM");
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth() + 1;
@@ -218,8 +226,9 @@ export function LedgerTabView({ initialData, initialMonthKey, receiptAccessStatu
     }
 
     // 캐시 미스 또는 강제 갱신: 로딩 표시 후 fetch
-    // 초기 데이터(SSR/localStorage)가 이미 화면에 표시 중이면 로딩 스피너 생략
-    if (!hasInitialDataRef.current) setIsLoading(true);
+    // 초기 데이터(SSR/localStorage)가 이미 화면에 표시 중이거나
+    // 무음 재검증(silent)이면 기존 데이터를 유지한 채 로딩 스피너 생략
+    if (!hasInitialDataRef.current && !opts?.silent) setIsLoading(true);
 
     try {
       const data = await getLedgerMonthData(year, month);
@@ -241,10 +250,31 @@ export function LedgerTabView({ initialData, initialMonthKey, receiptAccessStatu
     loadData();
   }, [loadData]);
 
-  // 거래 추가/수정/삭제 후 현재 월 캐시 무효화 후 재로드
-  const handleSuccess = useCallback(() => {
-    loadData(true);
-  }, [loadData]);
+  // 거래 변경(추가/수정/삭제/고정비 건너뜀) 후 처리:
+  // 서버가 확정한 변경(change)을 로컬 상태·캐시에 즉시 반영하고,
+  // 백그라운드에서 무음 재검증으로 최종 정합성을 확보한다.
+  const handleSuccess = useCallback((change?: TransactionChange) => {
+    if (change && !isGuest) {
+      const key = format(currentMonth, "yyyy-MM");
+      const entry: CacheEntry = {
+        transactions,
+        categories,
+        assets,
+        recurring: recurringItems,
+      };
+      const next = applyChangeToEntry(entry, change, key);
+      setTransactions(next.transactions);
+      setRecurringItems(next.recurring);
+      cacheRef.current.set(key, next);
+      writeLocalCache(key, next);
+      // 날짜 수정 등으로 다른 달이 영향받을 수 있으므로 현재 달 외 캐시 무효화
+      for (const k of Array.from(cacheRef.current.keys())) {
+        if (k !== key) cacheRef.current.delete(k);
+      }
+      pruneLocalCacheExcept(key);
+    }
+    loadData(true, { silent: true });
+  }, [loadData, currentMonth, isGuest, transactions, categories, assets, recurringItems]);
 
   const openPicker = () => {
     setPickerYear(currentMonth.getFullYear());
@@ -394,6 +424,7 @@ export function LedgerTabView({ initialData, initialMonthKey, receiptAccessStatu
         <SearchView
           onBack={closeSearch}
           onSheetOpenChange={(open) => { isSearchSheetOpenRef.current = open; }}
+          onTransactionChange={handleSuccess}
           categories={categories}
           assets={assets}
         />

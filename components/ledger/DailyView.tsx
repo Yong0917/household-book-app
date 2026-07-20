@@ -28,6 +28,7 @@ import { skipRecurring } from "@/lib/actions/recurring";
 import { useGuestMode } from "@/lib/context/GuestModeContext";
 import type { Transaction, Category, Asset, RecurringTransaction } from "@/lib/mock/types";
 import type { AccessStatus } from "@/lib/actions/receiptAccess";
+import type { TransactionChange } from "@/lib/utils/ledgerCache";
 
 interface DailyViewProps {
   currentMonth: Date;
@@ -35,7 +36,7 @@ interface DailyViewProps {
   categories: Category[];
   assets: Asset[];
   isLoading: boolean;
-  onSuccess: () => void;
+  onSuccess: (change?: TransactionChange) => void;
   recurringItems?: RecurringTransaction[];
   openRecurringId?: string;
   receiptAccessStatus?: AccessStatus;
@@ -151,8 +152,9 @@ export function DailyView({ currentMonth, transactions, categories, assets, isLo
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth() + 1;
     await skipRecurring(skipTarget.id, year, month);
+    const skippedId = skipTarget.id;
     setSkipTarget(null);
-    onSuccess();
+    onSuccess({ kind: "skip", recurringId: skippedId });
   };
 
   // FAB의 기본 날짜: 현재 월이면 오늘, 아니면 해당 월 1일

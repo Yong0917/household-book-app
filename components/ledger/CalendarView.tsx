@@ -22,6 +22,7 @@ import { TransactionSheet } from "./TransactionSheet";
 import { useGuestMode } from "@/lib/context/GuestModeContext";
 import type { Transaction, Category, Asset } from "@/lib/mock/types";
 import type { AccessStatus } from "@/lib/actions/receiptAccess";
+import type { TransactionChange } from "@/lib/utils/ledgerCache";
 
 const WEEKDAY_LABELS = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -35,7 +36,7 @@ interface CalendarViewProps {
   categories: Category[];
   assets: Asset[];
   isLoading: boolean;
-  onSuccess: () => void;
+  onSuccess: (change?: TransactionChange) => void;
   receiptAccessStatus?: AccessStatus;
 }
 

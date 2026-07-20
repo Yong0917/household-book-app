@@ -79,33 +79,38 @@ export async function getLedgerMonthData(year: number, month: number): Promise<{
   return { transactions, categories, assets, recurring };
 }
 
-// 거래 추가
+// 거래 추가 — 생성된 행을 반환해 클라이언트가 재조회 없이 즉시 반영할 수 있게 한다
 export async function addTransaction(
   data: Omit<Transaction, "id"> & { recurringId?: string }
-): Promise<void> {
+): Promise<Transaction> {
   const supabase = await createClient();
   const { data: authData } = await supabase.auth.getClaims();
   if (!authData) throw new Error("인증이 필요합니다");
 
-  const { error } = await supabase.from("transactions").insert({
-    user_id: authData.claims.sub as string,
-    type: data.type,
-    amount: data.amount,
-    category_id: data.categoryId,
-    asset_id: data.assetId,
-    description: data.description ?? null,
-    transaction_at: data.transactionAt,
-    recurring_id: data.recurringId ?? null,
-  });
+  const { data: row, error } = await supabase
+    .from("transactions")
+    .insert({
+      user_id: authData.claims.sub as string,
+      type: data.type,
+      amount: data.amount,
+      category_id: data.categoryId,
+      asset_id: data.assetId,
+      description: data.description ?? null,
+      transaction_at: data.transactionAt,
+      recurring_id: data.recurringId ?? null,
+    })
+    .select("id, type, amount, category_id, asset_id, description, transaction_at")
+    .single();
 
   if (error) throw new Error(error.message);
+  return toTransaction(row);
 }
 
-// 거래 수정
+// 거래 수정 — 수정된 행을 반환해 클라이언트가 재조회 없이 즉시 반영할 수 있게 한다
 export async function updateTransaction(
   id: string,
   data: Partial<Omit<Transaction, "id">>
-): Promise<void> {
+): Promise<Transaction> {
   const supabase = await createClient();
 
   const updateData: Record<string, unknown> = {};
@@ -116,12 +121,15 @@ export async function updateTransaction(
   if (data.description !== undefined) updateData.description = data.description ?? null;
   if (data.transactionAt !== undefined) updateData.transaction_at = data.transactionAt;
 
-  const { error } = await supabase
+  const { data: row, error } = await supabase
     .from("transactions")
     .update(updateData)
-    .eq("id", id);
+    .eq("id", id)
+    .select("id, type, amount, category_id, asset_id, description, transaction_at")
+    .single();
 
   if (error) throw new Error(error.message);
+  return toTransaction(row);
 }
 
 // 거래 검색 (키워드 + 필터)

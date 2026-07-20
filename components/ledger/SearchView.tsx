@@ -12,6 +12,7 @@ import { GUEST_TRANSACTIONS, GUEST_CATEGORIES, GUEST_ASSETS } from "@/lib/mock/g
 import { useGuestMode } from "@/lib/context/GuestModeContext";
 import { TransactionSheet } from "@/components/ledger/TransactionSheet";
 import type { Transaction, Category, Asset } from "@/lib/mock/types";
+import type { TransactionChange } from "@/lib/utils/ledgerCache";
 
 interface FilterState {
   startDate: string;
@@ -46,11 +47,12 @@ interface SearchViewProps {
   onBack: () => void;
   initialFilterOpen?: boolean;
   onSheetOpenChange?: (open: boolean) => void; // LedgerTabView에 시트 열림 상태 전달
+  onTransactionChange?: (change?: TransactionChange) => void; // 수정/삭제를 가계부 목록에도 반영
   categories?: Category[];
   assets?: Asset[];
 }
 
-export function SearchView({ onBack, initialFilterOpen = false, onSheetOpenChange, categories: propCategories, assets: propAssets }: SearchViewProps) {
+export function SearchView({ onBack, initialFilterOpen = false, onSheetOpenChange, onTransactionChange, categories: propCategories, assets: propAssets }: SearchViewProps) {
   const { isGuest, requireLogin } = useGuestMode();
   const [keyword, setKeyword] = useState("");
   const [filter, setFilter] = useState<FilterState>(DEFAULT_FILTER);
@@ -178,8 +180,10 @@ export function SearchView({ onBack, initialFilterOpen = false, onSheetOpenChang
   }, [isSheetOpen, onSheetOpenChange]);
 
   // 수정 성공 후 재검색
-  const handleEditSuccess = () => {
+  const handleEditSuccess = (change?: TransactionChange) => {
     doSearch(keyword, filter);
+    // 뒤에 마운트된 LedgerTabView의 목록·캐시도 동기화
+    onTransactionChange?.(change);
   };
 
   const activeFilterCount =

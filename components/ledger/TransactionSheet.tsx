@@ -26,6 +26,7 @@ import {
   deleteTransaction,
 } from "@/lib/actions/transactions";
 import type { Transaction, Category, Asset, RecurringTransaction } from "@/lib/mock/types";
+import type { TransactionChange } from "@/lib/utils/ledgerCache";
 
 // 폼 검증 스키마
 const schema = z.object({
@@ -49,7 +50,7 @@ interface TransactionSheetProps {
   initialRecurring?: RecurringTransaction; // 고정비에서 열릴 때 pre-fill
   categories: Category[];
   assets: Asset[];
-  onSuccess?: () => void; // 저장/삭제 성공 후 콜백
+  onSuccess?: (change?: TransactionChange) => void; // 저장/삭제 성공 후 콜백 (변경 내용 전달)
   receiptAccessStatus?: AccessStatus; // 영수증 스캔 접근 상태
 }
 
@@ -125,6 +126,7 @@ export function TransactionSheet({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [accessStatus, setAccessStatus] = useState<AccessStatus>(receiptAccessStatus);
   const [isRequesting, setIsRequesting] = useState(false);
   const [showAccessTooltip, setShowAccessTooltip] = useState(false);
@@ -264,6 +266,7 @@ export function TransactionSheet({
       const defaults = getDefaultValues();
       reset(defaults);
       setAnalyzeError(null);
+      setSubmitError(null);
       closeScanMenu();
       if (mode === "edit" && transaction) {
         setDisplayAmount(transaction.amount.toLocaleString("ko-KR"));
@@ -323,16 +326,24 @@ export function TransactionSheet({
       transactionAt,
     };
 
-    if (mode === "edit" && transaction) {
-      await updateTransaction(transaction.id, payload);
-    } else {
-      await addTransaction({
-        ...payload,
-        recurringId: initialRecurring?.id,
-      });
+    setSubmitError(null);
+    try {
+      let change: TransactionChange;
+      if (mode === "edit" && transaction) {
+        const saved = await updateTransaction(transaction.id, payload);
+        change = { kind: "update", transaction: saved };
+      } else {
+        const saved = await addTransaction({
+          ...payload,
+          recurringId: initialRecurring?.id,
+        });
+        change = { kind: "create", transaction: saved, recurringId: initialRecurring?.id };
+      }
+      handleClose();
+      onSuccess?.(change);
+    } catch {
+      setSubmitError("저장에 실패했어요. 네트워크 상태를 확인하고 다시 시도해 주세요.");
     }
-    handleClose();
-    onSuccess?.();
   };
 
   // 거래 삭제 확인 모달 열기
@@ -343,9 +354,14 @@ export function TransactionSheet({
   // 거래 삭제 실행
   const handleConfirmDelete = async () => {
     if (transaction) {
-      await deleteTransaction(transaction.id);
-      handleClose();
-      onSuccess?.();
+      setSubmitError(null);
+      try {
+        await deleteTransaction(transaction.id);
+        handleClose();
+        onSuccess?.({ kind: "delete", id: transaction.id });
+      } catch {
+        setSubmitError("삭제에 실패했어요. 네트워크 상태를 확인하고 다시 시도해 주세요.");
+      }
     }
   };
 
@@ -670,6 +686,11 @@ export function TransactionSheet({
 
           {/* 저장 버튼 - 항상 하단 고정 */}
           <div className="px-5 pb-6 pt-3 flex-shrink-0">
+            {submitError && (
+              <div className="mb-2.5 px-3.5 py-2.5 rounded-xl bg-destructive/8 border border-destructive/20">
+                <p className="text-destructive text-[12px]">{submitError}</p>
+              </div>
+            )}
             <button
               type="button"
               onClick={handleSubmit(onSubmit)}
