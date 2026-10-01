@@ -75,27 +75,43 @@ const MONTH_LABELS = [
   "7월", "8월", "9월", "10월", "11월", "12월",
 ];
 
-function parseMonthParam(param: string | null): Date {
-  if (!param) return startOfMonth(new Date());
+// fallbackKey: 서버가 KST 기준으로 계산한 현재 달 — SSR/하이드레이션 간 월 불일치 방지
+function parseMonthParam(param: string | null, fallbackKey?: string): Date {
+  const fallback = fallbackKey ? parse(fallbackKey, "yyyy-MM", new Date()) : new Date();
+  const base = isValid(fallback) ? startOfMonth(fallback) : startOfMonth(new Date());
+  if (!param) return base;
   const parsed = parse(param, "yyyy-MM", new Date());
-  return isValid(parsed) ? startOfMonth(parsed) : startOfMonth(new Date());
+  return isValid(parsed) ? startOfMonth(parsed) : base;
 }
 
 interface LedgerTabViewProps {
-  // 서버 컴포넌트에서 SSR 시점에 미리 fetch한 현재 달 데이터 (선택적)
-  initialData?: CacheEntry;
-  // SSR 데이터에 해당하는 달 키 (예: "2026-03")
+  // 서버 컴포넌트가 await 없이 넘긴 현재 달 데이터 Promise (RSC 스트리밍으로 도착)
+  initialDataPromise?: Promise<CacheEntry | undefined>;
+  // initialDataPromise에 해당하는 달 키 (예: "2026-03")
   initialMonthKey?: string;
-  receiptAccessStatus?: AccessStatus;
+  receiptAccessStatusPromise?: Promise<AccessStatus>;
 }
 
-export function LedgerTabView({ initialData, initialMonthKey, receiptAccessStatus = "none" }: LedgerTabViewProps = {}) {
+export function LedgerTabView({ initialDataPromise, initialMonthKey, receiptAccessStatusPromise }: LedgerTabViewProps = {}) {
   const { isGuest } = useGuestMode();
   const searchParams = useSearchParams();
   const [tab, setTab] = useState<Tab>("list");
   const [currentMonth, setCurrentMonthState] = useState<Date>(() =>
-    parseMonthParam(searchParams.get("month"))
+    parseMonthParam(searchParams.get("month"), initialMonthKey)
   );
+  const [receiptAccessStatus, setReceiptAccessStatus] = useState<AccessStatus>("none");
+
+  // 영수증 스캔 권한: 스트리밍된 결과가 도착하면 반영
+  useEffect(() => {
+    if (!receiptAccessStatusPromise) return;
+    let cancelled = false;
+    receiptAccessStatusPromise.then((status) => {
+      if (!cancelled) setReceiptAccessStatus(status);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [receiptAccessStatusPromise]);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerYear, setPickerYear] = useState(() => currentMonth.getFullYear());
 
@@ -103,6 +119,8 @@ export function LedgerTabView({ initialData, initialMonthKey, receiptAccessStatu
   const isMountedRef = useRef(false);
 
   const setCurrentMonth = useCallback((updater: Date | ((prev: Date) => Date)) => {
+    // 사용자가 달을 바꾸면 초기 표시 데이터(캐시)는 더 이상 화면 기준이 아니므로 스피너 생략 플래그 해제
+    hasInitialDataRef.current = false;
     setCurrentMonthState((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
       return next;
@@ -129,7 +147,7 @@ export function LedgerTabView({ initialData, initialMonthKey, receiptAccessStatu
   const [categories, setCategories] = useState<Category[]>([]);
   const [assets, setAssets] = useState<Asset[]>([]);
   const [recurringItems, setRecurringItems] = useState<RecurringTransaction[]>([]);
-  // SSR initialData 또는 localStorage 캐시가 있으면 즉시 표시 (로딩 스피너 없음)
+  // localStorage 캐시가 있으면 즉시 표시 (로딩 스피너 없음)
   const [isLoading, setIsLoading] = useState(true);
 
   // 인메모리 캐시 (같은 달로 돌아올 때 재사용)
@@ -138,6 +156,11 @@ export function LedgerTabView({ initialData, initialMonthKey, receiptAccessStatu
   const fetchingKeyRef = useRef<string | null>(null);
   // 초기 데이터가 이미 표시 중인지 추적 (로딩 스피너 생략 판단용)
   const hasInitialDataRef = useRef(false);
+  // 아직 소비하지 않은 서버 스트리밍 데이터의 달 키 (해당 달 첫 로드 시 서버 액션 대신 사용)
+  const pendingInitialKeyRef = useRef<string | null>(initialDataPromise ? initialMonthKey ?? null : null);
+  // 현재 화면의 달 키 — 비동기 응답이 도착했을 때 다른 달로 이동했는지 판단용
+  const currentKeyRef = useRef(format(currentMonth, "yyyy-MM"));
+  currentKeyRef.current = format(currentMonth, "yyyy-MM");
 
   // 초기 마운트 시 SSR 데이터 또는 localStorage 캐시로 즉시 표시
   useEffect(() => {
@@ -157,21 +180,7 @@ export function LedgerTabView({ initialData, initialMonthKey, receiptAccessStatu
       return;
     }
 
-    // 1순위: 서버에서 넘겨준 SSR 초기 데이터
-    if (initialData && initialMonthKey === key) {
-      cacheRef.current.set(key, initialData);
-      setTransactions(initialData.transactions);
-      setCategories(initialData.categories);
-      setAssets(initialData.assets);
-      setRecurringItems(initialData.recurring);
-      setIsLoading(false);
-      hasInitialDataRef.current = true;
-      // SSR 데이터도 localStorage에 저장 (PWA 다음 재시작 시 즉시 표시)
-      writeLocalCache(key, initialData);
-      return;
-    }
-
-    // 2순위: localStorage 캐시 (PWA 재시작 시 즉시 표시)
+    // localStorage 캐시로 즉시 표시 (서버 스트리밍 데이터는 loadData에서 이어받아 교체)
     const lsCache = readLocalCache(key);
     if (lsCache) {
       cacheRef.current.set(key, lsCache);
@@ -211,6 +220,8 @@ export function LedgerTabView({ initialData, initialMonthKey, receiptAccessStatu
 
     if (invalidateCache) {
       cacheRef.current.delete(key);
+      // 거래 변경 후 강제 갱신 — 그 이전에 시작된 서버 스트리밍 데이터는 stale이므로 폐기
+      if (pendingInitialKeyRef.current === key) pendingInitialKeyRef.current = null;
     } else {
       // 인메모리 캐시 히트 (SSR 데이터 또는 이전 fetch 결과)
       const cached = cacheRef.current.get(key);
@@ -231,20 +242,30 @@ export function LedgerTabView({ initialData, initialMonthKey, receiptAccessStatu
     if (!hasInitialDataRef.current && !opts?.silent) setIsLoading(true);
 
     try {
-      const data = await getLedgerMonthData(year, month);
+      // 이 달의 서버 스트리밍 데이터가 아직 남아 있으면 중복 요청 대신 그것을 사용
+      let data: CacheEntry | undefined;
+      if (pendingInitialKeyRef.current === key && initialDataPromise) {
+        pendingInitialKeyRef.current = null;
+        data = await initialDataPromise.catch(() => undefined);
+      }
+      data ??= await getLedgerMonthData(year, month);
       cacheRef.current.set(key, data);
       // localStorage에 저장 (PWA 다음 재시작 시 즉시 표시)
       writeLocalCache(key, data);
+      // 응답 대기 중 다른 달로 이동했으면 화면 상태는 건드리지 않는다
+      if (currentKeyRef.current !== key) return;
       setTransactions(data.transactions);
       setCategories(data.categories);
       setAssets(data.assets);
       setRecurringItems(data.recurring);
     } finally {
-      setIsLoading(false);
-      hasInitialDataRef.current = false;
-      fetchingKeyRef.current = null;
+      if (currentKeyRef.current === key) {
+        setIsLoading(false);
+        hasInitialDataRef.current = false;
+      }
+      if (fetchingKeyRef.current === key) fetchingKeyRef.current = null;
     }
-  }, [currentMonth, isGuest]);
+  }, [currentMonth, isGuest, initialDataPromise]);
 
   useEffect(() => {
     loadData();
