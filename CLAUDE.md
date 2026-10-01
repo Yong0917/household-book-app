@@ -93,7 +93,7 @@ if (isGuest) return requireLogin(); // 로그인 유도 모달
 
 ## LedgerTabView 캐싱
 
-SSR 초기 데이터 → 인메모리(`txCacheRef`) → localStorage(`ledger_cache_v1`, 최근 3개월) 순으로 탐색. 거래 변경 시 현재 달만 재fetch.
+서버(`DailyContent`)는 데이터를 await하지 않고 Promise로 넘겨 셸을 즉시 출력한다. 클라이언트는 localStorage(`ledger_cache_v1`, 최근 3개월) 캐시를 먼저 그리고, 스트리밍된 서버 데이터로 교체한다(해당 달 첫 `loadData`가 서버 액션 대신 Promise를 소비). 이후 인메모리 캐시 사용. 거래 변경 시 현재 달만 재fetch.
 
 ## Android WebView 연동
 

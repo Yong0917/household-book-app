@@ -128,6 +128,10 @@ export function TransactionSheet({
   const [analyzeError, setAnalyzeError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [accessStatus, setAccessStatus] = useState<AccessStatus>(receiptAccessStatus);
+  // 접근 상태는 서버에서 스트리밍으로 늦게 도착할 수 있어 prop 변경 시 동기화
+  useEffect(() => {
+    setAccessStatus(receiptAccessStatus);
+  }, [receiptAccessStatus]);
   const [isRequesting, setIsRequesting] = useState(false);
   const [showAccessTooltip, setShowAccessTooltip] = useState(false);
   const [showScanMenu, setShowScanMenu] = useState(false);
