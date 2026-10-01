@@ -37,6 +37,7 @@ const MonthlyTrendChart = dynamic(
   }
 );
 import { getStatisticsPageData } from "@/lib/actions/transactions";
+import { settlePromise } from "@/lib/utils/settlePromise";
 import { getGuestStatisticsData } from "@/lib/mock/guestData";
 import { useGuestMode } from "@/lib/context/GuestModeContext";
 import type { Transaction, Category, TransactionType } from "@/lib/mock/types";
@@ -234,9 +235,9 @@ function StatisticsContent({ initialDataPromise, initialMonthKey }: StatisticsPa
     if (pendingInitialKeyRef.current === key && initialDataPromise) {
       pendingInitialKeyRef.current = null;
       consumedInitialPromises.add(initialDataPromise);
-      request = initialDataPromise
-        .catch(() => undefined)
-        .then((data) => data ?? getStatisticsPageData(year, month, trendCount));
+      request = settlePromise(initialDataPromise).then(
+        (data) => data ?? getStatisticsPageData(year, month, trendCount)
+      );
     } else {
       request = getStatisticsPageData(year, month, trendCount);
     }
