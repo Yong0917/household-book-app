@@ -1,5 +1,3 @@
-import { BottomTabBar } from "@/components/layout/BottomTabBar";
-
 export default function NotesLayout({
   children,
 }: {
@@ -8,7 +6,6 @@ export default function NotesLayout({
   return (
     <div className="h-dvh overflow-hidden flex flex-col">
       {children}
-      <BottomTabBar />
     </div>
   );
 }

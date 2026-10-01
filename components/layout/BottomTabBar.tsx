@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { BookOpen, BarChart2, Settings, StickyNote } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
+import { scheduleIdle } from "@/lib/utils/idle";
 
 const tabs = [
   { href: "/ledger/daily", icon: BookOpen, label: "가계부", match: "/ledger" },
@@ -17,9 +18,22 @@ export function BottomTabBar() {
   const router = useRouter();
   const [pendingHref, setPendingHref] = useState<string | null>(null);
 
-  // 마운트 시 모든 탭 라우트 프리패치 → 탭 전환 즉각적으로
+  // 모든 탭 라우트 프리패치 → 탭 전환 즉각적으로.
+  // 첫 페이지 스트리밍(load 이벤트)이 끝난 뒤 유휴 시점에 실행해 초기 데이터 요청과 경쟁하지 않게 한다.
   useEffect(() => {
-    tabs.forEach(({ href }) => router.prefetch(href));
+    let cancelIdle: (() => void) | undefined;
+    const prefetchAll = () => {
+      cancelIdle = scheduleIdle(() => tabs.forEach(({ href }) => router.prefetch(href)));
+    };
+    if (document.readyState === "complete") {
+      prefetchAll();
+      return () => cancelIdle?.();
+    }
+    window.addEventListener("load", prefetchAll, { once: true });
+    return () => {
+      window.removeEventListener("load", prefetchAll);
+      cancelIdle?.();
+    };
   }, [router]);
 
   // 페이지 이동 완료되면 로딩 상태 해제
