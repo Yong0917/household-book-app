@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   isAndroidApp,
@@ -27,6 +26,8 @@ export default function BiometricEnrollPrompt() {
 
   const handleEnroll = async () => {
     try {
+      // Supabase SDK는 등록 시점에만 로드 (초기 번들에서 제외)
+      const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
       const { data } = await supabase.auth.getSession();
       const session = data.session;

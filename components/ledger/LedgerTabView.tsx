@@ -27,6 +27,10 @@ import { applyChangeToEntry, type CacheEntry, type TransactionChange } from "@/l
 // localStorage 캐시 키
 const LS_KEY = "ledger_cache_v1";
 
+// 이미 소비한 서버 스트리밍 Promise — 라우터 캐시(뒤로가기·staleTimes)로 같은 RSC 페이로드가
+// 재사용되어 컴포넌트가 다시 마운트돼도, 이전 시점 데이터로 최신 상태를 덮어쓰지 않도록 기록한다
+const consumedInitialPromises = new WeakSet<Promise<unknown>>();
+
 // localStorage에서 특정 월 캐시 읽기
 function readLocalCache(key: string): CacheEntry | null {
   try {
@@ -157,7 +161,9 @@ export function LedgerTabView({ initialDataPromise, initialMonthKey, receiptAcce
   // 초기 데이터가 이미 표시 중인지 추적 (로딩 스피너 생략 판단용)
   const hasInitialDataRef = useRef(false);
   // 아직 소비하지 않은 서버 스트리밍 데이터의 달 키 (해당 달 첫 로드 시 서버 액션 대신 사용)
-  const pendingInitialKeyRef = useRef<string | null>(initialDataPromise ? initialMonthKey ?? null : null);
+  const pendingInitialKeyRef = useRef<string | null>(
+    initialDataPromise && !consumedInitialPromises.has(initialDataPromise) ? initialMonthKey ?? null : null
+  );
   // 현재 화면의 달 키 — 비동기 응답이 도착했을 때 다른 달로 이동했는지 판단용
   const currentKeyRef = useRef(format(currentMonth, "yyyy-MM"));
   currentKeyRef.current = format(currentMonth, "yyyy-MM");
@@ -246,6 +252,7 @@ export function LedgerTabView({ initialDataPromise, initialMonthKey, receiptAcce
       let data: CacheEntry | undefined;
       if (pendingInitialKeyRef.current === key && initialDataPromise) {
         pendingInitialKeyRef.current = null;
+        consumedInitialPromises.add(initialDataPromise);
         data = await initialDataPromise.catch(() => undefined);
       }
       data ??= await getLedgerMonthData(year, month);

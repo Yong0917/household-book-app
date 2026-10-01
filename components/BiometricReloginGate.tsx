@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import {
   isAndroidApp,
   isBiometricLoginEnabled,
@@ -34,6 +33,8 @@ export default function BiometricReloginGate() {
         setActive(false);
         return;
       }
+      // Supabase SDK는 생체인증 성공 시점에만 로드 (초기 번들에서 제외)
+      const { createClient } = await import("@/lib/supabase/client");
       const supabase = createClient();
       const { error } = await supabase.auth.setSession({
         access_token: tokens.accessToken,
@@ -53,7 +54,7 @@ export default function BiometricReloginGate() {
   if (!active) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-4 bg-background">
+    <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center gap-4 bg-background">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src="/icon-512.png"

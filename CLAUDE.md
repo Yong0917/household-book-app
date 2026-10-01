@@ -94,6 +94,11 @@ if (isGuest) return requireLogin(); // 로그인 유도 모달
 ## LedgerTabView 캐싱
 
 서버(`DailyContent`)는 데이터를 await하지 않고 Promise로 넘겨 셸을 즉시 출력한다. 클라이언트는 localStorage(`ledger_cache_v1`, 최근 3개월) 캐시를 먼저 그리고, 스트리밍된 서버 데이터로 교체한다(해당 달 첫 `loadData`가 서버 액션 대신 Promise를 소비). 이후 인메모리 캐시 사용. 거래 변경 시 현재 달만 재fetch.
+통계(`StatisticsPageClient`)도 같은 패턴(`stats_cache_v1`). 소비한 Promise는 모듈 `WeakSet`에 기록해 라우터 캐시로 재마운트돼도 이전 데이터로 덮어쓰지 않는다.
+
+**라우터 캐시:** `next.config.ts`의 `staleTimes.dynamic = 30` — 30초 내 탭 재방문은 서버 왕복 없음. `BottomTabBar`는 `(protected)/layout`에 1회 마운트되며, 탭 프리패치는 `load` 이후 유휴 시점에 실행한다.
+
+**초기 번들 주의:** `(protected)/layout`에 붙는 클라이언트 컴포넌트에서 `@/lib/supabase/client`를 정적 임포트하지 말 것(gzip 약 47KB가 모든 화면 초기 번들에 포함됨). 필요한 시점에 `await import()`로 로드한다.
 
 ## Android WebView 연동
 

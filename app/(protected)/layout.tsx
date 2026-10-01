@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import { createClient } from "@/lib/supabase/server";
 import { GuestModeProvider } from "@/lib/context/GuestModeContext";
 import DeletionGuard from "@/components/DeletionGuard";
+import { BottomTabBar } from "@/components/layout/BottomTabBar";
 import PushNotificationInit from "@/components/PushNotificationInit";
 import BiometricReloginGate from "@/components/BiometricReloginGate";
 import BiometricEnrollPrompt from "@/components/BiometricEnrollPrompt";
@@ -24,11 +25,13 @@ export default async function ProtectedLayout({
           <DeletionGuard />
         </Suspense>
       )}
-      {!isGuest && <PushNotificationInit />}
+      {!isGuest && <PushNotificationInit userId={data?.claims?.sub as string} />}
       {!isGuest && <BiometricTokenSync />}
       {!isGuest && <BiometricEnrollPrompt />}
       {isGuest && <BiometricReloginGate />}
       {children}
+      {/* 탭바는 섹션 간 이동에도 리마운트되지 않도록 공통 레이아웃에 1회만 마운트 */}
+      <BottomTabBar />
     </GuestModeProvider>
   );
 }

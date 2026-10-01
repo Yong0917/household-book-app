@@ -49,6 +49,10 @@ const MONTH_LABELS = [
 // localStorage 캐시 키
 const LS_KEY = "stats_cache_v1";
 
+// 이미 소비한 서버 스트리밍 Promise — 라우터 캐시(뒤로가기·staleTimes)로 같은 RSC 페이로드가
+// 재사용되어 컴포넌트가 다시 마운트돼도, 이전 시점 데이터로 최신 상태를 덮어쓰지 않도록 기록한다
+const consumedInitialPromises = new WeakSet<Promise<unknown>>();
+
 type StatsCacheEntry = {
   transactions: Transaction[];
   categories: Category[];
@@ -81,30 +85,34 @@ function writeLocalCache(key: string, data: StatsCacheEntry): void {
 }
 
 interface StatisticsPageClientProps {
-  initialData?: StatsCacheEntry;
+  // 서버 컴포넌트가 await 없이 넘긴 현재 달 데이터 Promise (RSC 스트리밍으로 도착)
+  initialDataPromise?: Promise<StatsCacheEntry | undefined>;
   initialMonthKey?: string;
 }
 
-function parseMonthParam(param: string | null): Date {
-  if (!param) return startOfMonth(new Date());
+// fallbackKey: 서버가 KST 기준으로 계산한 현재 달 — SSR/하이드레이션 간 월 불일치 방지
+function parseMonthParam(param: string | null, fallbackKey?: string): Date {
+  const fallback = fallbackKey ? parse(fallbackKey, "yyyy-MM", new Date()) : new Date();
+  const base = isValid(fallback) ? startOfMonth(fallback) : startOfMonth(new Date());
+  if (!param) return base;
   const parsed = parse(param, "yyyy-MM", new Date());
-  return isValid(parsed) ? startOfMonth(parsed) : startOfMonth(new Date());
+  return isValid(parsed) ? startOfMonth(parsed) : base;
 }
 
-export function StatisticsPageClient({ initialData, initialMonthKey }: StatisticsPageClientProps = {}) {
+export function StatisticsPageClient({ initialDataPromise, initialMonthKey }: StatisticsPageClientProps = {}) {
   return (
     <Suspense fallback={null}>
-      <StatisticsContent initialData={initialData} initialMonthKey={initialMonthKey} />
+      <StatisticsContent initialDataPromise={initialDataPromise} initialMonthKey={initialMonthKey} />
     </Suspense>
   );
 }
 
-function StatisticsContent({ initialData, initialMonthKey }: StatisticsPageClientProps) {
+function StatisticsContent({ initialDataPromise, initialMonthKey }: StatisticsPageClientProps) {
   const { isGuest } = useGuestMode();
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<TransactionType>("expense");
   const [currentMonth, setCurrentMonthState] = useState<Date>(() =>
-    parseMonthParam(searchParams.get("month"))
+    parseMonthParam(searchParams.get("month"), initialMonthKey)
   );
   const [isPickerOpen, setIsPickerOpen] = useState(false);
   const [pickerYear, setPickerYear] = useState(() => currentMonth.getFullYear());
@@ -114,6 +122,8 @@ function StatisticsContent({ initialData, initialMonthKey }: StatisticsPageClien
   const isMountedRef = useRef(false);
 
   const setCurrentMonth = useCallback((updater: Date | ((prev: Date) => Date)) => {
+    // 사용자가 달을 바꾸면 초기 표시 데이터(캐시)는 더 이상 화면 기준이 아니므로 스피너 생략 플래그 해제
+    hasInitialDataRef.current = false;
     setCurrentMonthState((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
       return next;
@@ -153,8 +163,17 @@ function StatisticsContent({ initialData, initialMonthKey }: StatisticsPageClien
   const fetchingKeyRef = useRef<string | null>(null);
   // SSR/localStorage 캐시 데이터가 화면에 표시 중인지 (로딩 스피너 생략 판단용)
   const hasInitialDataRef = useRef(false);
+  // 아직 소비하지 않은 서버 스트리밍 데이터의 캐시 키 (해당 키 첫 조회 시 서버 액션 대신 사용)
+  const pendingInitialKeyRef = useRef<string | null>(
+    initialDataPromise && initialMonthKey && !consumedInitialPromises.has(initialDataPromise)
+      ? `${initialMonthKey}-6`
+      : null
+  );
+  // 현재 화면의 캐시 키 — 비동기 응답이 도착했을 때 다른 달/기간으로 이동했는지 판단용
+  const currentKeyRef = useRef(`${format(currentMonth, "yyyy-MM")}-${trendCount}`);
+  currentKeyRef.current = `${format(currentMonth, "yyyy-MM")}-${trendCount}`;
 
-  // 마운트 시 SSR 데이터 또는 localStorage 캐시로 즉시 표시
+  // 마운트 시 localStorage 캐시로 즉시 표시 (서버 스트리밍 데이터는 아래 조회 effect에서 이어받아 교체)
   useEffect(() => {
     const key = `${format(currentMonth, "yyyy-MM")}-6`;
 
@@ -169,17 +188,7 @@ function StatisticsContent({ initialData, initialMonthKey }: StatisticsPageClien
       return;
     }
 
-    // 1순위: 서버에서 넘겨준 SSR 초기 데이터
-    if (initialData && initialMonthKey && `${initialMonthKey}-6` === key) {
-      cacheRef.current.set(key, initialData);
-      setStatsData(initialData);
-      setTrendLoading(false);
-      hasInitialDataRef.current = true;
-      writeLocalCache(key, initialData);
-      return;
-    }
-
-    // 2순위: localStorage 캐시 (앱 재시작 시 즉시 표시)
+    // localStorage 캐시 (앱 재시작 시 즉시 표시)
     const lsCache = readLocalCache(key);
     if (lsCache) {
       setStatsData(lsCache);
@@ -220,15 +229,29 @@ function StatisticsContent({ initialData, initialMonthKey }: StatisticsPageClien
     // 캐시 미스: SSR/localStorage 데이터가 이미 표시 중이면 스피너 생략
     if (!hasInitialDataRef.current) setTrendLoading(true);
 
-    getStatisticsPageData(year, month, trendCount).then((data) => {
+    // 이 키의 서버 스트리밍 데이터가 아직 남아 있으면 중복 요청 대신 그것을 사용
+    let request: Promise<StatsCacheEntry>;
+    if (pendingInitialKeyRef.current === key && initialDataPromise) {
+      pendingInitialKeyRef.current = null;
+      consumedInitialPromises.add(initialDataPromise);
+      request = initialDataPromise
+        .catch(() => undefined)
+        .then((data) => data ?? getStatisticsPageData(year, month, trendCount));
+    } else {
+      request = getStatisticsPageData(year, month, trendCount);
+    }
+
+    request.then((data) => {
       cacheRef.current.set(key, data);
       writeLocalCache(key, data);
+      if (fetchingKeyRef.current === key) fetchingKeyRef.current = null;
+      // 응답 대기 중 다른 달/기간으로 이동했으면 화면 상태는 건드리지 않는다
+      if (currentKeyRef.current !== key) return;
       setStatsData(data);
       setTrendLoading(false);
       hasInitialDataRef.current = false;
-      fetchingKeyRef.current = null;
     });
-  }, [currentMonth, trendCount, isGuest]);
+  }, [currentMonth, trendCount, isGuest, initialDataPromise]);
 
   const { onTouchStart, onTouchEnd, onTouchCancel } = useSwipeMonth(setCurrentMonth, !isPickerOpen);
 
