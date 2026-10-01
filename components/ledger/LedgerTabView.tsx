@@ -23,6 +23,7 @@ import type { Transaction, Category, Asset, RecurringTransaction } from "@/lib/m
 import type { AccessStatus } from "@/lib/actions/receiptAccess";
 import { useSwipeMonth } from "@/hooks/useSwipeMonth";
 import { applyChangeToEntry, type CacheEntry, type TransactionChange } from "@/lib/utils/ledgerCache";
+import { settlePromise } from "@/lib/utils/settlePromise";
 
 // localStorage 캐시 키
 const LS_KEY = "ledger_cache_v1";
@@ -109,8 +110,8 @@ export function LedgerTabView({ initialDataPromise, initialMonthKey, receiptAcce
   useEffect(() => {
     if (!receiptAccessStatusPromise) return;
     let cancelled = false;
-    receiptAccessStatusPromise.then((status) => {
-      if (!cancelled) setReceiptAccessStatus(status);
+    settlePromise(receiptAccessStatusPromise).then((status) => {
+      if (!cancelled && status) setReceiptAccessStatus(status);
     });
     return () => {
       cancelled = true;
@@ -253,7 +254,7 @@ export function LedgerTabView({ initialDataPromise, initialMonthKey, receiptAcce
       if (pendingInitialKeyRef.current === key && initialDataPromise) {
         pendingInitialKeyRef.current = null;
         consumedInitialPromises.add(initialDataPromise);
-        data = await initialDataPromise.catch(() => undefined);
+        data = await settlePromise(initialDataPromise);
       }
       data ??= await getLedgerMonthData(year, month);
       cacheRef.current.set(key, data);
