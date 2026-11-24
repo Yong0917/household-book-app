@@ -57,7 +57,7 @@ async function sendFcmMessage(
             notification: {
               icon: "ic_launcher",
               color: "#6366F1",
-              click_action: "OPEN_LEDGER",
+              click_action: "com.moneylogs.app.OPEN_LEDGER",
             },
           },
           data,
